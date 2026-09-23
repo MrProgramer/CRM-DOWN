@@ -1,0 +1,6 @@
+{
+  "name": "سامانه مدیریت انبار و صدور فاکتور بازرگانی",
+  "description": "نرم‌افزار جامع صدور فاکتور، مدیریت موجودی انبار با منطق کارتن و دانه، محاسبه سود و زیان، پنل کاربری فوق حرفه‌ای و حالت محرمانه قیمت خرید",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

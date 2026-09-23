@@ -1,0 +1,588 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: "ss01" 1, "cv01" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  *, ::before, ::after {
+    font-feature-settings: "ss01" 1, "cv01" 1;
+  }
+
+  body {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+    letter-spacing: -0.018em;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* High contrast black text strictly in light mode */
+  html:not(.dark) {
+    background-color: #f8fafc;
+    color: #090d16;
+  }
+
+  html:not(.dark) body {
+    background-color: #f8fafc;
+    color: #090d16;
+  }
+
+  html:not(.dark) .text-slate-900 {
+    color: #090d16;
+  }
+  html:not(.dark) .text-slate-800 {
+    color: #111827;
+  }
+  html:not(.dark) .text-slate-700 {
+    color: #1f2937;
+  }
+  html:not(.dark) .text-slate-600 {
+    color: #374151;
+  }
+  html:not(.dark) .text-slate-500 {
+    color: #4b5563;
+  }
+
+  /* Robust Dark Mode typography and background */
+  html.dark {
+    background-color: #080d1a !important;
+    color: #f8fafc !important;
+  }
+
+  html.dark body {
+    background-color: #080d1a !important;
+    color: #f8fafc !important;
+  }
+
+  /* Automatically ensure text in dark mode is bright and never black */
+  html.dark input,
+  html.dark select,
+  html.dark textarea {
+    color: #f8fafc;
+  }
+
+  html.dark .text-black {
+    color: #f8fafc !important;
+  }
+
+  html.dark .text-slate-900:not([class*="dark:text-"]) {
+    color: #f8fafc;
+  }
+
+  html.dark .text-slate-800:not([class*="dark:text-"]) {
+    color: #f1f5f9;
+  }
+
+  html.dark .text-slate-700:not([class*="dark:text-"]) {
+    color: #e2e8f0;
+  }
+
+  html.dark .text-slate-600:not([class*="dark:text-"]) {
+    color: #cbd5e1;
+  }
+
+  input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6, .font-mono, code, kbd, pre {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+  }
+
+  /* Force Persian Digits in all Form Inputs & Textboxes */
+  input[type="text"], input[type="number"], input[type="tel"], textarea, select {
+    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+  }
+
+  .font-display {
+    font-family: 'Lalezar', 'Vazirmatn', sans-serif !important;
+    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+    letter-spacing: 0.02em;
+  }
+
+  .dark body {
+    background-color: #080d1a;
+    color: #f8fafc;
+  }
+}
+
+/* Modern Fintech Luxury Surfaces */
+.modern-glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.03), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.dark .modern-glass-card {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.6), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Ambient Subtle Dot Grid Background */
+.bg-grid-subtle {
+  background-size: 32px 32px;
+  background-image: 
+    radial-gradient(circle, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+}
+
+.dark .bg-grid-subtle {
+  background-size: 32px 32px;
+  background-image: 
+    radial-gradient(circle, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+}
+
+/* Enterprise Data Table Styles */
+.table-enterprise {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-enterprise thead th {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.dark .table-enterprise thead th {
+  background-color: #0b1120;
+  border-bottom: 1px solid #1e293b;
+  color: #94a3b8;
+}
+
+.table-enterprise tbody tr {
+  transition: all 0.15s ease;
+}
+
+.table-enterprise tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.7);
+}
+
+.dark .table-enterprise tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* Card Interactive Hover Lift */
+.card-hover-lift {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08);
+}
+
+.dark .card-hover-lift:hover {
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* High-Class Light & Dark Surface Elevation */
+.glass-panel-light {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+}
+
+.glass-panel-dark {
+  background: #0f172a;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Micro-animations for animated icons */
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-float {
+  animation: floatSubtle 3.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 16s linear infinite;
+}
+
+/* Subtle glow accents */
+.glow-teal {
+  box-shadow: 0 0 35px -5px rgba(13, 148, 136, 0.3);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 35px -5px rgba(37, 99, 235, 0.3);
+}
+
+/* Peek hold animation pulse */
+@keyframes peekPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.97); }
+}
+
+.animate-peek-pulse {
+  animation: peekPulse 1.2s infinite ease-in-out;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .invoice-paper-container {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+    padding: 2mm 4mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  tr, table, .avoid-page-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 6mm 6mm;
+  }
+}
+
+/* Custom delicate scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 148, 136, 0.6);
+}
+
+/* ==========================================================================
+   DESIGN MODES ARCHITECTURE (6 DISTINCT VISUAL DESIGN SYSTEMS)
+   ========================================================================== */
+
+/* 1. CLASSIC BUSINESS LEDGER (کلاسیک اداری و دفتری سنتی) */
+[data-design-mode="classic"] .rounded-2xl,
+[data-design-mode="classic"] .rounded-3xl,
+[data-design-mode="classic"] .rounded-xl,
+[data-design-mode="classic"] .rounded-lg {
+  border-radius: 2px !important;
+}
+[data-design-mode="classic"] .shadow-sm,
+[data-design-mode="classic"] .shadow-md,
+[data-design-mode="classic"] .shadow-lg,
+[data-design-mode="classic"] .shadow-xl {
+  box-shadow: none !important;
+}
+[data-design-mode="classic"] .border,
+[data-design-mode="classic"] .border-slate-200,
+[data-design-mode="classic"] .border-slate-800 {
+  border-color: #cbd5e1 !important;
+}
+.dark[data-design-mode="classic"] .border,
+.dark[data-design-mode="classic"] .border-slate-200,
+.dark[data-design-mode="classic"] .border-slate-800 {
+  border-color: #334155 !important;
+}
+[data-design-mode="classic"] table {
+  border-collapse: collapse !important;
+}
+[data-design-mode="classic"] table th,
+[data-design-mode="classic"] table td {
+  border: 1px solid #e2e8f0 !important;
+}
+.dark[data-design-mode="classic"] table th,
+.dark[data-design-mode="classic"] table td {
+  border: 1px solid #1e293b !important;
+}
+
+/* 2. MODERN FINTECH PRO (مدرن هوشمند و فین‌تک) */
+[data-design-mode="modern"] {
+  /* Standard smooth modern fintech curves & subtle elevations */
+}
+
+/* 3. GLASSMORPHISM & FROSTED GLASS (شیشه‌ای و گلس‌مورفیک نئو) */
+[data-design-mode="glassmorphism"] {
+  background-image: radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.06) 0px, transparent 50%),
+                    radial-gradient(at 0% 100%, rgba(14, 165, 233, 0.06) 0px, transparent 50%) !important;
+}
+.dark[data-design-mode="glassmorphism"] {
+  background-image: radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+                    radial-gradient(at 0% 100%, rgba(14, 165, 233, 0.10) 0px, transparent 50%) !important;
+}
+[data-design-mode="glassmorphism"] .bg-white,
+[data-design-mode="glassmorphism"] .bg-slate-50 {
+  background-color: rgba(255, 255, 255, 0.76) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
+}
+.dark[data-design-mode="glassmorphism"] .bg-slate-900,
+.dark[data-design-mode="glassmorphism"] .bg-slate-950 {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* 4. MIDNIGHT OBSIDIAN & GOLD LUXURY (لوکس ابسیدین و طلایی شاهانه) */
+.dark[data-design-mode="luxury-gold"] {
+  background-color: #080a0f !important;
+}
+.dark[data-design-mode="luxury-gold"] .bg-slate-900,
+.dark[data-design-mode="luxury-gold"] .bg-slate-950 {
+  background-color: #0d121c !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+[data-design-mode="luxury-gold"] .border-slate-200,
+[data-design-mode="luxury-gold"] .border-slate-800 {
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+.dark[data-design-mode="luxury-gold"] .border-slate-800,
+.dark[data-design-mode="luxury-gold"] .border-slate-700 {
+  border-color: rgba(212, 175, 55, 0.35) !important;
+}
+
+/* 5. SOFT NEOBRUTALISM (نئوبروتالیسم نرم گرافیکی) */
+[data-design-mode="neobrutalism"] .rounded-2xl,
+[data-design-mode="neobrutalism"] .rounded-3xl,
+[data-design-mode="neobrutalism"] .rounded-xl {
+  border-radius: 12px !important;
+}
+[data-design-mode="neobrutalism"] .border,
+[data-design-mode="neobrutalism"] .border-slate-200,
+[data-design-mode="neobrutalism"] .border-slate-300 {
+  border: 2px solid #0f172a !important;
+}
+.dark[data-design-mode="neobrutalism"] .border,
+.dark[data-design-mode="neobrutalism"] .border-slate-700,
+.dark[data-design-mode="neobrutalism"] .border-slate-800 {
+  border: 2px solid #f1f5f9 !important;
+}
+[data-design-mode="neobrutalism"] .shadow-sm,
+[data-design-mode="neobrutalism"] .shadow-md,
+[data-design-mode="neobrutalism"] .shadow-lg,
+[data-design-mode="neobrutalism"] .shadow-xl {
+  box-shadow: 3px 3px 0px 0px #0f172a !important;
+}
+.dark[data-design-mode="neobrutalism"] .shadow-sm,
+.dark[data-design-mode="neobrutalism"] .shadow-md,
+.dark[data-design-mode="neobrutalism"] .shadow-lg,
+.dark[data-design-mode="neobrutalism"] .shadow-xl {
+  box-shadow: 3px 3px 0px 0px #f8fafc !important;
+}
+
+/* 6. CYBER TECH & DIGITAL COCKPIT (سایبرتک نئون و دیجیتال ترمینال) */
+[data-design-mode="cyber-tech"] {
+  background-image: 
+    linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark[data-design-mode="cyber-tech"] {
+  background-color: #04070e !important;
+  background-image: 
+    linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.dark[data-design-mode="cyber-tech"] .bg-slate-900,
+.dark[data-design-mode="cyber-tech"] .bg-slate-950 {
+  background-color: #080e18 !important;
+  border-color: rgba(6, 182, 212, 0.3) !important;
+}
+[data-design-mode="cyber-tech"] .border-slate-200,
+[data-design-mode="cyber-tech"] .border-slate-800 {
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+[data-design-mode="cyber-tech"] .shadow-sm,
+[data-design-mode="cyber-tech"] .shadow-md,
+[data-design-mode="cyber-tech"] .shadow-lg {
+  box-shadow: 0 0 16px -2px rgba(6, 182, 212, 0.22) !important;
+}
+
+/* 7. MINIMAL NORDIC (مینیمال نوردیک اسکاندیناوی و آرام) */
+[data-design-mode="minimal-nordic"] {
+  letter-spacing: -0.015em;
+}
+[data-design-mode="minimal-nordic"] .shadow-sm,
+[data-design-mode="minimal-nordic"] .shadow-md,
+[data-design-mode="minimal-nordic"] .shadow-lg,
+[data-design-mode="minimal-nordic"] .shadow-xl {
+  box-shadow: none !important;
+}
+[data-design-mode="minimal-nordic"] .border,
+[data-design-mode="minimal-nordic"] .border-slate-200,
+[data-design-mode="minimal-nordic"] .border-slate-300 {
+  border-color: rgba(226, 232, 240, 0.6) !important;
+}
+.dark[data-design-mode="minimal-nordic"] .border,
+.dark[data-design-mode="minimal-nordic"] .border-slate-800,
+.dark[data-design-mode="minimal-nordic"] .border-slate-700 {
+  border-color: rgba(51, 65, 85, 0.45) !important;
+}
+
+/* 8. AURORA SUNSET & DYNAMIC MESH (شفق قطبی و گرادیان زنده) */
+[data-design-mode="aurora-sunset"] {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.05) 0px, transparent 40%),
+    radial-gradient(at 100% 0%, rgba(225, 29, 72, 0.05) 0px, transparent 40%),
+    radial-gradient(at 50% 100%, rgba(124, 58, 237, 0.05) 0px, transparent 50%) !important;
+}
+.dark[data-design-mode="aurora-sunset"] {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.09) 0px, transparent 45%),
+    radial-gradient(at 100% 0%, rgba(225, 29, 72, 0.09) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(124, 58, 237, 0.08) 0px, transparent 50%) !important;
+}
+[data-design-mode="aurora-sunset"] .border-slate-200 {
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+.dark[data-design-mode="aurora-sunset"] .border-slate-800 {
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+[data-design-mode="aurora-sunset"] .shadow-sm,
+[data-design-mode="aurora-sunset"] .shadow-md {
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.08), 0 4px 12px -2px rgba(225, 29, 72, 0.06) !important;
+}
+
+/* 9. GLOBAL PRINT & EXPORT DAY MODE OVERRIDES (اجبار حالت روز برای تمامی چاپ‌ها، PDF و عکس) */
+@media print {
+  html, html.dark, body, body.dark {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+  }
+
+  .no-print, nav, aside, button, .control-bar {
+    display: none !important;
+  }
+
+  /* Force invoice paper and all report containers to standard white background with crisp dark text */
+  #invoice-paper, 
+  .invoice-paper-container,
+  .printable-document {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Strip all dark backgrounds and dark text overrides when printing */
+  .dark #invoice-paper,
+  .dark .invoice-paper-container,
+  .dark .printable-document {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  #invoice-paper *,
+  .invoice-paper-container *,
+  .printable-document * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Map dark backgrounds to light backgrounds on paper elements */
+  #invoice-paper [class*="dark:bg-"],
+  .invoice-paper-container [class*="dark:bg-"],
+  .printable-document [class*="dark:bg-"] {
+    background-color: #f8fafc !important;
+  }
+
+  /* Map dark text colors to dark slate text for print readability */
+  #invoice-paper [class*="dark:text-"],
+  .invoice-paper-container [class*="dark:text-"],
+  .printable-document [class*="dark:text-"] {
+    color: #0f172a !important;
+  }
+
+  #invoice-paper [class*="dark:border-"],
+  .invoice-paper-container [class*="dark:border-"],
+  .printable-document [class*="dark:border-"] {
+    border-color: #e2e8f0 !important;
+  }
+
+  table {
+    border-color: #cbd5e1 !important;
+  }
+
+  th, td {
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  thead tr {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+}
+
+
+
+
+

@@ -1,0 +1,3744 @@
+import React, { useState, useEffect } from 'react';
+import { Customer, CustomerType, Invoice, CustomerPayment, StoreSettings, ProductReturn } from '../types';
+import { themes } from './ThemeConfig';
+import { Pagination } from './Pagination';
+import { 
+  formatPrice, 
+  toPersianDigits, 
+  getCurrentPersianDate, 
+  getCurrentPersianTime,
+  numberToPersianWords,
+  getNetReturnAmount,
+  CUSTOMER_TYPE_OPTIONS,
+  getCustomerTypeInfo
+} from '../utils/formatters';
+import {
+  getCustomerSalesInvoices,
+  getCustomerCreditSalesTotal,
+  getCustomerPayments,
+  getCustomerDepositsTotal as getCustomerDepositsTotalCalc,
+  getCustomerManualDebtsTotal as getCustomerManualDebtsTotalCalc,
+  getCustomerReturnsFromTotal as getCustomerReturnsFromTotalCalc,
+  getCustomerAllReturnsFromTotal as getCustomerAllReturnsFromTotalCalc,
+  getCustomerSettledReturnsFromTotal as getCustomerSettledReturnsFromTotalCalc,
+  getCustomerReturnsToSupplierTotal as getCustomerReturnsToSupplierTotalCalc,
+  calculateCustomerLiveBalance,
+  getCustomerFinanceDetails
+} from '../utils/customerBalanceCalculations';
+import { downloadInvoiceAsImage, copyInvoiceImageToClipboard } from '../utils/exportInvoice';
+import { 
+  Users, 
+  UserPlus, 
+  Search, 
+  Phone, 
+  MapPin, 
+  Building, 
+  CreditCard, 
+  FileText, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  X, 
+  ShieldCheck,
+  Wallet,
+  Printer,
+  Calendar,
+  Clock,
+  ArrowRight,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Banknote,
+  Check,
+  CheckCheck,
+  History,
+  TrendingUp,
+  TrendingDown,
+  Layers,
+  ChevronLeft,
+  Camera,
+  Download,
+  Upload,
+  Copy,
+  Share2,
+  CheckCircle2,
+  Sparkles,
+  Sun,
+  Moon,
+  RefreshCw,
+  Table,
+  LayoutGrid,
+  Eye,
+  RotateCcw,
+  Scale,
+  Receipt,
+  ArrowUpDown,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Store,
+  Truck,
+  Repeat,
+  Briefcase,
+  User,
+  Tag,
+  MessageCircle,
+  Send,
+  FileSpreadsheet,
+  Package,
+  BarChart3,
+  Info,
+  CalendarDays,
+  Filter,
+  ExternalLink,
+  Save,
+  Percent,
+  AlertCircle,
+  ShoppingBag,
+  BadgePercent,
+  SlidersHorizontal,
+  Smartphone,
+  CheckCircle,
+  AlertTriangle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CustomValidationMessage } from './CustomValidationMessage';
+import { SmartPriceInput } from './SmartPriceInput';
+import { CustomerStatementView } from './CustomerStatementView';
+
+interface CustomerManagerProps {
+  customers: Customer[];
+  invoices: Invoice[];
+  payments: CustomerPayment[];
+  settings: StoreSettings;
+  isDarkMode?: boolean;
+  productReturns?: ProductReturn[];
+  runWithSecurityCheck?: (
+    title: string,
+    subtitle: string,
+    actionType?: 'edit' | 'delete',
+    onSuccess?: () => void
+  ) => void;
+  onAddCustomer: (customer: Customer) => void;
+  onUpdateCustomer: (customer: Customer) => void;
+  onDeleteCustomer: (customerId: string) => void;
+  onAddPayment: (payment: CustomerPayment) => void;
+  onUpdatePayment: (payment: CustomerPayment) => void;
+  onDeletePayment: (paymentId: string) => void;
+  onFullCustomerSettlement?: (
+    customer: Customer,
+    details: {
+      settlementAmount: number;
+      paymentMethod: 'card' | 'bank_transfer' | 'cash' | 'check';
+      accountType: 'bank' | 'cash';
+      date: string;
+      time: string;
+      referenceNumber?: string;
+      description?: string;
+      settleOpenInvoices?: boolean;
+      settleOpenReturns?: boolean;
+    }
+  ) => void;
+  onViewInvoice: (invoice: Invoice) => void;
+  onNewInvoiceForCustomer: (customer: Customer) => void;
+  onEditInvoice?: (invoice: Invoice) => void;
+  onDeleteInvoice?: (invoiceId: string) => void;
+  onShowAlert?: (message: string, type?: 'success' | 'error' | 'warning' | 'info', title?: string) => void;
+}
+
+export const CustomerManager: React.FC<CustomerManagerProps> = ({
+  customers,
+  invoices,
+  payments,
+  settings,
+  isDarkMode = true,
+  productReturns = [],
+  runWithSecurityCheck,
+  onAddCustomer,
+  onUpdateCustomer,
+  onDeleteCustomer,
+  onAddPayment,
+  onUpdatePayment,
+  onDeletePayment,
+  onFullCustomerSettlement,
+  onViewInvoice,
+  onNewInvoiceForCustomer,
+  onEditInvoice,
+  onDeleteInvoice,
+  onShowAlert,
+}) => {
+  const theme = themes[settings.themeColor] || themes.teal;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'debtor' | 'settled' | 'creditor'>('all');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<string>('all');
+  
+  // Modals & Dedicated View state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [selectedCustomerForStatement, setSelectedCustomerForStatement] = useState<Customer | null>(null);
+
+  // Auto-scroll to top when selecting a customer statement, opening customer form, or viewing document
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedCustomerForStatement, isFormOpen]);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<CustomerPayment | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<CustomerPayment | null>(null);
+  const [targetCustomerForPayment, setTargetCustomerForPayment] = useState<Customer | null>(null);
+
+  // Shot / Image Card Modal state
+  const [isShotModalOpen, setIsShotModalOpen] = useState(false);
+  const [shotCustomer, setShotCustomer] = useState<Customer | null>(null);
+  const [copiedText, setCopiedText] = useState(false);
+  const [isExportingShot, setIsExportingShot] = useState(false);
+  const [isCopyingShotImage, setIsCopyingShotImage] = useState(false);
+  const [shotThemeMode, setShotThemeMode] = useState<'day' | 'night'>(() => isDarkMode ? 'night' : 'day');
+  const [shotInvoiceLimit, setShotInvoiceLimit] = useState<number>(5);
+  const [shotFilterType, setShotFilterType] = useState<'all' | 'invoices' | 'payments'>('all');
+  const [shotRecentRowsLimit, setShotRecentRowsLimit] = useState<number>(5);
+
+  // View Mode & Customer List Pagination State
+  const [customerViewMode, setCustomerViewMode] = useState<'table' | 'cards'>('cards');
+  const [customerSortOrder, setCustomerSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [customerCurrentPage, setCustomerCurrentPage] = useState(1);
+  const [customerItemsPerPage, setCustomerItemsPerPage] = useState(20);
+
+  // Statement Ledger Pagination, Sub-Tabs & Advanced Filters
+  const [statementTab, setStatementTab] = useState<'ledger' | 'invoices' | 'payments' | 'returns' | 'purchased_items' | 'profile_details'>('ledger');
+  const [statementCurrentPage, setStatementCurrentPage] = useState(1);
+  const [statementItemsPerPage, setStatementItemsPerPage] = useState(20);
+  const [statementSearchTerm, setStatementSearchTerm] = useState('');
+  const [statementFilterType, setStatementFilterType] = useState<'all' | 'credit_sales' | 'payments' | 'returns'>('all');
+  const [statementDateFilter, setStatementDateFilter] = useState<'all' | 'today' | 'this_month' | 'last_3_months' | 'this_year'>('all');
+  const [viewingLedgerDoc, setViewingLedgerDoc] = useState<any | null>(null);
+
+  // Customer Statement Sub-Tab Search & Filter States
+  const [statementInvoiceSearch, setStatementInvoiceSearch] = useState('');
+  const [statementInvoiceStatusFilter, setStatementInvoiceStatusFilter] = useState<'all' | 'cash' | 'credit' | 'partial'>('all');
+  const [statementPaymentSearch, setStatementPaymentSearch] = useState('');
+  const [statementPaymentMethodFilter, setStatementPaymentMethodFilter] = useState<'all' | 'card' | 'bank_transfer' | 'cash' | 'check'>('all');
+  const [purchasedItemsSort, setPurchasedItemsSort] = useState<'total_spent' | 'count' | 'name'>('total_spent');
+  const [purchasedItemsSearch, setPurchasedItemsSearch] = useState('');
+
+  // Inline Customer Notes & Profile Quick Actions
+  const [isInlineNotesEditing, setIsInlineNotesEditing] = useState(false);
+  const [inlineNotesValue, setInlineNotesValue] = useState('');
+
+  // Debt Reminder & WhatsApp / SMS Sharing Modal State
+  const [isDebtReminderModalOpen, setIsDebtReminderModalOpen] = useState(false);
+  const [reminderTemplateType, setReminderTemplateType] = useState<'formal' | 'friendly' | 'brief' | 'card_info'>('formal');
+  const [reminderCopied, setReminderCopied] = useState(false);
+
+  // Dedicated Balance & Debt Adjustment Modal state
+  const [isBalanceAdjModalOpen, setIsBalanceAdjModalOpen] = useState(false);
+  const [targetCustomerForBalanceAdj, setTargetCustomerForBalanceAdj] = useState<Customer | null>(null);
+  const [balanceAdjType, setBalanceAdjType] = useState<'credit' | 'payout' | 'debt' | 'initial_balance'>('credit');
+  const [balanceAdjAmount, setBalanceAdjAmount] = useState<number | ''>('');
+  const [balanceAdjDate, setBalanceAdjDate] = useState(getCurrentPersianDate());
+  const [balanceAdjTime, setBalanceAdjTime] = useState(getCurrentPersianTime());
+  const [balanceAdjMethod, setBalanceAdjMethod] = useState<'card' | 'bank_transfer' | 'cash' | 'check'>('card');
+  const [balanceAdjRef, setBalanceAdjRef] = useState('');
+  const [balanceAdjNotes, setBalanceAdjNotes] = useState('');
+
+  const handleOpenBalanceAdjModal = (cust?: Customer, defaultType: 'credit' | 'payout' | 'debt' | 'initial_balance' = 'credit') => {
+    const selectedCust = cust || (selectedCustomerForStatement ? customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement : customers[0] || null);
+    if (!selectedCust) {
+      onShowAlert?.('ابتدا باید حداقل یک مشتری در سیستم ثبت نمایید.', 'warning', 'عدم وجود مشتری');
+      return;
+    }
+    const execute = () => {
+      setTargetCustomerForBalanceAdj(selectedCust);
+      setBalanceAdjType(defaultType);
+      setBalanceAdjAmount(defaultType === 'initial_balance' ? Math.abs(selectedCust.initialBalance || 0) : '');
+      setBalanceAdjDate(getCurrentPersianDate());
+      setBalanceAdjTime(getCurrentPersianTime());
+      setBalanceAdjMethod('card');
+      setBalanceAdjRef('');
+      setBalanceAdjNotes('');
+      setIsBalanceAdjModalOpen(true);
+    };
+
+    if (runWithSecurityCheck) {
+      runWithSecurityCheck(
+        `تایید پین‌کد جهت مدیریت حساب و بستانکاری «${selectedCust.name}»`,
+        'برای ثبت تغییرات بستانکاری، بدهی یا ویرایش مانده اولیه، پین‌کد مدیریت را وارد کنید.',
+        'edit',
+        execute
+      );
+    } else {
+      execute();
+    }
+  };
+
+  const handleSubmitBalanceAdj = (e: React.FormEvent) => {
+    e.preventDefault();
+    const currentCust = targetCustomerForBalanceAdj || (selectedCustomerForStatement ? customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement : null);
+    if (!currentCust) return;
+
+    const amt = Number(balanceAdjAmount);
+    if (balanceAdjType !== 'initial_balance' && (!amt || amt <= 0)) {
+      onShowAlert?.('لطفاً مبلغ معتبری را به تومان وارد کنید.', 'warning', 'مبلغ نامعتبر');
+      return;
+    }
+
+    if (balanceAdjType === 'initial_balance') {
+      const updatedCust: Customer = {
+        ...currentCust,
+        initialBalance: amt,
+      };
+      onUpdateCustomer(updatedCust);
+      setIsBalanceAdjModalOpen(false);
+      return;
+    }
+
+    if (balanceAdjType === 'credit') {
+      const newPay: CustomerPayment = {
+        id: `pay-${Date.now()}`,
+        customerId: currentCust.id,
+        customerName: currentCust.name,
+        amount: amt,
+        date: balanceAdjDate || getCurrentPersianDate(),
+        time: balanceAdjTime || getCurrentPersianTime(),
+        paymentMethod: balanceAdjMethod,
+        referenceNumber: balanceAdjRef.trim(),
+        description: balanceAdjNotes.trim() || 'ثبت بستانکاری و واریزی مشتری',
+        createdAt: Date.now(),
+      };
+      onAddPayment(newPay);
+    } else if (balanceAdjType === 'payout') {
+      const newPay: CustomerPayment = {
+        id: `pay-${Date.now()}`,
+        customerId: currentCust.id,
+        customerName: currentCust.name,
+        amount: -amt,
+        date: balanceAdjDate || getCurrentPersianDate(),
+        time: balanceAdjTime || getCurrentPersianTime(),
+        paymentMethod: balanceAdjMethod,
+        referenceNumber: balanceAdjRef.trim(),
+        description: balanceAdjNotes.trim() || 'عودت وجه و پرداخت بستانکاری به مشتری',
+        createdAt: Date.now(),
+      };
+      onAddPayment(newPay);
+    } else if (balanceAdjType === 'debt') {
+      const newPay: CustomerPayment = {
+        id: `pay-${Date.now()}`,
+        customerId: currentCust.id,
+        customerName: currentCust.name,
+        amount: -amt,
+        date: balanceAdjDate || getCurrentPersianDate(),
+        time: balanceAdjTime || getCurrentPersianTime(),
+        paymentMethod: balanceAdjMethod,
+        referenceNumber: balanceAdjRef.trim(),
+        description: balanceAdjNotes.trim() || 'ثبت بدهی جدید / نسیه دستی',
+        createdAt: Date.now(),
+      };
+      onAddPayment(newPay);
+    }
+
+    setIsBalanceAdjModalOpen(false);
+  };
+
+  // Dedicated 1-Click Full Customer Settlement Modal state
+  const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
+  const [targetCustomerForSettlement, setTargetCustomerForSettlement] = useState<Customer | null>(null);
+  const [settlementMethod, setSettlementMethod] = useState<'card' | 'bank_transfer' | 'cash' | 'check'>('bank_transfer');
+  const [settlementAccountType, setSettlementAccountType] = useState<'bank' | 'cash'>('bank');
+  const [settlementRef, setSettlementRef] = useState('');
+  const [settlementNotes, setSettlementNotes] = useState('');
+  const [settlementDate, setSettlementDate] = useState(getCurrentPersianDate());
+  const [settlementTime, setSettlementTime] = useState(getCurrentPersianTime());
+  const [settleOpenInvoicesChecked, setSettleOpenInvoicesChecked] = useState(true);
+  const [settleOpenReturnsChecked, setSettleOpenReturnsChecked] = useState(true);
+
+  const handleOpenSettlementModal = (cust?: Customer) => {
+    const selectedCust = cust || (selectedCustomerForStatement ? customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement : customers[0] || null);
+    if (!selectedCust) {
+      onShowAlert?.('ابتدا باید حداقل یک مشتری در سیستم ثبت نمایید.', 'warning', 'عدم وجود مشتری');
+      return;
+    }
+
+    const finDetails = getCustomerFinanceDetails(selectedCust, invoices, payments, productReturns);
+    const isDebtor = finDetails.liveBalance > 0;
+    const isCreditor = finDetails.liveBalance < 0;
+
+    setTargetCustomerForSettlement(selectedCust);
+    setSettlementMethod('bank_transfer');
+    setSettlementAccountType('bank');
+    setSettlementRef('');
+    setSettlementDate(getCurrentPersianDate());
+    setSettlementTime(getCurrentPersianTime());
+    setSettleOpenInvoicesChecked(true);
+    setSettleOpenReturnsChecked(true);
+
+    if (isDebtor) {
+      setSettlementNotes(`تسویه کامل مانده بدهی مشتری «${selectedCust.name}» (بی‌حساب شدن پرونده)`);
+    } else if (isCreditor) {
+      setSettlementNotes(`تسویه کامل و پرداخت مانده بستانکاری مشتری «${selectedCust.name}»`);
+    } else {
+      setSettlementNotes(`تأیید بی‌حساب بودن و تسویه کامل مشتری «${selectedCust.name}»`);
+    }
+
+    setIsSettlementModalOpen(true);
+  };
+
+  const handleSubmitSettlement = (e: React.FormEvent) => {
+    e.preventDefault();
+    const currentCust = targetCustomerForSettlement || (selectedCustomerForStatement ? customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement : null);
+    if (!currentCust) return;
+
+    const finDetails = getCustomerFinanceDetails(currentCust, invoices, payments, productReturns);
+    const liveBal = finDetails.liveBalance;
+
+    if (liveBal === 0) {
+      onShowAlert?.('حساب این مشتری در حال حاضر کاملاً تسویه و بی‌حساب است و هیچ مانده بدهی یا بستانکاری ندارد.', 'info', 'حساب بی‌حساب');
+      setIsSettlementModalOpen(false);
+      return;
+    }
+
+    const execute = () => {
+      if (onFullCustomerSettlement) {
+        onFullCustomerSettlement(currentCust, {
+          settlementAmount: liveBal,
+          paymentMethod: settlementMethod,
+          accountType: settlementAccountType,
+          date: settlementDate || getCurrentPersianDate(),
+          time: settlementTime || getCurrentPersianTime(),
+          referenceNumber: settlementRef.trim(),
+          description: settlementNotes.trim() || (liveBal > 0 ? 'تسویه کامل مانده بدهی مشتری' : 'تسویه بستانکاری مشتری'),
+          settleOpenInvoices: settleOpenInvoicesChecked,
+          settleOpenReturns: settleOpenReturnsChecked,
+        });
+      } else {
+        onAddPayment({
+          id: `pay-settle-${Date.now()}`,
+          customerId: currentCust.id,
+          customerName: currentCust.name,
+          amount: liveBal,
+          date: settlementDate || getCurrentPersianDate(),
+          time: settlementTime || getCurrentPersianTime(),
+          paymentMethod: settlementMethod,
+          referenceNumber: settlementRef.trim(),
+          description: settlementNotes.trim() || (liveBal > 0 ? 'تسویه کامل مانده بدهی مشتری (بی‌حساب)' : 'تسویه بستانکاری مشتری'),
+          createdAt: Date.now(),
+        });
+        onShowAlert?.(`تسویه حساب مشتری «${currentCust.name}» با موفقیت اعمال گردید.`, 'success', 'تسویه حساب');
+      }
+      setIsSettlementModalOpen(false);
+    };
+
+    if (runWithSecurityCheck) {
+      runWithSecurityCheck(
+        `تایید پین‌کد جهت تسویه کامل حساب «${currentCust.name}»`,
+        `برای ثبت تسویه به مبلغ ${formatPrice(Math.abs(liveBal))} و به‌روزرسانی نقدینگی، پین‌کد مدیریت را وارد کنید.`,
+        'edit',
+        execute
+      );
+    } else {
+      execute();
+    }
+  };
+
+  const renderCustomerTypeIcon = (iconName: string, className = "w-3.5 h-3.5") => {
+    switch (iconName) {
+      case 'Store': return <Store className={className} />;
+      case 'Truck': return <Truck className={className} />;
+      case 'Repeat': return <Repeat className={className} />;
+      case 'Briefcase': return <Briefcase className={className} />;
+      case 'User':
+      default: return <User className={className} />;
+    }
+  };
+
+  React.useEffect(() => {
+    setCustomerCurrentPage(1);
+  }, [searchTerm, filterType, customerTypeFilter]);
+
+  React.useEffect(() => {
+    setShotThemeMode(isDarkMode ? 'night' : 'day');
+  }, [isDarkMode, isShotModalOpen]);
+
+  // Customer Form State
+  const [formData, setFormData] = useState<Partial<Customer>>({
+    name: '',
+    company: '',
+    customerType: 'regular',
+    phone: '',
+    city: '',
+    address: '',
+    nationalCode: '',
+    initialBalance: 0,
+    creditLimit: 0,
+    notes: '',
+  });
+
+  // Payment Deposit Form State
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
+  const [paymentDate, setPaymentDate] = useState(getCurrentPersianDate());
+  const [paymentTime, setPaymentTime] = useState(getCurrentPersianTime());
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cash' | 'check'>('card');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentDescription, setPaymentDescription] = useState('');
+  const [selectedPaymentCustId, setSelectedPaymentCustId] = useState<string>('');
+
+  // Helpers to calculate customer finances
+  const getCustomerInvoices = (customer: Customer) => {
+    return getCustomerSalesInvoices(customer, invoices);
+  };
+
+  const getCustomerCreditInvoicesTotal = (customer: Customer) => {
+    return getCustomerCreditSalesTotal(customer, invoices);
+  };
+
+  const getCustomerPaymentsList = (customer: Customer) => {
+    return getCustomerPayments(customer, payments);
+  };
+
+  const getCustomerManualDebtsTotal = (customer: Customer) => {
+    return getCustomerManualDebtsTotalCalc(customer, payments);
+  };
+
+  const getCustomerDepositsTotal = (customer: Customer) => {
+    return getCustomerDepositsTotalCalc(customer, payments);
+  };
+
+  const getCustomerReturnsFromTotal = (customer: Customer) => {
+    return getCustomerReturnsFromTotalCalc(customer, productReturns);
+  };
+
+  const getCustomerAllReturnsTotal = (customer: Customer) => {
+    return getCustomerAllReturnsFromTotalCalc(customer, productReturns);
+  };
+
+  const getCustomerSettledReturnsTotal = (customer: Customer) => {
+    return getCustomerSettledReturnsFromTotalCalc(customer, productReturns);
+  };
+
+  const getCustomerReturnsToSupplierTotal = (customer: Customer) => {
+    return getCustomerReturnsToSupplierTotalCalc(customer, productReturns);
+  };
+
+  const getCustomerPaymentsTotal = (customer: Customer) => {
+    return getCustomerDepositsTotalCalc(customer, payments);
+  };
+
+  // Live Current Balance
+  const getCustomerLiveBalance = (customer: Customer) => {
+    return calculateCustomerLiveBalance(customer, invoices, payments, productReturns);
+  };
+
+  const [customerFormErrors, setCustomerFormErrors] = useState<{ [key: string]: string }>({});
+  const [paymentFormErrors, setPaymentFormErrors] = useState<{ [key: string]: string }>({});
+
+  const resetCustomerForm = () => {
+    setCustomerFormErrors({});
+    setFormData({
+      name: '',
+      company: '',
+      customerType: 'regular',
+      phone: '',
+      city: '',
+      address: '',
+      nationalCode: '',
+      initialBalance: 0,
+      creditLimit: 0,
+      notes: '',
+    });
+    setEditingCustomer(null);
+    setIsFormOpen(false);
+  };
+
+  const handleOpenAdd = () => {
+    resetCustomerForm();
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEdit = (c: Customer) => {
+    const execute = () => {
+      setCustomerFormErrors({});
+      setEditingCustomer(c);
+      setFormData({ ...c });
+      setIsFormOpen(true);
+    };
+
+    if (runWithSecurityCheck) {
+      runWithSecurityCheck(
+        `تایید پین‌کد جهت ویرایش حساب مشتری «${c.name}»`,
+        'برای ورود به بخش ویرایش مشخصات و مانده اولیه مشتری، پین‌کد مدیریت را وارد کنید.',
+        'edit',
+        execute
+      );
+    } else {
+      execute();
+    }
+  };
+
+  const handleSubmitCustomerForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.name?.trim()) {
+      errors.name = 'ورود نام و نام خانوادگی مشتری الزامی است';
+    }
+    if (!formData.phone?.trim()) {
+      errors.phone = 'ورود شماره تماس همراه الزامی است';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setCustomerFormErrors(errors);
+      return;
+    }
+
+    setCustomerFormErrors({});
+
+    if (editingCustomer) {
+      onUpdateCustomer({
+        ...editingCustomer,
+        ...(formData as Customer),
+        customerType: (formData.customerType || 'regular') as CustomerType,
+        initialBalance: Number(formData.initialBalance || 0),
+        creditLimit: Number(formData.creditLimit || 0),
+      });
+    } else {
+      const newCustomer: Customer = {
+        id: `cust-${Date.now()}`,
+        name: formData.name.trim(),
+        company: formData.company?.trim() || '',
+        customerType: (formData.customerType || 'regular') as CustomerType,
+        phone: formData.phone.trim(),
+        city: formData.city?.trim() || 'نامشخص',
+        address: formData.address?.trim() || '',
+        nationalCode: formData.nationalCode?.trim() || '',
+        initialBalance: Number(formData.initialBalance || 0),
+        creditLimit: Number(formData.creditLimit || 0),
+        notes: formData.notes?.trim() || '',
+        createdAt: Date.now(),
+      };
+      onAddCustomer(newCustomer);
+    }
+
+    resetCustomerForm();
+  };
+
+  // Handle Register/Edit Payment Modal Open
+  const handleOpenPaymentModal = (customer?: Customer) => {
+    setEditingPayment(null);
+    setPaymentFormErrors({});
+    if (customer) {
+      setTargetCustomerForPayment(customer);
+      setSelectedPaymentCustId(customer.id);
+    } else if (customers.length > 0) {
+      setTargetCustomerForPayment(customers[0]);
+      setSelectedPaymentCustId(customers[0].id);
+    }
+    setPaymentAmount('');
+    setPaymentDate(getCurrentPersianDate());
+    setPaymentTime(getCurrentPersianTime());
+    setPaymentMethod('card');
+    setPaymentRef('');
+    setPaymentDescription('');
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleOpenShotModal = (customer: Customer) => {
+    setShotCustomer(customer);
+    setCopiedText(false);
+    setIsShotModalOpen(true);
+  };
+
+  const handleOpenEditPayment = (payment: CustomerPayment) => {
+    const execute = () => {
+      setEditingPayment(payment);
+      setPaymentFormErrors({});
+      setSelectedPaymentCustId(payment.customerId);
+      const cust = customers.find(c => c.id === payment.customerId);
+      if (cust) setTargetCustomerForPayment(cust);
+      setPaymentAmount(Math.abs(payment.amount));
+      setPaymentDate(payment.date);
+      setPaymentTime(payment.time || getCurrentPersianTime());
+      setPaymentMethod(payment.paymentMethod || 'card');
+      setPaymentRef(payment.referenceNumber || '');
+      setPaymentDescription(payment.description || '');
+      setIsPaymentModalOpen(true);
+    };
+
+    if (runWithSecurityCheck) {
+      runWithSecurityCheck(
+        'تایید پین‌کد جهت ویرایش سند دریافتی/پرداختی',
+        'برای ورود به بخش ویرایش این سند مالی، پین‌کد مدیریت را وارد کنید.',
+        'edit',
+        execute
+      );
+    } else {
+      execute();
+    }
+  };
+
+  const handleSubmitPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: { [key: string]: string } = {};
+
+    const cust = customers.find((c) => c.id === selectedPaymentCustId) || targetCustomerForPayment;
+    if (!cust) {
+      errors.customer = 'انتخاب طرف حساب الزامی است';
+    }
+    const amountNum = Number(paymentAmount);
+    if (!amountNum || amountNum <= 0) {
+      errors.amount = 'ورود مبلغ معتبر به تومان الزامی است';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setPaymentFormErrors(errors);
+      return;
+    }
+
+    setPaymentFormErrors({});
+
+    if (editingPayment) {
+      const isNegative = editingPayment.amount < 0;
+      const finalAmt = isNegative ? -Math.abs(amountNum) : Math.abs(amountNum);
+
+      const updatedPayment: CustomerPayment = {
+        ...editingPayment,
+        customerId: cust.id,
+        customerName: cust.name,
+        amount: finalAmt,
+        date: paymentDate || getCurrentPersianDate(),
+        time: paymentTime || getCurrentPersianTime(),
+        paymentMethod,
+        referenceNumber: paymentRef.trim(),
+        description: paymentDescription.trim() || 'ویرایش سند مالی مشتری',
+      };
+      onUpdatePayment(updatedPayment);
+    } else {
+      const newPayment: CustomerPayment = {
+        id: `pay-${Date.now()}`,
+        customerId: cust.id,
+        customerName: cust.name,
+        amount: amountNum,
+        date: paymentDate || getCurrentPersianDate(),
+        time: paymentTime || getCurrentPersianTime(),
+        paymentMethod,
+        referenceNumber: paymentRef.trim(),
+        description: paymentDescription.trim() || 'ثبت واریزی و دریافتی از مشتری',
+        createdAt: Date.now(),
+      };
+      onAddPayment(newPayment);
+    }
+    setIsPaymentModalOpen(false);
+    setEditingPayment(null);
+  };
+
+  // Filtered Customer List
+  const filteredCustomers = customers.filter((c) => {
+    const liveBal = getCustomerLiveBalance(c);
+    const typeInfo = getCustomerTypeInfo(c.customerType);
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.company && c.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      c.phone.includes(searchTerm) ||
+      c.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      typeInfo.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      typeInfo.shortLabel.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Filter by financial balance status
+    if (filterType === 'debtor' && liveBal <= 0) return false;
+    if (filterType === 'creditor' && liveBal >= 0) return false;
+    if (filterType === 'settled' && liveBal !== 0) return false;
+
+    // Filter by Customer Type (طرف حساب)
+    if (customerTypeFilter !== 'all') {
+      const cType = c.customerType || 'regular';
+      if (cType !== customerTypeFilter) return false;
+    }
+
+    return true;
+  });
+
+  // Sorted Customer List (Default: Newest Added First at the top)
+  const sortedCustomers = React.useMemo(() => {
+    return [...filteredCustomers].sort((a, b) => {
+      const getTimestamp = (item: Customer) => {
+        if (item.createdAt && typeof item.createdAt === 'number') return item.createdAt;
+        if (typeof item.id === 'string' && item.id.startsWith('cust-')) {
+          const num = Number(item.id.replace('cust-', ''));
+          if (!isNaN(num) && num > 1000) return num;
+        }
+        return 0;
+      };
+      const ta = getTimestamp(a);
+      const tb = getTimestamp(b);
+      return customerSortOrder === 'desc' ? tb - ta : ta - tb;
+    });
+  }, [filteredCustomers, customerSortOrder]);
+
+  // Aggregate Stats
+  const totalDebtorsCount = customers.filter((c) => getCustomerLiveBalance(c) > 0).length;
+  const totalDebtorAmount = customers.reduce((sum, c) => {
+    const bal = getCustomerLiveBalance(c);
+    return sum + (bal > 0 ? bal : 0);
+  }, 0);
+
+  const totalCreditorAmount = customers.reduce((sum, c) => {
+    const bal = getCustomerLiveBalance(c);
+    return sum + (bal < 0 ? Math.abs(bal) : 0);
+  }, 0);
+
+  const totalPaymentsReceived = payments
+    .filter((p) => (Number(p.amount) || 0) > 0)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  const handlePrintStatement = () => {
+    window.print();
+  };
+
+  // =========================================================================
+  // DEDICATED FULL-PAGE VIEW: CUSTOMER STATEMENT & LEDGER (ریز حساب ها)
+  // =========================================================================
+  const renderStatementView = () => {
+    if (!selectedCustomerForStatement) return null;
+    const currentCustomer = customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement;
+
+    return (
+      <CustomerStatementView
+        customer={currentCustomer}
+        customers={customers}
+        invoices={invoices}
+        payments={payments}
+        productReturns={productReturns}
+        settings={settings}
+        isDarkMode={isDarkMode}
+        theme={theme}
+        onBack={() => setSelectedCustomerForStatement(null)}
+        onNewInvoice={onNewInvoiceForCustomer}
+        onOpenPaymentModal={handleOpenPaymentModal}
+        onOpenSettlementModal={handleOpenSettlementModal}
+        onOpenBalanceAdjModal={handleOpenBalanceAdjModal}
+        onOpenShotModal={handleOpenShotModal}
+        onViewInvoice={onViewInvoice}
+        onEditInvoice={onEditInvoice}
+        onDeleteInvoice={onDeleteInvoice}
+        onEditPayment={handleOpenEditPayment}
+        onDeletePayment={setPaymentToDelete}
+        onViewDoc={setViewingLedgerDoc}
+        onEditCustomer={handleOpenEdit}
+        onUpdateCustomer={onUpdateCustomer}
+        onShowAlert={onShowAlert}
+        renderCustomerTypeIcon={renderCustomerTypeIcon}
+      />
+    );
+  };
+
+  // Shot Customer Calculations
+  const targetShotCustomer = shotCustomer || selectedCustomerForStatement || (customers.length > 0 ? customers[0] : null);
+  const targetShotInvoices = targetShotCustomer ? getCustomerInvoices(targetShotCustomer) : [];
+  const targetShotPayments = targetShotCustomer ? getCustomerPaymentsList(targetShotCustomer) : [];
+  const targetShotLiveBal = targetShotCustomer ? getCustomerLiveBalance(targetShotCustomer) : 0;
+  const targetShotTotalCreditSales = targetShotCustomer ? getCustomerCreditInvoicesTotal(targetShotCustomer) : 0;
+  const targetShotTotalPaid = targetShotCustomer ? getCustomerPaymentsTotal(targetShotCustomer) : 0;
+
+  // Invoices sorted newest first & limited according to user preference
+  const sortedShotInvoices = [...targetShotInvoices].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const activeShotInvoices = shotInvoiceLimit > 0 ? sortedShotInvoices.slice(0, shotInvoiceLimit) : sortedShotInvoices;
+  
+  const getInvoiceEffectiveAmount = (inv: Invoice): number => {
+    if (!inv || !inv.items || inv.items.length === 0) return inv?.finalAmount || 0;
+    const computedSub = inv.items.reduce((s, it) => {
+      const uPrice = (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0)
+        ? it.unitSellingPrice
+        : (it.totalPieces > 0 && it.totalPrice > 0 ? Math.round(it.totalPrice / it.totalPieces) : (it.unitPrice || 0));
+      return s + (uPrice > 0 ? uPrice * it.totalPieces : (it.totalPrice || 0));
+    }, 0);
+    return Math.max(0, computedSub - (inv.discount || 0) + (inv.tax || 0) - (inv.offsetReturnsTotal || 0));
+  };
+
+  const targetShotTotalInvoicesAmount = activeShotInvoices.reduce((sum, inv) => sum + getInvoiceEffectiveAmount(inv), 0);
+
+  // Payments sorted newest first
+  const sortedShotPayments = [...targetShotPayments].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  type ShotRow = { 
+    id: string; 
+    date: string; 
+    code: string; 
+    description: string; 
+    debit: number; 
+    credit: number; 
+    amount: number;
+    type: 'invoice' | 'payment' | 'return';
+    timestamp: number 
+  };
+  
+  const allShotRows: ShotRow[] = [];
+  if (targetShotCustomer) {
+    // 1. Invoices (Strictly scoped to activeShotInvoices based on selected limit)
+    activeShotInvoices.forEach((inv) => {
+      const effAmount = getInvoiceEffectiveAmount(inv);
+      const isCredit = inv.paymentStatus === 'credit' || inv.paymentMethod?.includes('نسیه') || inv.paymentMethod?.includes('غیر');
+      const isPartial = inv.paymentStatus === 'partial' || (inv.paidAmount !== undefined && inv.paidAmount > 0 && inv.paidAmount < effAmount);
+
+      if (isPartial) {
+        const paid = inv.paidAmount || 0;
+        const unpaid = (inv.remainingAmount !== undefined && inv.finalAmount === effAmount) ? inv.remainingAmount : Math.max(0, effAmount - paid);
+        allShotRows.push({
+          id: inv.id,
+          date: inv.date,
+          code: `فاکتور #${toPersianDigits(inv.invoiceNumber)}`,
+          description: `فروش ${toPersianDigits(inv.items.length)} قلم (${formatPrice(paid)} نقد + ${formatPrice(unpaid)} نسیه)`,
+          debit: unpaid,
+          credit: 0,
+          amount: effAmount,
+          type: 'invoice',
+          timestamp: inv.createdAt || Date.now(),
+        });
+      } else {
+        allShotRows.push({
+          id: inv.id,
+          date: inv.date,
+          code: `فاکتور #${toPersianDigits(inv.invoiceNumber)}`,
+          description: `فروش ${toPersianDigits(inv.items.length)} قلم کالا (${inv.paymentMethod || (isCredit ? 'نسیه' : 'نقدی')})`,
+          debit: isCredit ? effAmount : 0,
+          credit: 0,
+          amount: effAmount,
+          type: 'invoice',
+          timestamp: inv.createdAt || Date.now(),
+        });
+      }
+    });
+
+    // 2. Payments
+    targetShotPayments.forEach((pay) => {
+      const amt = Number(pay.amount) || 0;
+      const isDeposit = amt >= 0;
+      const methodText = pay.paymentMethod === 'card' ? 'کارت به کارت' : pay.paymentMethod === 'bank_transfer' ? 'واریز بانکی' : pay.paymentMethod === 'cash' ? 'نقدی' : 'چک';
+      allShotRows.push({
+        id: pay.id,
+        date: pay.date,
+        code: pay.referenceNumber ? `سند پیگیری: ${pay.referenceNumber}` : (isDeposit ? 'سند دریافت وجه' : 'سند ثبت بدهی'),
+        description: `${pay.description || (isDeposit ? 'واریز وجه مشتری' : 'ثبت بدهی جدید')} (${methodText})`,
+        debit: isDeposit ? 0 : Math.abs(amt),
+        credit: isDeposit ? amt : 0,
+        amount: Math.abs(amt),
+        type: 'payment',
+        timestamp: pay.createdAt || Date.now(),
+      });
+    });
+
+    // 3. Returns
+    const targetShotReturns = (productReturns || []).filter(r => r.customerId === targetShotCustomer.id);
+    targetShotReturns.forEach((ret) => {
+      const isToSupplier = ret.type === 'to_supplier';
+      const isSettled = !!ret.isRefunded;
+      const methodLabel = ret.refundMethod === 'cash' ? 'صندوق نقدی' : 'حساب بانکی';
+      const netVal = getNetReturnAmount(ret);
+
+      allShotRows.push({
+        id: `shot-ret-${ret.id}`,
+        date: ret.date,
+        code: `مرجوعی #${toPersianDigits(ret.id.slice(-4).toUpperCase())}`,
+        description: `مرجوعی «${ret.productName}» (${toPersianDigits(ret.cartonsCount)} کارتن) - ${ret.reason}`,
+        debit: isToSupplier ? netVal : 0,
+        credit: !isToSupplier ? netVal : 0,
+        amount: netVal,
+        type: 'return',
+        timestamp: ret.createdAt || Date.now(),
+      });
+
+      if (isSettled) {
+        allShotRows.push({
+          id: `shot-ref-${ret.id}`,
+          date: ret.date,
+          code: `تسویه #${toPersianDigits(ret.id.slice(-4).toUpperCase())}`,
+          description: `تسویه نقدی وجه مرجوعی (${methodLabel}) بابت «${ret.productName}»`,
+          debit: !isToSupplier ? netVal : 0,
+          credit: isToSupplier ? netVal : 0,
+          amount: netVal,
+          type: 'return',
+          timestamp: (ret.createdAt || Date.now()) + 1,
+        });
+      }
+    });
+
+    // Sort newest first
+    allShotRows.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  // Filtered rows for Shot Card based on user selection
+  const filteredShotRows = allShotRows.filter((r) => {
+    if (shotFilterType === 'invoices') return r.type === 'invoice';
+    if (shotFilterType === 'payments') return r.type === 'payment';
+    return true; // 'all'
+  });
+
+  // Display limited rows for shot card micro table
+  const displayedShotRows = shotRecentRowsLimit > 0 ? filteredShotRows.slice(0, shotRecentRowsLimit) : filteredShotRows;
+
+  // =========================================================================
+  // MAIN RETURN STATEMENT
+  // =========================================================================
+  return (
+    <div className="w-full max-w-7xl mx-auto space-y-6 pb-20 px-2 sm:px-4">
+      
+      {selectedCustomerForStatement ? (
+        renderStatementView()
+      ) : (
+        <>
+      {/* 1. Modern Adaptive Header Banner */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-5 transition-colors no-print">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
+              <Users className="w-3.5 h-3.5" />
+              <span>دفتر حساب‌داری و طرف‌های حساب</span>
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{toPersianDigits(customers.length)} پرونده معاملاتی فعال</span>
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+              <Users className="w-5 h-5" />
+            </div>
+            <span>مدیریت مشتریان و حساب‌های دفتری</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
+            ثبت پرونده مشتریان، کنترل خریدهای اعتباری و نسیه، ثبت واریزی‌ها و صدور صورت‌حساب رسمی با ریزتراکنش‌های تاریخ‌دار
+          </p>
+        </div>
+
+        {/* Action Buttons Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 max-w-full">
+          <button
+            type="button"
+            onClick={() => handleOpenSettlementModal()}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+            title="تسویه حساب کامل مشتری با یک کلیک و ثبت در نقدینگی"
+          >
+            <CheckCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>تسویه حساب</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenBalanceAdjModal(undefined, 'credit')}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-slate-800 dark:text-slate-200 hover:text-teal-700 dark:hover:text-teal-300 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+            title="ثبت بستانکاری، پیش‌دریافت و تعدیل حساب مشتری"
+          >
+            <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span>ثبت بستانکاری</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenPaymentModal()}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-800 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+            title="ثبت واریز وجه و تسویه حساب طرف‌حساب"
+          >
+            <Banknote className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>ثبت واریزی</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer`}
+          >
+            <UserPlus className="w-4 h-4 shrink-0" />
+            <span>افزودن مشتری جدید</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Cohesive Rounded-3xl Stats - Styled like ReturnsManager */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
+        
+        {/* Stat 1: کل مشتریان */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">تعداد کل طرف‌حساب‌ها</span>
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+            {toPersianDigits(customers.length)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">طرف‌حساب</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span>پرونده‌های معاملاتی فعال:</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+              {toPersianDigits(customers.length)} پرونده
+            </span>
+          </div>
+        </div>
+
+        {/* Stat 2: مطالبات (بدهکاران) */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-rose-700 dark:text-rose-400">کل مطالبات بازرگانی (نسیه)</span>
+            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 mt-3 dir-ltr text-right">
+            {formatPrice(totalDebtorAmount)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span>طلب از خریداران:</span>
+            <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+              {toPersianDigits(totalDebtorsCount)} مشتری بدهکار
+            </span>
+          </div>
+        </div>
+
+        {/* Stat 3: مجموع دریافتی‌ها */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">مجموع واریزی‌های ثبت‌شده</span>
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
+              <TrendingDown className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-3 dir-ltr text-right">
+            {formatPrice(totalPaymentsReceived)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span>کل تسویه‌ها و پرداختی‌ها:</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+              {toPersianDigits(payments.filter((p) => (Number(p.amount) || 0) > 0).length)} تراکنش
+            </span>
+          </div>
+        </div>
+
+        {/* Stat 4: بستانکاران */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-amber-200/70 dark:border-amber-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">پیش‌پرداخت (بستانکاران)</span>
+            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800">
+              <CreditCard className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+            {formatPrice(totalCreditorAmount)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span>مانده بستانکار مشتریان:</span>
+            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
+              {toPersianDigits(customers.filter(c => getCustomerLiveBalance(c) < 0).length)} طرف‌حساب
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3. Search & Filter Bar */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3.5 transition-colors no-print">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3.5">
+          <div className="relative w-full md:w-96">
+            <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
+            <input
+              type="text"
+              placeholder="جستجوی نام مشتری، شرکت، تلفن، شهر یا نوع طرف‌حساب..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-black dark:text-white placeholder-slate-500 rounded-2xl text-xs font-bold focus:outline-none ${theme.ring} shadow-2xs`}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+            {/* Balance Status Filter Chips */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
+              <button
+                onClick={() => { setFilterType('all'); setCustomerCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  filterType === 'all'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                همه ({toPersianDigits(customers.length)})
+              </button>
+              
+              <button
+                onClick={() => { setFilterType('debtor'); setCustomerCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  filterType === 'debtor'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                بدهکاران ({toPersianDigits(totalDebtorsCount)})
+              </button>
+
+              <button
+                onClick={() => { setFilterType('settled'); setCustomerCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  filterType === 'settled'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                تسویه شده
+              </button>
+
+              <button
+                onClick={() => { setFilterType('creditor'); setCustomerCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  filterType === 'creditor'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                بستانکاران
+              </button>
+            </div>
+
+            {/* View Mode Switcher */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setCustomerViewMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  customerViewMode === 'table'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white'
+                }`}
+                title="نمای جدول جامع حسابداری"
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">جدول حسابداری</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomerViewMode('cards')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  customerViewMode === 'cards'
+                    ? `${theme.primary} text-white shadow-xs`
+                    : 'text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white'
+                }`}
+                title="نمای کارت‌های مدرن"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">کارت‌ها</span>
+              </button>
+            </div>
+
+            {/* Sort Order Toggle */}
+            <button
+              type="button"
+              onClick={() => setCustomerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer shrink-0"
+              title={customerSortOrder === 'desc' ? 'مرتب‌سازی: جدیدترین در ابتدا (کلیک برای صعودی/قدیمی‌ترین)' : 'مرتب‌سازی: قدیمی‌ترین در ابتدا (کلیک برای نزولی/جدیدترین)'}
+            >
+              {customerSortOrder === 'desc' ? (
+                <ArrowDownWideNarrow className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+              ) : (
+                <ArrowUpNarrowWide className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+              )}
+              <span className="hidden sm:inline">{customerSortOrder === 'desc' ? 'جدیدترین اول' : 'قدیمی‌ترین اول'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Customer Type Filter Row (دسته بندی طرف‌حساب / نقش) */}
+        <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto pb-0.5">
+          <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+            <Tag className="w-3.5 h-3.5" />
+            <span>نوع طرف‌حساب:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => { setCustomerTypeFilter('all'); setCustomerCurrentPage(1); }}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+              customerTypeFilter === 'all'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+            }`}
+          >
+            همه نقش‌ها ({toPersianDigits(customers.length)})
+          </button>
+          {CUSTOMER_TYPE_OPTIONS.map((opt) => {
+            const count = customers.filter(c => (c.customerType || 'regular') === opt.value).length;
+            const isSelected = customerTypeFilter === opt.value;
+            return (
+              <button
+                key={`cust-type-filter-${opt.value}`}
+                type="button"
+                onClick={() => { setCustomerTypeFilter(opt.value); setCustomerCurrentPage(1); }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                  isSelected
+                    ? `${opt.badgeClass} ring-2 ring-offset-1 ring-current shadow-2xs`
+                    : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+                }`}
+              >
+                {renderCustomerTypeIcon(opt.iconName, 'w-3 h-3')}
+                <span>{opt.shortLabel}</span>
+                <span className="text-[10px] opacity-75 font-mono">({toPersianDigits(count)})</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 4. Customer Cards Grid */}
+      {sortedCustomers.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3 no-print">
+          <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-950 text-slate-400 mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-800">
+            <Users className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-slate-800 dark:text-white text-base">مشتری با این مشخصات یافت نشد</h3>
+          <p className="text-xs text-slate-400 max-w-xs mx-auto">
+            عبارت جستجو را تغییر دهید یا با دکمه بالا مشتری جدید ثبت کنید.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {(() => {
+            const customerTotalPages = Math.ceil(sortedCustomers.length / customerItemsPerPage);
+            const customerStartIndex = (customerCurrentPage - 1) * customerItemsPerPage;
+            const paginatedCustomers = sortedCustomers.slice(customerStartIndex, customerStartIndex + customerItemsPerPage);
+
+            return (
+              <>
+                {customerViewMode === 'cards' ? (
+                  /* CARDS VIEW */
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 no-print">
+                    {paginatedCustomers.map((cust, cIdx) => {
+                      const liveBal = getCustomerLiveBalance(cust);
+                      const totalCreditSales = getCustomerCreditInvoicesTotal(cust);
+                      const manualDebts = getCustomerManualDebtsTotal(cust);
+                      const deposits = getCustomerDepositsTotal(cust);
+                      const allReturnsFromCust = getCustomerAllReturnsTotal(cust);
+                      const settledReturnsFromCust = getCustomerSettledReturnsTotal(cust);
+                      const isManager = cust.name.includes('مدیریت انبار') || cust.id === 'cust-1';
+
+                      return (
+                        <div
+                          key={`cust-card-${cust.id || cIdx}-${cIdx}`}
+                          onClick={() => setSelectedCustomerForStatement(cust)}
+                          className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group cursor-pointer"
+                        >
+                          <div className="space-y-3.5">
+                            {/* Top Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-black text-black dark:text-white text-base truncate">
+                                    {cust.name}
+                                  </h4>
+                                  {(() => {
+                                    const typeInfo = getCustomerTypeInfo(cust.customerType);
+                                    return (
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black border ${typeInfo.badgeClass}`}>
+                                        {renderCustomerTypeIcon(typeInfo.iconName, "w-3 h-3")}
+                                        <span>{typeInfo.shortLabel}</span>
+                                      </span>
+                                    );
+                                  })()}
+                                  {isManager && (
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 font-black text-[10px] rounded-md shrink-0 border border-amber-300 dark:border-amber-800">
+                                      مدیریت
+                                    </span>
+                                  )}
+                                </div>
+                                {cust.company && (
+                                  <div className="flex items-center gap-1 text-xs text-black dark:text-slate-200 font-bold truncate">
+                                    <Building className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                                    <span className="truncate">{cust.company}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Status Badge */}
+                              <div className="shrink-0 text-left">
+                                {liveBal > 0 ? (
+                                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl text-[11px] font-black shadow-2xs">
+                                    بدهکار: {formatPrice(liveBal)}
+                                  </span>
+                                ) : liveBal < 0 ? (
+                                  <span className={`inline-block px-3 py-1 ${theme.badgeBg} ${theme.badgeText} border ${theme.subtleBorder} rounded-xl text-[11px] font-black shadow-2xs`}>
+                                    بستانکار: {formatPrice(Math.abs(liveBal))}
+                                  </span>
+                                ) : (
+                                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black shadow-2xs">
+                                    تسویه کامل
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Phone and City */}
+                            <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 font-black text-black dark:text-white">
+                                  <Phone className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                  <span className="font-mono dir-ltr">{toPersianDigits(cust.phone)}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-black dark:text-slate-300 font-bold">
+                                  <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                  <span>{cust.city}</span>
+                                </div>
+                              </div>
+                              {cust.address && (
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate pt-1 border-t border-slate-200/50 dark:border-slate-800 font-medium">
+                                  {cust.address}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Summary Micro Values */}
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                                <span className="block text-slate-600 dark:text-slate-400 text-[10px] mb-0.5 font-bold">خرید نسیه:</span>
+                                <b className="font-black text-black dark:text-white dir-ltr text-right block">{formatPrice(totalCreditSales)}</b>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                                <span className="block text-slate-600 dark:text-slate-400 text-[10px] mb-0.5 font-bold">مجموع دریافتی:</span>
+                                <b className={`font-black ${theme.primaryText} dir-ltr text-right block`}>{formatPrice(deposits)}</b>
+                              </div>
+                              {allReturnsFromCust > 0 && (
+                                <div className="p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/40 col-span-2 flex items-center justify-between text-[11px]">
+                                  <span className="text-indigo-700 dark:text-indigo-300 font-bold text-[10px]">گردش مرجوعی:</span>
+                                  <span className="font-black text-indigo-800 dark:text-indigo-200 dir-ltr text-right">
+                                    {formatPrice(allReturnsFromCust)}
+                                    {settledReturnsFromCust > 0 && (
+                                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mr-1">
+                                        (تسویه نقدی)
+                                      </span>
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card Action Buttons */}
+                          <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                            <div className="grid grid-cols-4 gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleOpenPaymentModal(cust); }}
+                                className="flex items-center justify-center gap-1 py-2 px-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-[11px] border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                                title="ثبت واریز وجه"
+                              >
+                                <Banknote className="w-3.5 h-3.5" />
+                                <span>واریزی</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleOpenBalanceAdjModal(cust, 'credit'); }}
+                                className="flex items-center justify-center gap-1 py-2 px-1 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] shadow-xs transition-all cursor-pointer"
+                                title="ثبت بستانکاری و پیش‌دریافت"
+                              >
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                <span>بستانکاری</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleOpenSettlementModal(cust); }}
+                                className="flex items-center justify-center gap-1 py-2 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow-xs transition-all cursor-pointer"
+                                title="تسویه کامل حساب این مشتری با یک کلیک"
+                              >
+                                <CheckCheck className="w-3.5 h-3.5" />
+                                <span>تسویه</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setSelectedCustomerForStatement(cust); }}
+                                className={`flex items-center justify-center gap-1 py-2 px-1 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-[11px] shadow-xs transition-all cursor-pointer`}
+                                title="ریز گردش حساب"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>کاردکس</span>
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-1 text-slate-400">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleOpenShotModal(cust); }}
+                                  className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                  title="شات حساب تلگرام"
+                                >
+                                  <Camera className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleOpenEdit(cust); }}
+                                  className={`p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:${theme.primaryText} hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer`}
+                                  title="ویرایش مشخصات مشتری"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setCustomerToDelete(cust); }}
+                                  className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                  title="حذف پرونده مشتری"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onNewInvoiceForCustomer(cust); }}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-black dark:text-slate-200 font-black text-xs transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>فاکتور جدید</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* TABLE VIEW */
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden no-print">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-xs">
+                        <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800">
+                          <tr>
+                            <th 
+                              className="p-3.5 w-12 text-center cursor-pointer select-none hover:text-black dark:hover:text-white"
+                              onClick={() => setCustomerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                              title="مرتب‌سازی ترتیب نمایش"
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span>#</span>
+                                {customerSortOrder === 'desc' ? (
+                                  <ArrowDownWideNarrow className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                                ) : (
+                                  <ArrowUpNarrowWide className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                                )}
+                              </div>
+                            </th>
+                            <th 
+                              className="p-3.5 cursor-pointer select-none hover:text-black dark:hover:text-white"
+                              onClick={() => setCustomerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                              title="مرتب‌سازی طرف‌های حساب بر اساس تاریخ ثبت (جدیدترین / قدیمی‌ترین)"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>طرف‌حساب</span>
+                                <span className="text-[10px] font-normal px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                  {customerSortOrder === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین'}
+                                </span>
+                              </div>
+                            </th>
+                            <th className="p-3.5 text-center">نوع حساب</th>
+                            <th className="p-3.5">تلفن / شهر</th>
+                            <th className="p-3.5 text-left">مانده اول دوره</th>
+                            <th className="p-3.5 text-left">خرید نسیه</th>
+                            <th className="p-3.5 text-left">بدهی دستی</th>
+                            <th className="p-3.5 text-left">کل دریافتی</th>
+                            <th className="p-3.5 text-left">گردش مرجوعی</th>
+                            <th className="p-3.5 text-left">مانده خالص</th>
+                            <th className="p-3.5 text-center">وضعیت</th>
+                            <th className="p-3.5 text-center">عملیات حسابداری</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                          {paginatedCustomers.map((cust, idx) => {
+                            const liveBal = getCustomerLiveBalance(cust);
+                            const totalCreditSales = getCustomerCreditInvoicesTotal(cust);
+                            const manualDebts = getCustomerManualDebtsTotal(cust);
+                            const deposits = getCustomerDepositsTotal(cust);
+                            const allReturnsFromCust = getCustomerAllReturnsTotal(cust);
+                            const settledReturnsFromCust = getCustomerSettledReturnsTotal(cust);
+                            const isManager = cust.name.includes('مدیریت انبار') || cust.id === 'cust-1';
+                            const absoluteIndex = customerStartIndex + idx + 1;
+                            const typeInfo = getCustomerTypeInfo(cust.customerType);
+
+                            return (
+                              <tr 
+                                key={`cust-tbl-row-${cust.id || idx}-${idx}`} 
+                                onClick={() => setSelectedCustomerForStatement(cust)}
+                                className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                              >
+                                <td className="p-3.5 text-center text-slate-400 font-mono">
+                                  {toPersianDigits(absoluteIndex)}
+                                </td>
+                                <td className="p-3.5 font-black text-slate-900 dark:text-white">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{cust.name}</span>
+                                    {isManager && (
+                                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold text-[9px] rounded">
+                                        مدیریت
+                                      </span>
+                                    )}
+                                  </div>
+                                  {cust.company && (
+                                    <span className="block text-[10px] text-purple-600 dark:text-purple-400 font-bold">
+                                      {cust.company}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-center whitespace-nowrap">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black border ${typeInfo.badgeClass} whitespace-nowrap shrink-0`}>
+                                    {renderCustomerTypeIcon(typeInfo.iconName, "w-3 h-3 shrink-0")}
+                                    <span>{typeInfo.shortLabel}</span>
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                  <div className="font-mono dir-ltr text-right font-bold text-xs">{toPersianDigits(cust.phone)}</div>
+                                  <div className="text-[11px] text-slate-400 font-medium">{cust.city}</div>
+                                </td>
+                                <td className="p-3.5 text-left dir-ltr font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                  {formatPrice(cust.initialBalance || 0)}
+                                </td>
+                                <td className="p-3.5 text-left dir-ltr font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                  {totalCreditSales > 0 ? formatPrice(totalCreditSales) : '-'}
+                                </td>
+                                <td className="p-3.5 text-left dir-ltr font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                                  {manualDebts > 0 ? formatPrice(manualDebts) : '-'}
+                                </td>
+                                <td className={`p-3.5 text-left dir-ltr font-bold ${theme.primaryText} whitespace-nowrap`}>
+                                  {deposits > 0 ? formatPrice(deposits) : '-'}
+                                </td>
+                                <td className="p-3.5 text-left dir-ltr font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                  {allReturnsFromCust > 0 ? (
+                                    <div>
+                                      <span>{formatPrice(allReturnsFromCust)}</span>
+                                      {settledReturnsFromCust > 0 && (
+                                        <span className="block text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
+                                          ({formatPrice(settledReturnsFromCust)} تسویه)
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : '-'}
+                                </td>
+                                <td className="p-3.5 text-left dir-ltr font-black text-sm whitespace-nowrap">
+                                  <span className={liveBal > 0 ? 'text-rose-600 dark:text-rose-400' : liveBal < 0 ? theme.primaryText : 'text-slate-700 dark:text-slate-300'}>
+                                    {formatPrice(liveBal)}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center whitespace-nowrap">
+                                  {liveBal > 0 ? (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 text-[10px] font-bold whitespace-nowrap shrink-0">
+                                      بدهکار
+                                    </span>
+                                  ) : liveBal < 0 ? (
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor} text-[10px] font-bold whitespace-nowrap shrink-0`}>
+                                      بستانکار
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold whitespace-nowrap shrink-0">
+                                      تسویه
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                  <div className="inline-flex items-center gap-1.5 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedCustomerForStatement(cust)}
+                                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${theme.primary} text-white hover:opacity-95 text-[11px] font-black transition-all cursor-pointer shadow-xs whitespace-nowrap`}
+                                      title="مشاهده کاردکس و ریز حساب‌ها"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 shrink-0" />
+                                      <span>ریزحساب</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenSettlementModal(cust)}
+                                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                                      title="تسویه حساب کامل مشتری با یک کلیک"
+                                    >
+                                      <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                                      <span>تسویه</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenPaymentModal(cust)}
+                                      className="px-2 py-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-slate-200/80 dark:border-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                      title="ثبت واریز وجه"
+                                    >
+                                      + واریزی
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenBalanceAdjModal(cust, 'debt')}
+                                      className="px-2 py-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-slate-200/80 dark:border-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                      title="ثبت بدهی جدید"
+                                    >
+                                      - بدهی
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => onNewInvoiceForCustomer(cust)}
+                                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+                                      title="فاکتور جدید برای این طرف‌حساب"
+                                    >
+                                      <Plus className="w-3.5 h-3.5 shrink-0" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenShotModal(cust)}
+                                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+                                      title="شات وضعیت حساب جهت ارسال به مشتری"
+                                    >
+                                      <Camera className="w-3.5 h-3.5 shrink-0" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEdit(cust)}
+                                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+                                      title="ویرایش مشخصات مشتری"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5 shrink-0" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCustomerToDelete(cust)}
+                                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+                                      title="حذف پرونده مشتری"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer List Pagination Bar */}
+                <Pagination
+                  currentPage={customerCurrentPage}
+                  totalPages={customerTotalPages}
+                  totalItems={sortedCustomers.length}
+                  itemsPerPage={customerItemsPerPage}
+                  onPageChange={setCustomerCurrentPage}
+                  onItemsPerPageChange={(val) => {
+                    setCustomerItemsPerPage(val);
+                    setCustomerCurrentPage(1);
+                  }}
+                  itemsPerPageOptions={[10, 20, 50, 100]}
+                  itemName="مشتری"
+                  themeColor={settings.themeColor}
+                />
+              </>
+            );
+          })()}
+        </div>
+      )}
+      </>
+      )}
+
+      {/* MODAL 1: Payment Registration Modal */}
+      <AnimatePresence>
+        {isPaymentModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+                    <Banknote className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-base text-slate-900 dark:text-white">
+                      {editingPayment ? 'ویرایش سند واریزی و دریافتی' : 'ثبت دریافتی و واریزی مشتری'}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {editingPayment ? 'ویرایش مشخصات، مبلغ و شماره پیگیری سند مالی' : 'وصول وجه نقد، کارت‌به‌کارت یا چک برای کسر از بدهی'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPaymentModalOpen(false);
+                    setEditingPayment(null);
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form noValidate onSubmit={handleSubmitPayment} className="p-6 space-y-4">
+                {/* Select Customer */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                    انتخاب طرف حساب واریز کننده <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={selectedPaymentCustId}
+                    onChange={(e) => {
+                      setSelectedPaymentCustId(e.target.value);
+                      if (paymentFormErrors.customer) setPaymentFormErrors({ ...paymentFormErrors, customer: '' });
+                      const found = customers.find(c => c.id === e.target.value);
+                      if (found) setTargetCustomerForPayment(found);
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      paymentFormErrors.customer ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    {customers.map((c, cIdx) => {
+                      const bal = getCustomerLiveBalance(c);
+                      const balStr = bal > 0 ? `(بدهکار: ${formatPrice(bal)})` : bal < 0 ? `(بستانکار: ${formatPrice(Math.abs(bal))})` : '(تسویه شده)';
+                      return (
+                        <option key={`pay-cust-opt-${c.id || cIdx}-${cIdx}`} value={c.id}>
+                          {c.name} {c.company ? `(${c.company})` : ''} - {c.city} {balStr}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <CustomValidationMessage message={paymentFormErrors.customer} />
+                </div>
+
+                {/* Amount Input */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                    مبلغ واریزی (تومان) <span className="text-rose-500">*</span>
+                  </label>
+                  <SmartPriceInput
+                    value={Number(paymentAmount) || 0}
+                    onChange={(val) => {
+                      setPaymentAmount(val || '');
+                      if (paymentFormErrors.amount) setPaymentFormErrors({ ...paymentFormErrors, amount: '' });
+                    }}
+                    placeholder="مثال: ۵,۰۰۰,۰۰۰ یا ۵۰۰۰"
+                    themeColor="emerald"
+                  />
+                  <CustomValidationMessage message={paymentFormErrors.amount} />
+                </div>
+
+                {/* Payment Method Radio */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                    روش واریز
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                        paymentMethod === 'card'
+                          ? 'bg-emerald-600 text-white font-black shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>کارت به کارت</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('bank_transfer')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                        paymentMethod === 'bank_transfer'
+                          ? 'bg-emerald-600 text-white font-black shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Building className="w-4 h-4" />
+                      <span>حواله پایا / ساتنا</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('cash')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                        paymentMethod === 'cash'
+                          ? 'bg-emerald-600 text-white font-black shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Banknote className="w-4 h-4" />
+                      <span>وجه نقد</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('check')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                        paymentMethod === 'check'
+                          ? 'bg-emerald-600 text-white font-black shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>چک صیادی</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Date & Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                      تاریخ پرداخت (شمسی)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                      ساعت پرداخت
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentTime}
+                      onChange={(e) => setPaymentTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* Reference Number */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                    شماره پیگیری / فیش واریز
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: پیگیری فیش ۶۵۲۰۳۹"
+                    value={paymentRef}
+                    onChange={(e) => setPaymentRef(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                    شرح و بابت
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: بابت خرید نسیه مرداد ماه"
+                    value={paymentDescription}
+                    onChange={(e) => setPaymentDescription(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                  />
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>تایید و ثبت دریافتی</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Balance & Debt Adjustment Modal */}
+      <AnimatePresence>
+        {isBalanceAdjModalOpen && (targetCustomerForBalanceAdj || selectedCustomerForStatement) && (() => {
+          const currentAdjCustomer = targetCustomerForBalanceAdj || (selectedCustomerForStatement ? customers.find(c => c.id === selectedCustomerForStatement.id) || selectedCustomerForStatement : null);
+          if (!currentAdjCustomer) return null;
+          return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-base text-slate-900 dark:text-white">
+                      مدیریت و تعدیل بستانکاری، بدهی و مانده اولیه
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      طرف حساب: <span className="font-bold text-slate-700 dark:text-slate-300">{currentAdjCustomer.name}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBalanceAdjModalOpen(false)}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleSubmitBalanceAdj} className="p-6 space-y-4">
+                {/* Customer Select dropdown if opened from outside statement */}
+                {!selectedCustomerForStatement && customers.length > 1 && (
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      انتخاب طرف‌حساب
+                    </label>
+                    <select
+                      value={currentAdjCustomer.id}
+                      onChange={(e) => {
+                        const found = customers.find(c => c.id === e.target.value);
+                        if (found) setTargetCustomerForBalanceAdj(found);
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none cursor-pointer"
+                    >
+                      {customers.map((c, cIdx) => (
+                        <option key={`adj-cust-opt-${c.id || cIdx}-${cIdx}`} value={c.id}>
+                          {c.name} {c.company ? `(${c.company})` : ''} - تلفن: {toPersianDigits(c.phone)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {/* Operation Type Radio */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">
+                    نوع عملیات و تعدیل حساب
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBalanceAdjType('credit')}
+                      className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all border ${
+                        balanceAdjType === 'credit'
+                          ? 'bg-emerald-600 text-white font-black border-emerald-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <TrendingUp className="w-4 h-4 text-emerald-300" />
+                      <span className="text-center">ثبت بستانکاری (+)</span>
+                      <span className="text-[9px] opacity-80 font-normal">واریز / کاهش بدهی</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBalanceAdjType('payout')}
+                      className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all border ${
+                        balanceAdjType === 'payout'
+                          ? 'bg-rose-600 text-white font-black border-rose-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <ArrowUpRight className="w-4 h-4 text-rose-300" />
+                      <span className="text-center">عودت وجه (-)</span>
+                      <span className="text-[9px] opacity-80 font-normal">تسویه بستانکاری</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBalanceAdjType('debt')}
+                      className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all border ${
+                        balanceAdjType === 'debt'
+                          ? 'bg-amber-600 text-white font-black border-amber-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <TrendingDown className="w-4 h-4 text-amber-300" />
+                      <span className="text-center">ثبت بدهی (-)</span>
+                      <span className="text-[9px] opacity-80 font-normal">نسیه / افزایش بدهی</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBalanceAdjType('initial_balance')}
+                      className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all border ${
+                        balanceAdjType === 'initial_balance'
+                          ? 'bg-purple-600 text-white font-black border-purple-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Edit3 className="w-4 h-4 text-purple-300" />
+                      <span className="text-center">مانده اولیه</span>
+                      <span className="text-[9px] opacity-80 font-normal">اصلاح حساب قبلی</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount Input */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                    {balanceAdjType === 'initial_balance' ? 'مانده اولیه جدید (تومان)' : balanceAdjType === 'credit' ? 'مبلغ بستانکاری / واریزی (تومان)' : 'مبلغ بدهی / نسیه جدید (تومان)'} <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    placeholder="مبلغ به تومان"
+                    value={balanceAdjAmount}
+                    onChange={(e) => setBalanceAdjAmount(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full pl-4 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500 dir-ltr text-right"
+                  />
+                  {balanceAdjAmount && Number(balanceAdjAmount) > 0 && (
+                    <div className="mt-1.5 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
+                      <span>مبلغ به حروف:</span>
+                      <span className="font-black">{numberToPersianWords(Number(balanceAdjAmount))} تومان</span>
+                    </div>
+                  )}
+                </div>
+
+                {balanceAdjType !== 'initial_balance' && (
+                  <>
+                    {/* Payment Method Radio */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                        روش تسویه / سند
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setBalanceAdjMethod('card')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            balanceAdjMethod === 'card'
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>کارت به کارت</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setBalanceAdjMethod('bank_transfer')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            balanceAdjMethod === 'bank_transfer'
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Building className="w-4 h-4" />
+                          <span>حواله بانکی</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setBalanceAdjMethod('cash')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            balanceAdjMethod === 'cash'
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Banknote className="w-4 h-4" />
+                          <span>نقدی</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setBalanceAdjMethod('check')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            balanceAdjMethod === 'check'
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>چک صیادی</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Date & Time */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                          تاریخ (شمسی)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={balanceAdjDate}
+                          onChange={(e) => setBalanceAdjDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                          ساعت
+                        </label>
+                        <input
+                          type="text"
+                          value={balanceAdjTime}
+                          onChange={(e) => setBalanceAdjTime(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Reference Number */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                        شماره پیگیری / سند
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="شماره فیش یا سند"
+                        value={balanceAdjRef}
+                        onChange={(e) => setBalanceAdjRef(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                        توضیحات و بابت تعدیل
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="مثال: تخفیف ویژه تسویه / واریز اضافه‌پرداخت / nsiye دستی"
+                        value={balanceAdjNotes}
+                        onChange={(e) => setBalanceAdjNotes(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsBalanceAdjModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>تایید و ثبت عملیات</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* MODAL 2: Add / Edit Customer Modal */}
+      <AnimatePresence>
+        {isFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+            >
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-black text-base text-slate-900 dark:text-white">
+                    {editingCustomer ? 'ویرایش مشخصات مشتری' : 'ثبت پرونده مشتری جدید'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetCustomerForm}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form noValidate onSubmit={handleSubmitCustomerForm} className="p-6 overflow-y-auto space-y-4 flex-1">
+                {/* انتخاب نوع طرف‌حساب / نقش مشتری */}
+                <div className="space-y-2.5 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-slate-500" />
+                      <span>نوع طرف‌حساب و نقش در سیستم <span className="text-rose-500">*</span></span>
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-bold">تعیین رفتار مالی و مراوده تجاری</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {CUSTOMER_TYPE_OPTIONS.map((opt) => {
+                      const isSelected = (formData.customerType || 'regular') === opt.value;
+                      return (
+                        <button
+                          key={`cust-form-type-${opt.value}`}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, customerType: opt.value as CustomerType })}
+                          className={`p-2.5 rounded-xl text-right transition-all cursor-pointer border flex items-start gap-2.5 ${
+                            isSelected
+                              ? `${opt.badgeClass} ring-2 ring-offset-1 ring-current shadow-xs`
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-black/10 dark:bg-white/10' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                            {renderCustomerTypeIcon(opt.iconName, "w-4 h-4")}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-black text-xs">{opt.label}</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{opt.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      نام و نام خانوادگی <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: علی رضایی"
+                      value={formData.name || ''}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (customerFormErrors.name) setCustomerFormErrors({ ...customerFormErrors, name: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${
+                        customerFormErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : `border-slate-200 dark:border-slate-800 ${theme.ring}`
+                      }`}
+                    />
+                    <CustomValidationMessage message={customerFormErrors.name} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      نام شرکت / فروشگاه
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: بازرگانی رضایی"
+                      value={formData.company || ''}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      شماره تماس همراه <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="09121234567"
+                      value={formData.phone || ''}
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        if (customerFormErrors.phone) setCustomerFormErrors({ ...customerFormErrors, phone: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white text-xs font-bold dir-ltr text-right focus:outline-none focus:ring-2 ${
+                        customerFormErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20' : `border-slate-200 dark:border-slate-800 ${theme.ring}`
+                      }`}
+                    />
+                    <CustomValidationMessage message={customerFormErrors.phone} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      شهر / منطقه
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: تهران، تبریز"
+                      value={formData.city || ''}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      کد ملی / شناسه اقتصادی
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: 1361234567"
+                      value={formData.nationalCode || ''}
+                      onChange={(e) => setFormData({ ...formData, nationalCode: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold dir-ltr text-right focus:outline-none focus:ring-2 ${theme.ring}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                      مانده حساب اولیه (تومان)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="مثبت: بدهکار / منفی: بستانکار"
+                      value={formData.initialBalance || ''}
+                      onChange={(e) => setFormData({ ...formData, initialBalance: Number(e.target.value) })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold dir-ltr text-right focus:outline-none focus:ring-2 ${theme.ring}`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                    نشانی تحویل بار و محل کار
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="آدرس دقیق فروشگاه یا انبار مشتری..."
+                    value={formData.address || ''}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={resetCustomerForm}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-5 py-2 rounded-xl ${theme.primary} ${theme.primaryHover} text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5`}
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{editingCustomer ? 'ذخیره تغییرات' : 'ثبت نهایی مشتری'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 3: Delete Customer Confirmation Modal */}
+      <AnimatePresence>
+        {customerToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center border border-rose-100 dark:border-rose-900">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-slate-900 dark:text-white text-base">
+                  حذف پرونده {customerToDelete.name}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  آیا از حذف این مشتری اطمینان دارید؟ تمام سوابق مالی این مشتری حذف خواهد شد.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  onClick={() => setCustomerToDelete(null)}
+                  className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  انصراف
+                </button>
+                <button
+                  onClick={() => {
+                    onDeleteCustomer(customerToDelete.id);
+                    setCustomerToDelete(null);
+                  }}
+                  className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow-xs cursor-pointer"
+                >
+                  حذف پرونده
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 4: Delete Payment Confirmation Modal */}
+      <AnimatePresence>
+        {paymentToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center border border-rose-100 dark:border-rose-900">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-slate-900 dark:text-white text-base">
+                  حذف سند دریافتی
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  آیا از حذف سند دریافتی به مبلغ <span className="font-black text-slate-800 dark:text-slate-200">{formatPrice(paymentToDelete.amount)}</span> به تاریخ <span className="font-black text-slate-800 dark:text-slate-200">{toPersianDigits(paymentToDelete.date)}</span> اطمینان دارید؟ این مبلغ مجدداً به بدهی مشتری اضافه خواهد شد.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  onClick={() => setPaymentToDelete(null)}
+                  className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  انصراف
+                </button>
+                <button
+                  onClick={() => {
+                    onDeletePayment(paymentToDelete.id);
+                    setPaymentToDelete(null);
+                  }}
+                  className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow-xs cursor-pointer"
+                >
+                  حذف سند
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 5: Customer Account Shot Card Modal (عکس شات ریز حساب) */}
+      <AnimatePresence>
+        {isShotModalOpen && targetShotCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md no-print overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
+            >
+              {/* Modal Header Bar */}
+              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-2xl text-white shadow-xs ${theme.primary}`}>
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>کارت تصویری وضعیت حساب</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {targetShotCustomer.name}
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      خلاصه گرافیکی حساب، مبالغ محاسباتی و گردش‌های انتخابی طرف‌حساب
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsShotModalOpen(false)}
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Body */}
+              <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 flex-1">
+                
+                {/* Advanced Controls Toolbar */}
+                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/60">
+                  
+                  {/* 1. Item Filter Selector: All / Invoices Only / Payments Only */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                        نحوه نمایش اقلام در لیست:
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {shotFilterType === 'all' ? 'فاکتورها و واریزی‌ها' : shotFilterType === 'invoices' ? 'فقط فاکتورها' : 'فقط دریافتی‌ها'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setShotFilterType('all')}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          shotFilterType === 'all'
+                            ? `${theme.primary} text-white shadow-xs`
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        <span>همه (فاکتور + واریزی)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShotFilterType('invoices')}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          shotFilterType === 'invoices'
+                            ? `${theme.primary} text-white shadow-xs`
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>فقط فاکتورها</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShotFilterType('payments')}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          shotFilterType === 'payments'
+                            ? `${theme.primary} text-white shadow-xs`
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <Banknote className="w-3.5 h-3.5" />
+                        <span>فقط واریزی‌ها</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Invoices Count Selector & Display Limits */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1 border-t border-slate-200/80 dark:border-slate-700/60">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-slate-500" />
+                      تعداد فاکتورهای محاسباتی:
+                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[3, 5, 10, 15, 20].map((num) => (
+                        <button
+                          key={`shot-limit-${num}`}
+                          type="button"
+                          onClick={() => setShotInvoiceLimit(num)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                            shotInvoiceLimit === num
+                              ? `${theme.primary} text-white shadow-xs`
+                              : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                          }`}
+                        >
+                          {toPersianDigits(num)}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setShotInvoiceLimit(0)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                          shotInvoiceLimit === 0
+                            ? `${theme.primary} text-white shadow-xs`
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                        }`}
+                      >
+                        همه فاکتورها
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Theme Mode Selector Pill (حالت روز / حالت شب) */}
+                  <div className="flex items-center justify-between p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setShotThemeMode('day')}
+                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        shotThemeMode === 'day'
+                          ? 'bg-slate-100 text-slate-900 shadow-xs border border-slate-200'
+                          : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                      }`}
+                    >
+                      <Sun className="w-3.5 h-3.5 text-amber-500" />
+                      <span>قالب روز (روشن)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShotThemeMode('night')}
+                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        shotThemeMode === 'night'
+                          ? 'bg-slate-800 text-white shadow-xs border border-slate-700'
+                          : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                      }`}
+                    >
+                      <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>قالب شب (تاریک)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Printable / Capturable Shot Card Container */}
+                <div 
+                  id="customer-statement-shot-card"
+                  className={`p-5 sm:p-6 rounded-3xl border space-y-4 w-full max-w-md mx-auto relative overflow-hidden font-sans transition-all duration-200 ${
+                    shotThemeMode === 'day'
+                      ? 'bg-white text-slate-900 border-slate-200 shadow-xl shadow-slate-100'
+                      : 'bg-slate-950 text-slate-100 border-slate-800 shadow-2xl shadow-black/80'
+                  }`}
+                  style={{ direction: 'rtl' }}
+                >
+                  {/* Header */}
+                  <div className={`flex items-center justify-between border-b pb-3.5 relative z-10 ${
+                    shotThemeMode === 'day' ? 'border-slate-100' : 'border-slate-800/80'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-10 h-10 rounded-xl ${theme.primary} flex items-center justify-center font-black text-white text-base shadow-xs`}>
+                        {settings.brandName ? settings.brandName.charAt(0) : 'ب'}
+                      </div>
+                      <div>
+                        <h4 className={`font-black text-sm sm:text-base ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
+                          {settings.brandName || 'سامانه بازرگانی'}
+                        </h4>
+                        <p className={`text-[10px] font-bold ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-400'}`}>
+                          {settings.subtitle || 'خلاصه وضعیت مالی و گردش حساب'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`text-left text-[10px] space-y-1 font-mono dir-ltr ${
+                      shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'
+                    }`}>
+                      <div className={`font-bold px-2 py-0.5 rounded-lg border ${
+                        shotThemeMode === 'day' 
+                          ? 'bg-slate-50 border-slate-200 text-slate-700' 
+                          : 'bg-slate-900 border-slate-800 text-slate-300'
+                      }`}>
+                        {shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور اخیر` : 'تمام فاکتورها'}
+                      </div>
+                      <div className="pt-0.5 text-[9px] opacity-80">{toPersianDigits(getCurrentPersianDate())}</div>
+                    </div>
+                  </div>
+
+                  {/* Customer Info Card - Flat & Minimal */}
+                  <div className={`p-3 rounded-2xl border flex items-center justify-between relative z-10 ${
+                    shotThemeMode === 'day'
+                      ? 'bg-slate-50/70 border-slate-100'
+                      : 'bg-slate-900/60 border-slate-800/80'
+                  }`}>
+                    <div className="space-y-0.5">
+                      <span className={`text-[9px] font-bold block ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-400'}`}>
+                        طرف حساب
+                      </span>
+                      <h5 className={`font-black text-sm ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
+                        {targetShotCustomer.name}
+                      </h5>
+                      {targetShotCustomer.company && (
+                        <span className={`text-[10px] font-bold block ${shotThemeMode === 'day' ? 'text-slate-600' : 'text-slate-300'}`}>
+                          {targetShotCustomer.company}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-left text-[10px] font-bold space-y-0.5 ${
+                      shotThemeMode === 'day' ? 'text-slate-600' : 'text-slate-400'
+                    }`}>
+                      <div className="font-mono dir-ltr">{toPersianDigits(targetShotCustomer.phone)}</div>
+                      <div className="text-[9px]">{targetShotCustomer.city || 'ثبت نشده'}</div>
+                    </div>
+                  </div>
+
+                  {/* 3 Main Stat Cards - Flat Modern High-Precision Fintech Style */}
+                  <div className="grid grid-cols-3 gap-2 relative z-10">
+                    
+                    {/* 1. Live Balance Card */}
+                    <div className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-right space-y-1.5 ${
+                      shotThemeMode === 'day'
+                        ? 'bg-slate-50/90 border-slate-200/90 text-slate-900'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-100'
+                    }`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-[10px] font-bold truncate ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>
+                          مانده حساب
+                        </span>
+                        <div className={`p-1 rounded-md shrink-0 ${
+                          shotThemeMode === 'day' ? 'bg-slate-200/70 text-slate-700' : 'bg-slate-800 text-slate-300'
+                        }`}>
+                          <Scale className="w-3 h-3" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                          {targetShotLiveBal > 0 
+                            ? formatPrice(targetShotLiveBal) 
+                            : targetShotLiveBal < 0 
+                            ? `${formatPrice(Math.abs(targetShotLiveBal))}` 
+                            : '۰'}
+                        </span>
+                      </div>
+
+                      {/* Explicit Status & Info Underneath */}
+                      <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
+                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
+                          targetShotLiveBal > 0
+                            ? shotThemeMode === 'day' 
+                              ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                              : 'bg-rose-950/50 border-rose-900/70 text-rose-300'
+                            : targetShotLiveBal < 0
+                            ? shotThemeMode === 'day' 
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                              : 'bg-emerald-950/50 border-emerald-900/70 text-emerald-300'
+                            : shotThemeMode === 'day'
+                            ? 'bg-slate-100 border-slate-200 text-slate-600'
+                            : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}>
+                          {targetShotLiveBal > 0 ? 'بدهکار' : targetShotLiveBal < 0 ? 'بستانکار' : 'تسویه'}
+                        </span>
+                        <span className={`text-[8px] font-bold ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          وضعیت فعلی
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. Total Payments Card */}
+                    <div className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-right space-y-1.5 ${
+                      shotThemeMode === 'day'
+                        ? 'bg-slate-50/90 border-slate-200/90 text-slate-900'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-100'
+                    }`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-[10px] font-bold truncate ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>
+                          کل واریزی‌ها
+                        </span>
+                        <div className={`p-1 rounded-md shrink-0 ${
+                          shotThemeMode === 'day' ? 'bg-slate-200/70 text-slate-700' : 'bg-slate-800 text-slate-300'
+                        }`}>
+                          <ArrowDownLeft className="w-3 h-3" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                          {formatPrice(targetShotTotalPaid)}
+                        </span>
+                      </div>
+
+                      {/* Explicit Count Underneath */}
+                      <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
+                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
+                          shotThemeMode === 'day'
+                            ? 'bg-slate-100 border-slate-200 text-slate-700'
+                            : 'bg-slate-800 border-slate-700 text-slate-300'
+                        }`}>
+                          {toPersianDigits(targetShotPayments.length)} واریزی
+                        </span>
+                        <span className={`text-[8px] font-bold ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          تعداد دریافتی
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. Total Invoices Card (Strictly Scoped) */}
+                    <div className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-right space-y-1.5 ${
+                      shotThemeMode === 'day'
+                        ? 'bg-slate-50/90 border-slate-200/90 text-slate-900'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-100'
+                    }`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-[10px] font-bold truncate ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {shotInvoiceLimit > 0 ? `مبلغ ${toPersianDigits(activeShotInvoices.length)} فاکتور` : 'کل فاکتورها'}
+                        </span>
+                        <div className={`p-1 rounded-md shrink-0 ${
+                          shotThemeMode === 'day' ? 'bg-slate-200/70 text-slate-700' : 'bg-slate-800 text-slate-300'
+                        }`}>
+                          <Receipt className="w-3 h-3" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                          {formatPrice(targetShotTotalInvoicesAmount)}
+                        </span>
+                      </div>
+
+                      {/* Explicit Count Underneath */}
+                      <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
+                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
+                          shotThemeMode === 'day'
+                            ? 'bg-slate-100 border-slate-200 text-slate-700'
+                            : 'bg-slate-800 border-slate-700 text-slate-300'
+                        }`}>
+                          {toPersianDigits(activeShotInvoices.length)} فاکتور
+                        </span>
+                        <span className={`text-[8px] font-bold ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          تعداد فاکتور
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filtered Recent Items Micro Table - Flat Modern */}
+                  <div className="space-y-1.5 relative z-10">
+                    <div className={`flex items-center justify-between text-[10px] font-bold px-0.5 ${
+                      shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'
+                    }`}>
+                      <span className="flex items-center gap-1.5">
+                        {shotFilterType === 'invoices' ? (
+                          <>
+                            <FileText className="w-3.5 h-3.5 text-slate-500" />
+                            <span>فهرست فاکتورهای اخیر:</span>
+                          </>
+                        ) : shotFilterType === 'payments' ? (
+                          <>
+                            <Banknote className="w-3.5 h-3.5 text-slate-500" />
+                            <span>فهرست اسناد واریزی اخیر:</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+                            <span>گردش و تراکنش‌های اخیر:</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="text-[9px] font-normal">{toPersianDigits(displayedShotRows.length)} مورد</span>
+                    </div>
+                    <div className={`divide-y rounded-2xl border overflow-hidden text-[11px] ${
+                      shotThemeMode === 'day'
+                        ? 'divide-slate-100 bg-slate-50/50 border-slate-200/90'
+                        : 'divide-slate-800/80 bg-slate-900/50 border-slate-800'
+                    }`}>
+                      {displayedShotRows.length === 0 ? (
+                        <div className={`p-3.5 text-center text-xs ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {shotFilterType === 'invoices' 
+                            ? 'هیچ فاکتوری برای این مشتری ثبت نشده است' 
+                            : shotFilterType === 'payments' 
+                            ? 'هیچ واریزی برای این مشتری ثبت نشده است' 
+                            : 'هیچ گردش حسابی ثبت نشده است'}
+                        </div>
+                      ) : (
+                        displayedShotRows.map((r, idx) => (
+                          <div key={`shot-row-${r.id || idx}-${idx}`} className="p-2.5 flex items-center justify-between gap-2">
+                            <div className="space-y-0.5 truncate flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`font-black block truncate text-[11px] ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-slate-200'}`}>
+                                  {r.code}
+                                </span>
+                                <span className={`text-[8px] px-1.5 py-0.2 rounded border font-bold ${
+                                  shotThemeMode === 'day'
+                                    ? 'bg-white border-slate-200 text-slate-600'
+                                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                                }`}>
+                                  {r.type === 'invoice' ? 'فاکتور' : r.type === 'payment' ? 'واریزی' : 'مرجوعی'}
+                                </span>
+                              </div>
+                              <span className={`text-[9px] block truncate ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-400'}`}>
+                                {toPersianDigits(r.date)} • {r.description}
+                              </span>
+                            </div>
+                            <div className="text-left font-black dir-ltr shrink-0 text-xs">
+                              {r.type === 'invoice' ? (
+                                <span className={shotThemeMode === 'day' ? 'text-slate-900 block' : 'text-slate-100 block'}>
+                                  +{formatPrice(r.amount)}
+                                </span>
+                              ) : r.type === 'payment' ? (
+                                <span className={shotThemeMode === 'day' ? 'text-emerald-700 block' : 'text-emerald-400 block'}>
+                                  -{formatPrice(r.amount)}
+                                </span>
+                              ) : r.debit > 0 ? (
+                                <span className={shotThemeMode === 'day' ? 'text-rose-700 block' : 'text-rose-400 block'}>
+                                  +{formatPrice(r.debit)}
+                                </span>
+                              ) : (
+                                <span className={shotThemeMode === 'day' ? 'text-emerald-700 block' : 'text-emerald-400 block'}>
+                                  -{formatPrice(r.credit)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Embedded High-Contrast Telegram/Messenger Summary Caption Box (Rendered on Image) */}
+                  <div className={`p-3 rounded-2xl border space-y-1.5 relative z-10 ${
+                    shotThemeMode === 'day'
+                      ? 'bg-slate-900 text-white border-slate-950 shadow-sm'
+                      : 'bg-indigo-950/80 text-white border-indigo-900/90 shadow-sm'
+                  }`}>
+                    <div className="flex items-center justify-between text-[10px] font-black border-b pb-1.5 border-white/15">
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <FileText className="w-3.5 h-3.5" />
+                        خلاصه صورت‌حساب جهت ارائه در تلگرام/پیام‌رسان:
+                      </span>
+                      <span className="text-[9px] text-slate-300 font-mono">
+                        {toPersianDigits(getCurrentPersianDate())}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                      <div>👤 طرف‌حساب: <span className="font-black text-white">{targetShotCustomer.name}</span></div>
+                      <div>
+                        🔴 مانده حساب: <span className={`font-black font-mono ${targetShotLiveBal > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                          {targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : 'تسویه‌شده (۰)'}
+                        </span>
+                      </div>
+                      <div>💳 مجموع دریافتی‌ها: <span className="font-black font-mono text-emerald-300">{formatPrice(targetShotTotalPaid)}</span></div>
+                      <div>🧾 گردش فاکتورها: <span className="font-black font-mono text-amber-300">{formatPrice(targetShotTotalInvoicesAmount)}</span></div>
+                    </div>
+                    {(settings.cardNumber || settings.phone) && (
+                      <div className="pt-1.5 border-t border-white/15 flex items-center justify-between text-[9px] text-slate-300 font-mono">
+                        {settings.cardNumber ? <span>💳 شماره کارت: {settings.cardNumber} ({settings.cardHolder || settings.brandName})</span> : <span />}
+                        {settings.phone ? <span>📞 تماس: {toPersianDigits(settings.phone)}</span> : <span />}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clean Flat Footer */}
+                  <div className={`pt-2 border-t flex items-center justify-between text-[9px] relative z-10 ${
+                    shotThemeMode === 'day' ? 'border-slate-100 text-slate-400' : 'border-slate-800/80 text-slate-500'
+                  }`}>
+                    <span>سیستم جامع صدور فاکتور و حسابداری {settings.brandName || 'فروشگاه'}</span>
+                    <span>زمان گزارش: {toPersianDigits(getCurrentPersianTime())}</span>
+                  </div>
+                </div>
+
+                {/* Actions Section */}
+                <div className="space-y-2.5 pt-1">
+                  {/* Action 1 & 2: Quick Side-by-Side Copy Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Copy Image Button */}
+                    <button
+                      type="button"
+                      disabled={isCopyingShotImage || isExportingShot}
+                      onClick={async () => {
+                        setIsCopyingShotImage(true);
+                        const shotTextSummary = `📋 *خلاصه وضعیت حساب طرف‌حساب*
+👤 *نام مشتری:* ${targetShotCustomer.name} ${targetShotCustomer.company ? `(${targetShotCustomer.company})` : ''}
+📅 *تاریخ گزارش:* ${toPersianDigits(getCurrentPersianDate())}
+
+🔴 *مانده بدهکاری فعلی:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه‌شده)'}
+💳 *مجموع واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
+🧾 *مبلغ ${shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور اخیر` : 'کل فاکتورها'}:* ${formatPrice(targetShotTotalInvoicesAmount)}
+${settings.cardNumber ? `💳 *شماره کارت جهت واریز:* ${settings.cardNumber} (${settings.cardHolder || settings.brandName})` : ''}
+${settings.phone ? `📞 *شماره تماس:* ${toPersianDigits(settings.phone)}` : ''}
+
+${shotFilterType === 'invoices' ? `🔍 حالت نمایش: فقط فاکتورها` : shotFilterType === 'payments' ? `🔍 حالت نمایش: فقط واریزی‌ها` : `🔍 حالت نمایش: کلیه گردش‌ها`}
+با تشکر از همکاری شما 🙏`;
+
+                        await copyInvoiceImageToClipboard(
+                          'customer-statement-shot-card',
+                          () => {
+                            onShowAlert?.(
+                              '✅ عکس شات در کلیپ‌بورد کپی شد! در محیط تلگرام یا ایتا کلید Paste (Ctrl+V) را بزنید. (متن کامل خلاصه و شماره کارت روی خود عکس نیز درج شده است).',
+                              'success',
+                              'کپی عکس شات برای تلگرام'
+                            );
+                          },
+                          (errMsg) => {
+                            onShowAlert?.(errMsg, 'info', 'کپی اسکرین‌شات');
+                          },
+                          shotTextSummary
+                        );
+                        setIsCopyingShotImage(false);
+                      }}
+                      className="flex items-center justify-center gap-2 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                      title="کپی مستقیم عکس در حافظه جهت ارسال با Ctrl+V در تلگرام"
+                    >
+                      <Camera className="w-4 h-4 shrink-0" />
+                      <span>{isCopyingShotImage ? 'در حال تصویربرداری...' : '۱. کپی عکس شات (Ctrl+V)'}</span>
+                    </button>
+
+                    {/* Copy Caption Text Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const shotTextSummary = `📋 *خلاصه وضعیت حساب طرف‌حساب*
+👤 *نام مشتری:* ${targetShotCustomer.name} ${targetShotCustomer.company ? `(${targetShotCustomer.company})` : ''}
+📅 *تاریخ گزارش:* ${toPersianDigits(getCurrentPersianDate())}
+
+🔴 *مانده بدهکاری فعلی:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه‌شده)'}
+💳 *مجموع واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
+🧾 *مبلغ ${shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور اخیر` : 'کل فاکتورها'}:* ${formatPrice(targetShotTotalInvoicesAmount)}
+${settings.cardNumber ? `💳 *شماره کارت:* ${settings.cardNumber} (${settings.cardHolder || settings.brandName})` : ''}
+${settings.phone ? `📞 *تماس:* ${toPersianDigits(settings.phone)}` : ''}
+
+${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterType === 'payments' ? `🔍 فقط واریزی‌ها` : `🔍 کلیه گردش‌ها`}
+با تشکر 🙏`;
+
+                        navigator.clipboard.writeText(shotTextSummary);
+                        setCopiedText(true);
+                        setTimeout(() => setCopiedText(false), 2500);
+                        onShowAlert?.(
+                          'متن کامل کپشن در کلیپ‌بورد کپی شد! اکنون می‌توانید در کادر کپشن تلگرام یا متن چت Paste کنید.',
+                          'success',
+                          'کپی متن کپشن'
+                        );
+                      }}
+                      className="flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-black text-xs transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                      title="کپی متن خلاصه جهت الصاق در کادر کپشن تلگرام"
+                    >
+                      {copiedText ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <span className="text-emerald-600 dark:text-emerald-400">متن کپشن کپی شد!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                          <span>۲. کپی متن کپشن (برای تلگرام)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Secondary 3 Actions Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {/* Download Image PNG */}
+                    <button
+                      type="button"
+                      disabled={isExportingShot || isCopyingShotImage}
+                      onClick={async () => {
+                        setIsExportingShot(true);
+                        await downloadInvoiceAsImage('customer-statement-shot-card', `شات_حساب_${targetShotCustomer.name}`);
+                        setIsExportingShot(false);
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-white font-black text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 ${theme.primary}`}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{isExportingShot ? 'در حال ساخت...' : 'دانلود عکس PNG'}</span>
+                    </button>
+
+                    {/* Direct Telegram Link Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const shotTextSummary = `📋 *خلاصه وضعیت حساب طرف‌حساب*
+👤 *نام مشتری:* ${targetShotCustomer.name} ${targetShotCustomer.company ? `(${targetShotCustomer.company})` : ''}
+📅 *تاریخ:* ${toPersianDigits(getCurrentPersianDate())}
+🔴 *مانده بدهکاری:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه)'}
+💳 *واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
+${settings.cardNumber ? `💳 *شماره کارت:* ${settings.cardNumber}` : ''}`;
+                        const tgUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(shotTextSummary)}`;
+                        window.open(tgUrl, '_blank');
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-xs transition-all cursor-pointer"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>ارسال به تلگرام</span>
+                    </button>
+
+                    {/* Native Share */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const textSummary = `📋 خلاصه حساب ${targetShotCustomer.name}
+مانده بدهکاری: ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : 'تسویه'}
+مجموع واریزی: ${formatPrice(targetShotTotalPaid)}
+مبلغ ${shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور` : 'کل فاکتورها'}: ${formatPrice(targetShotTotalInvoicesAmount)}
+تاریخ: ${toPersianDigits(getCurrentPersianDate())}`;
+                        if (navigator.share) {
+                          navigator.share({
+                            title: `صورت‌حساب ${targetShotCustomer.name}`,
+                            text: textSummary,
+                          }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(textSummary);
+                          setCopiedText(true);
+                          setTimeout(() => setCopiedText(false), 2500);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xs transition-all cursor-pointer"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>اشتراک‌گذاری</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: View Statement Document (Receipt / Transaction Details) */}
+      <AnimatePresence>
+        {viewingLedgerDoc && (() => {
+          const doc = viewingLedgerDoc;
+          const raw = doc.rawObj || {};
+          const isCredit = doc.credit > 0;
+          const amt = isCredit ? doc.credit : doc.debit;
+          const custName = selectedCustomerForStatement?.name || raw.customerName || 'مشتری';
+          const custPhone = selectedCustomerForStatement?.phone || '';
+          const custCompany = selectedCustomerForStatement?.company || '';
+          const refNum = raw.referenceNumber || raw.invoiceNumber || '';
+          const itemsList: any[] = raw.items || [];
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 text-right max-h-[90vh] flex flex-col overflow-hidden"
+                dir="rtl"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                      doc.type === 'payment'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                        : doc.type === 'manual_debt'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                        : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+                    }`}>
+                      {doc.type === 'payment' ? (
+                        <Banknote className="w-5 h-5" />
+                      ) : doc.type === 'manual_debt' ? (
+                        <TrendingDown className="w-5 h-5" />
+                      ) : (
+                        <RotateCcw className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 dark:text-white text-base">
+                        {doc.type === 'payment'
+                          ? 'جزئیات سند واریزی و بستانکاری'
+                          : doc.type === 'manual_debt'
+                          ? 'جزئیات سند ثبت بدهی'
+                          : doc.type === 'return_to_supplier'
+                          ? 'جزئیات مرجوعی کالا به شرکت'
+                          : doc.type === 'return_from_customer'
+                          ? 'جزئیات مرجوعی کالا از مشتری'
+                          : 'جزئیات تراکنش مالی'}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-bold">
+                        کد سند: <span className="font-mono text-slate-700 dark:text-slate-300">{toPersianDigits(doc.code)}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setViewingLedgerDoc(null)}
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content Body */}
+                <div className="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
+                  {/* Customer Info Card */}
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">طرف حساب:</span>
+                      <span className="font-black text-slate-900 dark:text-white text-sm">
+                        {custName} {custCompany ? `(${custCompany})` : ''}
+                      </span>
+                    </div>
+                    {custPhone && (
+                      <div className="text-left dir-ltr">
+                        <span className="text-[11px] text-slate-400 block font-medium">شماره تماس:</span>
+                        <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                          {toPersianDigits(custPhone)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary grid */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-0.5">
+                      <span className="text-slate-400 text-[11px] block">تاریخ و زمان ثبت:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {toPersianDigits(doc.date)} {doc.time ? ` - ${toPersianDigits(doc.time)}` : ''}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-0.5">
+                      <span className="text-slate-400 text-[11px] block">روش پرداخت / نوع:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {doc.methodText || (isCredit ? 'تسویه / بستانکاری' : 'بدهکاری')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Amount Card */}
+                  <div className={`p-3.5 rounded-2xl border space-y-1 ${
+                    isCredit
+                      ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/60'
+                      : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/60'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold">
+                        {isCredit ? 'مبلغ واریزی / بستانکاری:' : 'مبلغ بدهکار / نسیه:'}
+                      </span>
+                      <span className={`font-black text-base dir-ltr ${
+                        isCredit ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
+                      }`}>
+                        {formatPrice(amt)}
+                      </span>
+                    </div>
+                    {amt > 0 && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        مبلغ به حروف: <span className="font-bold text-slate-800 dark:text-slate-200">{numberToPersianWords(amt)} تومان</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Reference & Running Balance */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {refNum && (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-0.5">
+                        <span className="text-slate-400 text-[11px] block">شماره پیگیری / فیش:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                          {toPersianDigits(refNum)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-0.5">
+                      <span className="text-slate-400 text-[11px] block">مانده حساب پس از این تراکنش:</span>
+                      <span className="font-black text-slate-900 dark:text-white dir-ltr">
+                        {formatPrice(doc.runningBalance)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Items List Table if present */}
+                  {itemsList.length > 0 && (
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-2">
+                      <span className="font-black text-slate-800 dark:text-slate-200 block text-[11px]">
+                        اقلام ثبت شده در این سند ({toPersianDigits(itemsList.length)} کالا):
+                      </span>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-right text-[11px]">
+                          <thead className="bg-slate-200/50 dark:bg-slate-800/50 font-black text-slate-600 dark:text-slate-300">
+                            <tr>
+                              <th className="p-1.5">کالا</th>
+                              <th className="p-1.5 text-center">تعداد</th>
+                              <th className="p-1.5 text-left">قیمت کل</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200/40 dark:divide-slate-800/40">
+                            {itemsList.map((it: any, i: number) => (
+                              <tr key={`ledger-item-${it.id || it.productId || i}-${i}`}>
+                                <td className="p-1.5 font-bold text-slate-900 dark:text-white">{it.productName}</td>
+                                <td className="p-1.5 text-center font-bold">{toPersianDigits(it.totalPieces)}</td>
+                                <td className="p-1.5 text-left dir-ltr font-bold text-slate-800 dark:text-slate-200">
+                                  {formatPrice(it.totalPrice || 0)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Description Box */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-1">
+                    <span className="text-slate-400 block font-bold text-[11px]">توضیحات و بابت:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 leading-relaxed block">
+                      {doc.description || raw.description || 'بدون توضیحات تکمیلی'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer Action Buttons */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                  {(doc.type === 'payment' || doc.type === 'manual_debt') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewingLedgerDoc(null);
+                        handleOpenEditPayment(raw);
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-bold text-xs shadow-xs transition-all cursor-pointer`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>ویرایش این سند</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setViewingLedgerDoc(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer"
+                  >
+                    بستن
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* MODAL 7: 1-Click Full Customer Settlement Modal (تسویه کامل حساب مشتری با یک کلیک) */}
+      <AnimatePresence>
+        {isSettlementModalOpen && targetCustomerForSettlement && (() => {
+          const fin = getCustomerFinanceDetails(targetCustomerForSettlement, invoices, payments, productReturns);
+          const liveBal = fin.liveBalance;
+          const isDebtor = liveBal > 0;
+          const isCreditor = liveBal < 0;
+          const isSettled = liveBal === 0;
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md no-print overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
+              >
+                {/* Modal Header Bar */}
+                <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-emerald-50/80 dark:bg-emerald-950/40 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-xs">
+                      <CheckCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>تسویه کامل حساب مشتری (یک کلیک)</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        صفر شدن پرونده، کسر پرداختی‌ها و مرجوعی‌ها، و به‌روزرسانی نقدینگی صندوق/بانک
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettlementModalOpen(false)}
+                    className="p-1.5 rounded-lg bg-white/80 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Form Body */}
+                <form onSubmit={handleSubmitSettlement} className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                  
+                  {/* Customer Selector / Info Header */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-700 dark:text-slate-300">
+                        طرف حساب انتخابی:
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-bold">
+                        تلفن: {toPersianDigits(targetCustomerForSettlement.phone)}
+                      </span>
+                    </div>
+
+                    <select
+                      value={targetCustomerForSettlement.id}
+                      onChange={(e) => {
+                        const nextCust = customers.find(c => c.id === e.target.value);
+                        if (nextCust) handleOpenSettlementModal(nextCust);
+                      }}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-black focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    >
+                      {customers.map((c, cIdx) => {
+                        const bal = getCustomerFinanceDetails(c, invoices, payments, productReturns).liveBalance;
+                        const label = bal > 0 ? `بدهکار: ${formatPrice(bal)}` : bal < 0 ? `بستانکار: ${formatPrice(Math.abs(bal))}` : 'تسویه شده';
+                        return (
+                          <option key={`settle-opt-${c.id || cIdx}-${cIdx}`} value={c.id}>
+                            {c.name} {c.company ? `(${c.company})` : ''} - [{label}]
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Financial Breakdown Card (بدهکاری کل، پرداختی‌ها، مرجوعی، مانده نهایی) */}
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60 text-xs">
+                      <span className="font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Scale className="w-4 h-4 text-emerald-600" />
+                        <span>خلاصه وضعیت مالی و گردش حساب</span>
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${
+                        isDebtor
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          : isCreditor
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      }`}>
+                        {isDebtor ? 'حساب بدهکار' : isCreditor ? 'حساب بستانکار' : 'بی‌حساب'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <span>بدهکاری کل ناخالص (فاکتورها + مانده اول + نسیه):</span>
+                        <span className="font-black text-slate-900 dark:text-white dir-ltr">
+                          {formatPrice(fin.grossDebts)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+                        <span>مجموع واریزی‌ها و دریافتی‌های قبلی (-):</span>
+                        <span className="font-black dir-ltr">
+                          {formatPrice(fin.grossCredits)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-indigo-700 dark:text-indigo-400">
+                        <span>کسر بابت مرجوعی کالا (-):</span>
+                        <span className="font-black dir-ltr">
+                          {formatPrice(fin.allReturnsTotal)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Final Settlement Amount Highlight */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                      isDebtor
+                        ? `${theme.primaryLight} ${theme.borderColor} ${theme.primaryText}`
+                        : isCreditor
+                        ? `${theme.badgeBg} ${theme.borderColor} ${theme.badgeText}`
+                        : 'bg-slate-200/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    }`}>
+                      <div>
+                        <span className="text-[11px] font-bold block opacity-80">
+                          {isDebtor ? 'مبلغ واریزی جهت تسویه کامل بدهی:' : isCreditor ? 'مبلغ عودت بستانکاری به مشتری:' : 'وضعیت مانده حساب:'}
+                        </span>
+                        <div className="text-xl font-black dir-ltr text-right">
+                          {formatPrice(Math.abs(liveBal))}
+                        </div>
+                      </div>
+
+                      <div className="text-left">
+                        <span className="text-xs font-bold opacity-90">
+                          {isDebtor ? 'دریافت از مشتری و افزایش نقدینگی' : isCreditor ? 'پرداخت به مشتری و کسر از نقدینگی' : 'حساب بدون بدهی'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {liveBal !== 0 && (
+                      <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                        مبلغ تسویه به حروف: <span className="font-black text-slate-900 dark:text-slate-200">{numberToPersianWords(Math.abs(liveBal))} تومان</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Method & Destination Selection */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                        روش پرداخت و تسویه
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSettlementMethod('bank_transfer')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            settlementMethod === 'bank_transfer'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Building className="w-4 h-4" />
+                          <span>حواله بانکی</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettlementMethod('card')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            settlementMethod === 'card'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>کارت به کارت</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSettlementMethod('cash');
+                            setSettlementAccountType('cash');
+                          }}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            settlementMethod === 'cash'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Banknote className="w-4 h-4" />
+                          <span>نقدی / صندوق</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettlementMethod('check')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                            settlementMethod === 'check'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>چک صیادی</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Account Destination (بانک / صندوق) */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+                        حساب مقصد جهت افزایش نقدینگی
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSettlementAccountType('bank')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                            settlementAccountType === 'bank'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Building className="w-4 h-4" />
+                          <span>حساب بانکی (موجودی بانک)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettlementAccountType('cash')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                            settlementAccountType === 'cash'
+                              ? `${theme.primary} text-white font-black shadow-xs`
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Wallet className="w-4 h-4" />
+                          <span>صندوق نقدی (موجودی صندوق)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Date & Time */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                          تاریخ تسویه (شمسی)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={settlementDate}
+                          onChange={(e) => setSettlementDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                          ساعت ثبت
+                        </label>
+                        <input
+                          type="text"
+                          value={settlementTime}
+                          onChange={(e) => setSettlementTime(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold text-center"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Reference Number */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                        شماره پیگیری / فیش واریز
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="شماره فیش، ارجاع یا پیگیری پایا / کارت"
+                        value={settlementRef}
+                        onChange={(e) => setSettlementRef(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                        شرح و بابت تسویه حساب
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="توضیحات تسویه حساب کامل"
+                        value={settlementNotes}
+                        onChange={(e) => setSettlementNotes(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+
+                    {/* Automation Checkboxes */}
+                    <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/40 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={settleOpenInvoicesChecked}
+                          onChange={(e) => setSettleOpenInvoicesChecked(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        />
+                        <span>تسویه خودکار وضعیت فاکتورهای نسیه باز این مشتری</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={settleOpenReturnsChecked}
+                          onChange={(e) => setSettleOpenReturnsChecked(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        />
+                        <span>تسویه قطعی مرجوعی‌های کالا و لحاظ شدن در پرونده</span>
+                      </label>
+                    </div>
+
+                  </div>
+
+                  {/* Footer Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setIsSettlementModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    >
+                      انصراف
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSettled}
+                      className={`px-5 py-2.5 rounded-xl text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-2 transition-all ${
+                        isSettled
+                          ? 'bg-slate-400 cursor-not-allowed opacity-60'
+                          : `${theme.primary} ${theme.primaryHover} shadow-md`
+                      }`}
+                    >
+                      <CheckCheck className="w-4 h-4" />
+                      <span>{isSettled ? 'حساب هم‌اکنون تسویه است' : '⚡ تأیید و اعمال تسویه کامل حساب'}</span>
+                    </button>
+                  </div>
+                </form>
+
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
+
+    </div>
+  );
+};
