@@ -1325,7 +1325,7 @@ export default function App() {
           stockPieces: Math.max(0, updatedP.stockPieces + delta),
         };
       }
-      // Sync packaging specs, unit title and default purchase price from invoice items into product catalog
+      // Sync packaging specs, unit title, name, category, and pricing from invoice items into product catalog
       const itemInInv = savedInvoice.items.find(it => it.productId === p.id || (p.name && it.productName && it.productName.trim().toLowerCase() === p.name.trim().toLowerCase()));
       if (itemInInv) {
         const itemPacks = Number(itemInInv.packsCount) > 0 ? Number(itemInInv.packsCount) : updatedP.packsPerCarton;
@@ -1334,16 +1334,46 @@ export default function App() {
 
         updatedP = {
           ...updatedP,
+          name: itemInInv.productName?.trim() || updatedP.name,
+          category: (itemInInv as any).category || updatedP.category,
           packsPerCarton: itemPacks || updatedP.packsPerCarton,
           piecesPerPack: itemPpp || updatedP.piecesPerPack,
           piecesPerCarton: itemPpc || updatedP.piecesPerCarton,
           unitTitle: itemInInv.unitTitle || updatedP.unitTitle,
           purchasePrice: (savedInvoice.type === 'purchase' && itemInInv.unitPurchasePrice > 0) ? itemInInv.unitPurchasePrice : updatedP.purchasePrice,
           sellingPrice: (itemInInv.unitSellingPrice && itemInInv.unitSellingPrice > 0) ? itemInInv.unitSellingPrice : updatedP.sellingPrice,
+          updatedAt: Date.now()
         };
       }
       return updatedP;
     });
+
+    // Ensure any newly defined item in the invoice also gets registered in master product catalog
+    savedInvoice.items.forEach(it => {
+      const exists = updatedProducts.some(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
+      if (!exists && it.productName) {
+        const itemPacks = Number(it.packsCount) > 0 ? Number(it.packsCount) : 1;
+        const itemPpp = Number(it.piecesPerPack) > 0 ? Number(it.piecesPerPack) : 1;
+        const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (itemPacks * itemPpp);
+        const newProd: Product = {
+          id: it.productId || `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: it.productName.trim(),
+          category: (it as any).category || 'متفرقه',
+          purchasePrice: it.unitPurchasePrice || 0,
+          sellingPrice: it.unitSellingPrice || 0,
+          stockPieces: savedInvoice.type === 'purchase' ? (it.totalPieces || 0) : 0,
+          piecesPerCarton: itemPpc,
+          packsPerCarton: itemPacks,
+          piecesPerPack: itemPpp,
+          unitTitle: it.unitTitle || 'عدد',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        updatedProducts.unshift(newProd);
+      }
+    });
+
+    setProducts(updatedProducts);
 
     let nextInvoices: Invoice[];
     if (existingIndex >= 0) {
@@ -1587,8 +1617,28 @@ export default function App() {
     const prodWithTimestamp: Product = {
       ...newProd,
       createdAt: newProd.createdAt || Date.now(),
+      updatedAt: Date.now(),
     };
-    setProducts([prodWithTimestamp, ...products]);
+    setProducts(prevProducts => {
+      const existsIdx = prevProducts.findIndex(p => 
+        p.id === prodWithTimestamp.id || 
+        (p.name && prodWithTimestamp.name && p.name.trim().toLowerCase() === prodWithTimestamp.name.trim().toLowerCase())
+      );
+      let nextList: Product[];
+      if (existsIdx >= 0) {
+        nextList = [...prevProducts];
+        nextList[existsIdx] = { ...nextList[existsIdx], ...prodWithTimestamp, id: prevProducts[existsIdx].id };
+      } else {
+        nextList = [prodWithTimestamp, ...prevProducts];
+      }
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextList));
+      } catch (e) {
+        console.error('Failed to save products to localStorage', e);
+      }
+      return nextList;
+    });
+
     const stockDesc = formatStockBreakdown(newProd.stockPieces, newProd.piecesPerCarton);
     const packaging = formatProductPackagingSpec(newProd);
     const pkgDesc = packaging ? ` (${packaging})` : '';
@@ -1612,24 +1662,41 @@ export default function App() {
   };
 
   const handleUpdateProduct = (updatedProd: Product) => {
-    const prevProd = products.find(p => p.id === updatedProd.id);
-    const updatedProductsList = products.map(p => p.id === updatedProd.id ? updatedProd : p);
-    setProducts(updatedProductsList);
-    try {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updatedProductsList));
-    } catch (e) {
-      console.error('Failed to save products to localStorage', e);
-    }
+    let matchedPrev: Product | undefined;
+    setProducts(prevProducts => {
+      matchedPrev = prevProducts.find(p => p.id === updatedProd.id) ||
+        (updatedProd.name ? prevProducts.find(p => p.name && p.name.trim().toLowerCase() === updatedProd.name.trim().toLowerCase()) : undefined);
+
+      let nextList: Product[];
+      const existsById = prevProducts.some(p => p.id === updatedProd.id);
+      if (existsById) {
+        nextList = prevProducts.map(p => p.id === updatedProd.id ? { ...p, ...updatedProd } : p);
+      } else if (matchedPrev) {
+        // Matched by name
+        nextList = prevProducts.map(p => p.id === matchedPrev!.id ? { ...p, ...updatedProd, id: p.id } : p);
+      } else {
+        // Product was newly added or not present in catalog yet, add it
+        nextList = [updatedProd, ...prevProducts];
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextList));
+      } catch (e) {
+        console.error('Failed to save products to localStorage', e);
+      }
+      return nextList;
+    });
 
     // Synchronize linked invoice items across invoices and draft records
-    const prevName = prevProd?.name?.trim().toLowerCase();
+    const prevName = matchedPrev?.name?.trim().toLowerCase();
     const updatedName = updatedProd.name.trim().toLowerCase();
     setInvoices(prevInvoices => {
       let anyInvoiceChanged = false;
       const syncedInvoices = prevInvoices.map(inv => {
         let hasChange = false;
         const syncedItems = inv.items.map(it => {
-          const isMatch = it.productId === updatedProd.id || 
+          const isMatch = (updatedProd.id && it.productId === updatedProd.id) || 
+            (matchedPrev?.id && it.productId === matchedPrev.id) ||
             (prevName && it.productName && it.productName.trim().toLowerCase() === prevName) ||
             (updatedName && it.productName && it.productName.trim().toLowerCase() === updatedName);
 
@@ -1644,6 +1711,7 @@ export default function App() {
               ...it,
               productId: updatedProd.id,
               productName: updatedProd.name,
+              category: updatedProd.category || (it as any).category,
               unitTitle: updatedProd.unitTitle || it.unitTitle,
               piecesPerCarton: ppc,
               packsCount: packs > 0 ? (cartons * packs) : (it.packsCount || 0),
@@ -1673,8 +1741,8 @@ export default function App() {
       return anyInvoiceChanged ? syncedInvoices : prevInvoices;
     });
 
-    if (prevProd) {
-      const prevStock = prevProd.stockPieces;
+    if (matchedPrev) {
+      const prevStock = matchedPrev.stockPieces;
       const newStock = updatedProd.stockPieces;
 
       if (newStock > prevStock) {

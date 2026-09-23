@@ -232,23 +232,34 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
   // Item Edit Modal State
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
+  const [editingOriginalMeta, setEditingOriginalMeta] = useState<{ id?: string; name?: string; productId?: string; category?: string }>({});
   const [isUnknownCartonMode, setIsUnknownCartonMode] = useState<boolean>(false);
 
   // Helper to open edit item modal with smart detection of unpackaged / unknown carton items
   const openEditItemModal = (item: InvoiceItem) => {
-    const associatedProduct = products.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
+    const associatedProduct = currentProductsList.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
     
     const packs = item.packsCount || associatedProduct?.packsPerCarton || 1;
     const ppp = item.piecesPerPack || associatedProduct?.piecesPerPack || 1;
     const ppc = item.piecesPerCarton || associatedProduct?.piecesPerCarton || (packs * ppp) || 1;
 
+    setEditingOriginalMeta({
+      id: item.id,
+      name: item.productName,
+      productId: item.productId || associatedProduct?.id,
+      category: (item as any).category || associatedProduct?.category || '',
+    });
+
     setEditingItem({
       ...item,
+      productId: item.productId || associatedProduct?.id || '',
+      productName: item.productName || associatedProduct?.name || '',
+      category: (item as any).category || associatedProduct?.category || '',
       packsCount: packs,
       piecesPerPack: ppp,
       piecesPerCarton: ppc,
       unitTitle: item.unitTitle || associatedProduct?.unitTitle || 'عدد'
-    });
+    } as any);
     const isUnpack = (ppc <= 1) || item.cartonsCount === 0 || item.cartonsCount === item.totalPieces || !!item.isUnpackaged || !!associatedProduct?.isUnpackaged;
     setIsUnknownCartonMode(isUnpack);
   };
@@ -652,7 +663,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       if (item.id !== id) return item;
       const updated = { ...item, ...updates };
 
-      const associatedProduct = products.find(p => p.id === item.productId || p.name?.trim() === item.productName?.trim());
+      const associatedProduct = currentProductsList.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
       
       let packs = updates.packsCount ?? item.packsCount ?? associatedProduct?.packsPerCarton ?? 1;
       let ppp = updates.piecesPerPack ?? item.piecesPerPack ?? associatedProduct?.piecesPerPack ?? 1;
@@ -769,6 +780,23 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
       return updated;
     }));
+
+    if (onUpdateProduct && (updates.unitPurchasePrice !== undefined || updates.unitSellingPrice !== undefined)) {
+      const itemToUpdate = items.find(it => it.id === id);
+      if (itemToUpdate) {
+        const prod = currentProductsList.find(p => p.id === itemToUpdate.productId || (p.name && itemToUpdate.productName && p.name.trim().toLowerCase() === itemToUpdate.productName.trim().toLowerCase()));
+        if (prod) {
+          const newPur = (invoiceType === 'purchase' && updates.unitPurchasePrice !== undefined && updates.unitPurchasePrice > 0) ? updates.unitPurchasePrice : prod.purchasePrice;
+          const newSell = (updates.unitSellingPrice !== undefined && updates.unitSellingPrice > 0) ? updates.unitSellingPrice : prod.sellingPrice;
+          onUpdateProduct({
+            ...prod,
+            purchasePrice: newPur,
+            sellingPrice: newSell,
+            updatedAt: Date.now()
+          });
+        }
+      }
+    }
   };
 
   // Delete item
@@ -1021,31 +1049,29 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         });
       }
 
-      // Sync items' packaging, packs, and piece structures to products
+      // Sync items' names, categories, packaging, pricing, and specs to products
       items.forEach(it => {
-        const prod = products.find(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
+        const prod = currentProductsList.find(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
         if (prod) {
-          const itemPacks = (it.packsCount && it.cartonsCount && it.cartonsCount > 0 && it.packsCount > it.cartonsCount)
-            ? Math.round(it.packsCount / it.cartonsCount)
-            : (it.packsCount || prod.packsPerCarton || 0);
+          const itemPacks = Number(it.packsCount) > 0 ? Number(it.packsCount) : (prod.packsPerCarton || 1);
+          const itemPpp = Number(it.piecesPerPack) > 0 ? Number(it.piecesPerPack) : (prod.piecesPerPack || 1);
+          const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (itemPacks * itemPpp);
+          const itemUnitTitle = it.unitTitle?.trim() || prod.unitTitle || 'عدد';
+          const itemNewName = it.productName?.trim() || prod.name;
+          const itemCategory = (it as any).category || prod.category;
 
-          const itemPpp = it.piecesPerPack || prod.piecesPerPack || 0;
-          const itemPpc = it.piecesPerCarton || prod.piecesPerCarton || (itemPacks * itemPpp) || 1;
-
-          if (
-            (itemPacks > 0 && itemPacks !== prod.packsPerCarton) ||
-            (itemPpp > 0 && itemPpp !== prod.piecesPerPack) ||
-            (itemPpc > 0 && itemPpc !== prod.piecesPerCarton)
-          ) {
-            onUpdateProduct({
-              ...prod,
-              piecesPerCarton: itemPpc,
-              packsPerCarton: itemPacks,
-              piecesPerPack: itemPpp,
-              unitTitle: it.unitTitle || prod.unitTitle || 'عدد',
-              updatedAt: Date.now()
-            });
-          }
+          onUpdateProduct({
+            ...prod,
+            name: itemNewName,
+            category: itemCategory,
+            piecesPerCarton: itemPpc,
+            packsPerCarton: itemPacks,
+            piecesPerPack: itemPpp,
+            unitTitle: itemUnitTitle,
+            purchasePrice: (invoiceType === 'purchase' && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : prod.purchasePrice,
+            sellingPrice: (it.unitSellingPrice && it.unitSellingPrice > 0) ? it.unitSellingPrice : prod.sellingPrice,
+            updatedAt: Date.now()
+          });
         }
       });
     }
@@ -3721,7 +3747,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div className="sm:col-span-2">
                       <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                         عنوان / شرح کالا <span className="text-rose-500">*</span>
@@ -3733,6 +3759,25 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         placeholder="نام کامل کالا..."
                         className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        دسته‌بندی کالا
+                      </label>
+                      <input
+                        type="text"
+                        list="edit-item-categories-list"
+                        value={(editingItem as any).category || (products.find(p => p.id === editingItem.productId)?.category) || ''}
+                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value } as any)}
+                        placeholder="دسته‌بندی..."
+                        className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-bold text-slate-900 dark:text-white text-xs focus:outline-none"
+                      />
+                      <datalist id="edit-item-categories-list">
+                        {categories.filter(c => c !== 'all').map(c => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
                     </div>
 
                     <div>
@@ -4174,30 +4219,90 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   type="button"
                   onClick={() => {
                     if (editingItem) {
-                      handleUpdateItem(editingItem.id, editingItem);
-                      
-                      // Two-way synchronization: update master product packaging, pricing, unit title in warehouse/catalog
-                      const targetProduct = products.find(p => p.id === editingItem.productId || (p.name && editingItem.productName && p.name.trim().toLowerCase() === editingItem.productName.trim().toLowerCase()));
-                      if (targetProduct && onUpdateProduct) {
-                        const calculatedPacks = Number(editingItem.packsCount) > 0 ? Number(editingItem.packsCount) : (targetProduct.packsPerCarton || 1);
-                        const ppp = Number(editingItem.piecesPerPack) > 0 ? Number(editingItem.piecesPerPack) : (targetProduct.piecesPerPack || 1);
-                        const ppc = Number(editingItem.piecesPerCarton) > 0 ? Number(editingItem.piecesPerCarton) : (calculatedPacks * ppp);
+                      const newName = editingItem.productName?.trim() || '';
+                      const newCat = (editingItem as any).category;
+                      const calculatedPacks = Number(editingItem.packsCount) > 0 ? Number(editingItem.packsCount) : 1;
+                      const ppp = Number(editingItem.piecesPerPack) > 0 ? Number(editingItem.piecesPerPack) : 1;
+                      const ppc = Number(editingItem.piecesPerCarton) > 0 ? Number(editingItem.piecesPerCarton) : (calculatedPacks * ppp);
+                      const unitTitle = editingItem.unitTitle?.trim() || 'عدد';
+                      const purchasePrice = Number(editingItem.unitPurchasePrice || 0);
+                      const sellingPrice = Number(editingItem.unitSellingPrice || 0);
 
-                        const updatedProd: Product = {
-                          ...targetProduct,
-                          name: editingItem.productName?.trim() || targetProduct.name,
-                          piecesPerCarton: ppc,
-                          packsPerCarton: calculatedPacks,
-                          piecesPerPack: ppp,
-                          unitTitle: editingItem.unitTitle || targetProduct.unitTitle || 'عدد',
-                          purchasePrice: (editingItem.unitPurchasePrice && editingItem.unitPurchasePrice > 0) ? editingItem.unitPurchasePrice : targetProduct.purchasePrice,
-                          sellingPrice: (editingItem.unitSellingPrice && editingItem.unitSellingPrice > 0) ? editingItem.unitSellingPrice : targetProduct.sellingPrice,
-                          updatedAt: Date.now()
-                        };
-                        onUpdateProduct(updatedProd);
-                      }
+                      // 1. Locate master product in products catalog or pending new products
+                      const targetProduct = currentProductsList.find(p => 
+                        (editingItem.productId && p.id === editingItem.productId) ||
+                        (editingOriginalMeta.productId && p.id === editingOriginalMeta.productId) ||
+                        (editingOriginalMeta.name && p.name && p.name.trim().toLowerCase() === editingOriginalMeta.name.trim().toLowerCase()) ||
+                        (newName && p.name && p.name.trim().toLowerCase() === newName.trim().toLowerCase())
+                      );
 
-                      onShowAlert?.(`تغییرات ردیف «${editingItem.productName}» ذخیره و در مشخصات کالا در انبار همگام‌سازی شد.`, 'success', 'ویرایش و همگام‌سازی کالا');
+                      const effectiveProdId = targetProduct?.id || editingItem.productId || editingOriginalMeta.productId || `prod-${Date.now()}`;
+
+                      const updatedProd: Product = {
+                        ...(targetProduct || {
+                          id: effectiveProdId,
+                          stockPieces: 0,
+                          createdAt: Date.now(),
+                        }),
+                        id: effectiveProdId,
+                        name: newName || targetProduct?.name || 'کالای بدون نام',
+                        category: (newCat !== undefined && newCat !== '') ? newCat : (targetProduct?.category || 'متفرقه'),
+                        piecesPerCarton: ppc,
+                        packsPerCarton: calculatedPacks,
+                        piecesPerPack: ppp,
+                        unitTitle: unitTitle || targetProduct?.unitTitle || 'عدد',
+                        purchasePrice: purchasePrice > 0 ? purchasePrice : (targetProduct?.purchasePrice || 0),
+                        sellingPrice: sellingPrice > 0 ? sellingPrice : (targetProduct?.sellingPrice || 0),
+                        updatedAt: Date.now()
+                      };
+
+                      // Update pending products buffer
+                      setPendingNewProducts(prev => {
+                        const filtered = prev.filter(p => 
+                          p.id !== updatedProd.id && 
+                          (!editingOriginalMeta.name || p.name.trim().toLowerCase() !== editingOriginalMeta.name.trim().toLowerCase())
+                        );
+                        return [...filtered, updatedProd];
+                      });
+
+                      // 2. Update this item and all other invoice items sharing this productId or original name
+                      setItems(prevItems => prevItems.map(it => {
+                        const isThisItem = it.id === editingItem.id;
+                        const isSameProduct = (effectiveProdId && it.productId === effectiveProdId) ||
+                          (editingOriginalMeta.productId && it.productId === editingOriginalMeta.productId) ||
+                          (editingOriginalMeta.name && it.productName && it.productName.trim().toLowerCase() === editingOriginalMeta.name.trim().toLowerCase());
+
+                        if (isThisItem || isSameProduct) {
+                          const itemTotalPieces = isThisItem ? editingItem.totalPieces : it.totalPieces;
+                          const itemCartons = ppc > 1 ? Math.floor(itemTotalPieces / ppc) : (isThisItem ? editingItem.cartonsCount : it.cartonsCount);
+                          const itemExtra = ppc > 1 ? (itemTotalPieces % ppc) : (isThisItem ? editingItem.extraPieces : it.extraPieces);
+                          const unitPriceForTotal = invoiceType === 'purchase' ? purchasePrice : sellingPrice;
+
+                          return {
+                            ...it,
+                            ...(isThisItem ? editingItem : {}),
+                            productId: effectiveProdId,
+                            productName: newName || it.productName,
+                            category: (newCat !== undefined && newCat !== '') ? newCat : (it as any).category,
+                            unitTitle,
+                            packsCount: calculatedPacks,
+                            piecesPerPack: ppp,
+                            piecesPerCarton: ppc,
+                            cartonsCount: itemCartons,
+                            extraPieces: itemExtra,
+                            totalPieces: itemTotalPieces,
+                            unitPurchasePrice: purchasePrice > 0 ? purchasePrice : it.unitPurchasePrice,
+                            unitSellingPrice: sellingPrice > 0 ? sellingPrice : it.unitSellingPrice,
+                            totalPrice: unitPriceForTotal > 0 ? itemTotalPieces * unitPriceForTotal : it.totalPrice,
+                          };
+                        }
+                        return it;
+                      }));
+
+                      // 3. Broadcast to global product catalog
+                      onUpdateProduct?.(updatedProd);
+
+                      onShowAlert?.(`تغییرات کالا «${newName || editingItem.productName}» ذخیره و در انبار و کل فاکتورها همگام‌سازی شد.`, 'success', 'ویرایش یکپارچه کالا');
                       setEditingItem(null);
                     }
                   }}
