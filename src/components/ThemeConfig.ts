@@ -663,3 +663,403 @@ export const themes: Record<ThemeColor, ThemeStyles> = {
     pillBg: 'bg-teal-500/10 text-emerald-700 dark:text-teal-300 border-emerald-300 dark:border-blue-800/50',
   },
 };
+
+export interface ThemeBadges {
+  // ۱. فاکتور فروش (Sales Invoice badge)
+  sale: string;
+  saleIcon: string;
+  // ۲. ورود کالا / خرید / فاکتور ورودی (Purchase / Inward badge)
+  purchase: string;
+  purchaseIcon: string;
+  // ۳. سود تا الان و سود کل فروش (Profit Until Now / Realized Profit)
+  profit: string;
+  profitText: string;
+  // ۴. موجودی کالا، کارتن و اضافه به انبار (Inventory & Stock badge)
+  stock: string;
+  stockText: string;
+  // ۵. حساب دفتری (Ledger: Credit / Debit / Settled)
+  credit: string;
+  debit: string;
+  settled: string;
+  // ۶. وضعیت و روش‌های تسویه (Settlement methods)
+  cash: string;
+  bank: string;
+  check: string;
+  creditTerm: string;
+  // ۷. پیش‌نویس (Draft)
+  draft: string;
+  // ۸. برچسب تأمین‌کننده
+  supplier: string;
+}
+
+export const getThemeBadges = (colorKey?: ThemeColor): ThemeBadges => {
+  const key = colorKey && themes[colorKey] ? colorKey : 'teal';
+
+  // Common cross-cutting badges
+  const commonDebit = 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60';
+  const commonSettled = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
+  const commonDraft = 'bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+  const commonCreditTerm = 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80';
+  const commonCash = 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
+
+  switch (key) {
+    case 'blue':
+      return {
+        sale: 'bg-blue-50/90 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80',
+        saleIcon: 'text-blue-600 dark:text-blue-400',
+        purchase: 'bg-sky-50/90 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-200/90 dark:border-sky-800/80',
+        purchaseIcon: 'text-sky-600 dark:text-sky-400',
+        profit: 'bg-blue-50/90 dark:bg-blue-950/70 text-blue-800 dark:text-blue-200 border border-blue-200/90 dark:border-blue-800/80',
+        profitText: 'text-blue-600 dark:text-blue-400',
+        stock: 'bg-blue-50/80 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/70',
+        stockText: 'text-blue-700 dark:text-blue-300',
+        credit: 'bg-blue-100/90 dark:bg-blue-950/80 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80',
+        check: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-blue-100/90 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+      };
+
+    case 'emerald':
+      return {
+        sale: 'bg-emerald-50/90 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/80',
+        saleIcon: 'text-emerald-600 dark:text-emerald-400',
+        purchase: 'bg-teal-50/90 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200/90 dark:border-teal-800/80',
+        purchaseIcon: 'text-teal-600 dark:text-teal-400',
+        profit: 'bg-emerald-100/90 dark:bg-emerald-950/90 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700',
+        profitText: 'text-emerald-700 dark:text-emerald-300',
+        stock: 'bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/70',
+        stockText: 'text-emerald-700 dark:text-emerald-300',
+        credit: 'bg-emerald-100/90 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/80',
+        check: 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-emerald-100/90 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+      };
+
+    case 'amber':
+      return {
+        sale: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80',
+        saleIcon: 'text-amber-600 dark:text-amber-400',
+        purchase: 'bg-orange-50/90 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300 border border-orange-200/90 dark:border-orange-800/80',
+        purchaseIcon: 'text-orange-600 dark:text-orange-400',
+        profit: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/80',
+        profitText: 'text-amber-700 dark:text-amber-300',
+        stock: 'bg-amber-50/80 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/70',
+        stockText: 'text-amber-700 dark:text-amber-300',
+        credit: 'bg-amber-100/90 dark:bg-amber-950/80 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80',
+        check: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-amber-100/90 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+      };
+
+    case 'rose':
+      return {
+        sale: 'bg-rose-50/90 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-200/90 dark:border-rose-800/80',
+        saleIcon: 'text-rose-600 dark:text-rose-400',
+        purchase: 'bg-pink-50/90 dark:bg-pink-950/70 text-pink-800 dark:text-pink-300 border border-pink-200/90 dark:border-pink-800/80',
+        purchaseIcon: 'text-pink-600 dark:text-pink-400',
+        profit: 'bg-rose-50/90 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200 border border-rose-200/90 dark:border-rose-800/80',
+        profitText: 'text-rose-700 dark:text-rose-300',
+        stock: 'bg-rose-50/80 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/70',
+        stockText: 'text-rose-700 dark:text-rose-300',
+        credit: 'bg-rose-100/90 dark:bg-rose-950/80 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200/90 dark:border-rose-800/80',
+        check: 'bg-pink-50 dark:bg-pink-950/60 text-pink-800 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-rose-100/90 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+      };
+
+    case 'violet':
+      return {
+        sale: 'bg-violet-50/90 dark:bg-violet-950/70 text-violet-800 dark:text-violet-300 border border-violet-200/90 dark:border-violet-800/80',
+        saleIcon: 'text-violet-600 dark:text-violet-400',
+        purchase: 'bg-purple-50/90 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200/90 dark:border-purple-800/80',
+        purchaseIcon: 'text-purple-600 dark:text-purple-400',
+        profit: 'bg-violet-50/90 dark:bg-violet-950/70 text-violet-900 dark:text-violet-200 border border-violet-200/90 dark:border-violet-800/80',
+        profitText: 'text-violet-700 dark:text-violet-300',
+        stock: 'bg-violet-50/80 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/70',
+        stockText: 'text-violet-700 dark:text-violet-300',
+        credit: 'bg-violet-100/90 dark:bg-violet-950/80 text-violet-800 dark:text-violet-200 border border-violet-200 dark:border-violet-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-violet-50 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-200/90 dark:border-violet-800/80',
+        check: 'bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-violet-100/90 dark:bg-violet-950 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800',
+      };
+
+    case 'navy':
+    case 'black':
+      return {
+        sale: 'bg-slate-100 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700',
+        saleIcon: 'text-slate-800 dark:text-slate-200',
+        purchase: 'bg-indigo-50/90 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200/90 dark:border-indigo-800/80',
+        purchaseIcon: 'text-indigo-600 dark:text-indigo-400',
+        profit: 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700',
+        profitText: 'text-slate-900 dark:text-white',
+        stock: 'bg-slate-100/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700',
+        stockText: 'text-slate-800 dark:text-slate-200',
+        credit: 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700',
+        check: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700',
+      };
+
+    case 'cyan':
+      return {
+        sale: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-800 dark:text-cyan-300 border border-cyan-200/90 dark:border-cyan-800/80',
+        saleIcon: 'text-cyan-600 dark:text-cyan-400',
+        purchase: 'bg-sky-50/90 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-200/90 dark:border-sky-800/80',
+        purchaseIcon: 'text-sky-600 dark:text-sky-400',
+        profit: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-900 dark:text-cyan-200 border border-cyan-200/90 dark:border-cyan-800/80',
+        profitText: 'text-cyan-700 dark:text-cyan-300',
+        stock: 'bg-cyan-50/80 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/70',
+        stockText: 'text-cyan-700 dark:text-cyan-300',
+        credit: 'bg-cyan-100/90 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-200 border border-cyan-200 dark:border-cyan-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200/90 dark:border-cyan-800/80',
+        check: 'bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-cyan-100/90 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800',
+      };
+
+    case 'lime':
+      return {
+        sale: 'bg-lime-50/90 dark:bg-lime-950/70 text-lime-800 dark:text-lime-300 border border-lime-200/90 dark:border-lime-800/80',
+        saleIcon: 'text-lime-600 dark:text-lime-400',
+        purchase: 'bg-emerald-50/90 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/80',
+        purchaseIcon: 'text-emerald-600 dark:text-emerald-400',
+        profit: 'bg-lime-50/90 dark:bg-lime-950/70 text-lime-900 dark:text-lime-200 border border-lime-200/90 dark:border-lime-800/80',
+        profitText: 'text-lime-700 dark:text-lime-300',
+        stock: 'bg-lime-50/80 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 border border-lime-200/80 dark:border-lime-800/70',
+        stockText: 'text-lime-700 dark:text-lime-300',
+        credit: 'bg-lime-100/90 dark:bg-lime-950/80 text-lime-800 dark:text-lime-200 border border-lime-200 dark:border-lime-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-lime-50 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 border border-lime-200/90 dark:border-lime-800/80',
+        check: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-lime-100/90 dark:bg-lime-950 text-lime-800 dark:text-lime-300 border border-lime-200 dark:border-lime-800',
+      };
+
+    case 'orange':
+      return {
+        sale: 'bg-orange-50/90 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300 border border-orange-200/90 dark:border-orange-800/80',
+        saleIcon: 'text-orange-600 dark:text-orange-400',
+        purchase: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80',
+        purchaseIcon: 'text-amber-600 dark:text-amber-400',
+        profit: 'bg-orange-50/90 dark:bg-orange-950/70 text-orange-900 dark:text-orange-200 border border-orange-200/90 dark:border-orange-800/80',
+        profitText: 'text-orange-700 dark:text-orange-300',
+        stock: 'bg-orange-50/80 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800/70',
+        stockText: 'text-orange-700 dark:text-orange-300',
+        credit: 'bg-orange-100/90 dark:bg-orange-950/80 text-orange-800 dark:text-orange-200 border border-orange-200 dark:border-orange-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border border-orange-200/90 dark:border-orange-800/80',
+        check: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-orange-100/90 dark:bg-orange-950 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+      };
+
+    case 'fuchsia':
+      return {
+        sale: 'bg-fuchsia-50/90 dark:bg-fuchsia-950/70 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        saleIcon: 'text-fuchsia-600 dark:text-fuchsia-400',
+        purchase: 'bg-purple-50/90 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200/90 dark:border-purple-800/80',
+        purchaseIcon: 'text-purple-600 dark:text-purple-400',
+        profit: 'bg-fuchsia-50/90 dark:bg-fuchsia-950/70 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        profitText: 'text-fuchsia-700 dark:text-fuchsia-300',
+        stock: 'bg-fuchsia-50/80 dark:bg-fuchsia-950/60 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-200/80 dark:border-fuchsia-800/70',
+        stockText: 'text-fuchsia-700 dark:text-fuchsia-300',
+        credit: 'bg-fuchsia-100/90 dark:bg-fuchsia-950/80 text-fuchsia-800 dark:text-fuchsia-200 border border-fuchsia-200 dark:border-fuchsia-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        check: 'bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-fuchsia-100/90 dark:bg-fuchsia-950 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800',
+      };
+
+    case 'ruby':
+      return {
+        sale: 'bg-rose-50/90 dark:bg-rose-950/70 text-rose-900 dark:text-rose-300 border border-rose-200/90 dark:border-rose-900/80',
+        saleIcon: 'text-rose-600 dark:text-rose-400',
+        purchase: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80',
+        purchaseIcon: 'text-amber-600 dark:text-amber-400',
+        profit: 'bg-rose-50/90 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200 border border-rose-200/90 dark:border-rose-900/80',
+        profitText: 'text-rose-700 dark:text-rose-300',
+        stock: 'bg-rose-50/80 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-200/80 dark:border-rose-900/70',
+        stockText: 'text-rose-700 dark:text-rose-300',
+        credit: 'bg-rose-100/90 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-900',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-200/90 dark:border-rose-900/80',
+        check: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-rose-100/90 dark:bg-rose-950 text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-900',
+      };
+
+    case 'indigo':
+      return {
+        sale: 'bg-indigo-50/90 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200/90 dark:border-indigo-800/80',
+        saleIcon: 'text-indigo-600 dark:text-indigo-400',
+        purchase: 'bg-blue-50/90 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80',
+        purchaseIcon: 'text-blue-600 dark:text-blue-400',
+        profit: 'bg-indigo-50/90 dark:bg-indigo-950/70 text-indigo-900 dark:text-indigo-200 border border-indigo-200/90 dark:border-indigo-800/80',
+        profitText: 'text-indigo-700 dark:text-indigo-300',
+        stock: 'bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70',
+        stockText: 'text-indigo-700 dark:text-indigo-300',
+        credit: 'bg-indigo-100/90 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200/90 dark:border-indigo-800/80',
+        check: 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-indigo-100/90 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
+      };
+
+    case 'gradient-sunset':
+      return {
+        sale: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/80',
+        saleIcon: 'text-amber-600 dark:text-amber-400',
+        purchase: 'bg-rose-50/90 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200 border border-rose-200/90 dark:border-rose-800/80',
+        purchaseIcon: 'text-rose-600 dark:text-rose-400',
+        profit: 'bg-amber-50/90 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/80',
+        profitText: 'text-amber-700 dark:text-amber-300',
+        stock: 'bg-amber-50/80 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/70',
+        stockText: 'text-amber-700 dark:text-amber-300',
+        credit: 'bg-amber-100/90 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/80',
+        check: 'bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border border-rose-200/80 dark:border-rose-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-amber-100/90 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800',
+      };
+
+    case 'gradient-ocean':
+      return {
+        sale: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-900 dark:text-cyan-200 border border-cyan-200/90 dark:border-cyan-800/80',
+        saleIcon: 'text-cyan-600 dark:text-cyan-400',
+        purchase: 'bg-indigo-50/90 dark:bg-indigo-950/70 text-indigo-900 dark:text-indigo-200 border border-indigo-200/90 dark:border-indigo-800/80',
+        purchaseIcon: 'text-indigo-600 dark:text-indigo-400',
+        profit: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-900 dark:text-cyan-200 border border-cyan-200/90 dark:border-cyan-800/80',
+        profitText: 'text-cyan-700 dark:text-cyan-300',
+        stock: 'bg-cyan-50/80 dark:bg-cyan-950/60 text-cyan-900 dark:text-cyan-200 border border-cyan-200/80 dark:border-cyan-800/70',
+        stockText: 'text-cyan-700 dark:text-cyan-300',
+        credit: 'bg-cyan-100/90 dark:bg-cyan-950/80 text-cyan-900 dark:text-cyan-200 border border-cyan-200 dark:border-cyan-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-900 dark:text-cyan-200 border border-cyan-200/90 dark:border-cyan-800/80',
+        check: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-cyan-100/90 dark:bg-cyan-950 text-cyan-900 dark:text-cyan-200 border border-cyan-200 dark:border-cyan-800',
+      };
+
+    case 'gradient-cyber':
+      return {
+        sale: 'bg-fuchsia-50/90 dark:bg-fuchsia-950/70 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        saleIcon: 'text-fuchsia-600 dark:text-fuchsia-400',
+        purchase: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-900 dark:text-cyan-200 border border-cyan-200/90 dark:border-cyan-800/80',
+        purchaseIcon: 'text-cyan-600 dark:text-cyan-400',
+        profit: 'bg-fuchsia-50/90 dark:bg-fuchsia-950/70 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        profitText: 'text-fuchsia-700 dark:text-fuchsia-300',
+        stock: 'bg-fuchsia-50/80 dark:bg-fuchsia-950/60 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200/80 dark:border-fuchsia-800/70',
+        stockText: 'text-fuchsia-700 dark:text-fuchsia-300',
+        credit: 'bg-fuchsia-100/90 dark:bg-fuchsia-950/80 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200 dark:border-fuchsia-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200/90 dark:border-fuchsia-800/80',
+        check: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-900 dark:text-cyan-200 border border-cyan-200/80 dark:border-cyan-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-fuchsia-100/90 dark:bg-fuchsia-950 text-fuchsia-900 dark:text-fuchsia-200 border border-fuchsia-200 dark:border-fuchsia-800',
+      };
+
+    case 'gradient-aurora':
+      return {
+        sale: 'bg-emerald-50/90 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-200 border border-emerald-200/90 dark:border-emerald-800/80',
+        saleIcon: 'text-emerald-600 dark:text-emerald-400',
+        purchase: 'bg-teal-50/90 dark:bg-teal-950/70 text-teal-900 dark:text-teal-200 border border-teal-200/90 dark:border-teal-800/80',
+        purchaseIcon: 'text-teal-600 dark:text-teal-400',
+        profit: 'bg-emerald-100/90 dark:bg-emerald-950/90 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700',
+        profitText: 'text-emerald-700 dark:text-emerald-300',
+        stock: 'bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-200/80 dark:border-emerald-800/70',
+        stockText: 'text-emerald-700 dark:text-emerald-300',
+        credit: 'bg-emerald-100/90 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-200/90 dark:border-emerald-800/80',
+        check: 'bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 border border-blue-200/80 dark:border-blue-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-emerald-100/90 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
+      };
+
+    case 'teal':
+    default:
+      return {
+        sale: 'bg-teal-50/90 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200/90 dark:border-teal-800/80',
+        saleIcon: 'text-teal-600 dark:text-teal-400',
+        purchase: 'bg-cyan-50/90 dark:bg-cyan-950/70 text-cyan-800 dark:text-cyan-300 border border-cyan-200/90 dark:border-cyan-800/80',
+        purchaseIcon: 'text-cyan-600 dark:text-cyan-400',
+        profit: 'bg-teal-50/90 dark:bg-teal-950/70 text-teal-900 dark:text-teal-200 border border-teal-200/90 dark:border-teal-800/80',
+        profitText: 'text-teal-700 dark:text-teal-300',
+        stock: 'bg-teal-50/80 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/70',
+        stockText: 'text-teal-700 dark:text-teal-300',
+        credit: 'bg-teal-100/90 dark:bg-teal-950/80 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800',
+        debit: commonDebit,
+        settled: commonSettled,
+        cash: commonCash,
+        bank: 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200/90 dark:border-teal-800/80',
+        check: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/70',
+        creditTerm: commonCreditTerm,
+        draft: commonDraft,
+        supplier: 'bg-teal-100/90 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800',
+      };
+  }
+};

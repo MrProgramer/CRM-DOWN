@@ -10,10 +10,11 @@ import {
   isProductUnpackaged,
   getProductEffectiveCartonSize
 } from '../utils/formatters';
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { CategoryManagerModal } from './CategoryManagerModal';
 import { InventoryAuditReport } from './InventoryAuditReport';
 import { ProductFormModal } from './ProductFormModal';
+import { SortableTableHeader } from './SortableTableHeader';
 import { 
   Package, 
   Plus, 
@@ -119,6 +120,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   onShowAlert,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = getThemeBadges(settings.themeColor);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -577,8 +579,27 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     return ['all', ...Array.from(rawSet)];
   }, [products]);
 
-  // Sorting state: default 'desc' (newest first)
-  const [productSortOrder, setProductSortOrder] = useState<'desc' | 'asc'>('desc');
+  // Sorting state
+  type ProductSortField = 'index' | 'name' | 'price' | 'stock';
+  const [sortField, setSortField] = useState<ProductSortField>('index');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+  const productSortOrder = sortDirection;
+  const setProductSortOrder = (fnOrVal: any) => {
+    if (typeof fnOrVal === 'function') {
+      setSortDirection(prev => fnOrVal(prev));
+    } else {
+      setSortDirection(fnOrVal);
+    }
+  };
+
+  const handleSort = (field: ProductSortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'name' ? 'asc' : 'desc');
+    }
+  };
 
   // Filter products
   const filteredProducts = products.filter(p => {
@@ -588,27 +609,36 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     return matchesSearch && matchesCat;
   });
 
-  // Sort products (newest items first by default)
+  // Sort products
   const sortedProducts = useMemo(() => {
     return [...filteredProducts].sort((a, b) => {
-      const aTime = (a as any).createdAt || (a.id.startsWith('prod-') ? Number(a.id.replace('prod-', '')) : 0);
-      const bTime = (b as any).createdAt || (b.id.startsWith('prod-') ? Number(b.id.replace('prod-', '')) : 0);
-
-      if (aTime && bTime && aTime !== bTime) {
-        return productSortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+      let cmp = 0;
+      if (sortField === 'name') {
+        cmp = a.name.localeCompare(b.name, 'fa');
+      } else if (sortField === 'price') {
+        cmp = a.sellingPrice - b.sellingPrice;
+      } else if (sortField === 'stock') {
+        cmp = a.stockPieces - b.stockPieces;
+      } else {
+        // index / time
+        const aTime = (a as any).createdAt || (a.id.startsWith('prod-') ? Number(a.id.replace('prod-', '')) : 0);
+        const bTime = (b as any).createdAt || (b.id.startsWith('prod-') ? Number(b.id.replace('prod-', '')) : 0);
+        if (aTime && bTime && aTime !== bTime) {
+          cmp = aTime - bTime;
+        } else {
+          const aIdx = products.indexOf(a);
+          const bIdx = products.indexOf(b);
+          cmp = bIdx - aIdx;
+        }
       }
-
-      // If timestamps absent, preserve array creation position (index 0 is newest)
-      const aIdx = products.indexOf(a);
-      const bIdx = products.indexOf(b);
-      return productSortOrder === 'desc' ? aIdx - bIdx : bIdx - aIdx;
+      return sortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredProducts, productSortOrder, products]);
+  }, [filteredProducts, sortField, sortDirection, products]);
 
   // Reset page when category, search, hideZeroStock or sort changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, searchQuery, hideZeroStock, productSortOrder]);
+  }, [selectedCategory, searchQuery, hideZeroStock, sortField, sortDirection]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -890,25 +920,49 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           <table className="w-full text-right border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-black dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-[11px]">
-                <th 
-                  className="py-3.5 px-3 text-center w-20 cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-                  onClick={() => setProductSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                  title="کلیک برای تغییر ترتیب مرتب‌سازی (جدیدترین / قدیمی‌ترین)"
+                <SortableTableHeader
+                  field="index"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="w-20"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>ردیف</span>
-                    {productSortOrder === 'desc' ? (
-                      <ArrowDownWideNarrow className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    ) : (
-                      <ArrowUpNarrowWide className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    )}
-                  </div>
-                </th>
-                <th className="py-3.5 px-4 min-w-[220px]">شرح کالا و دسته‌بندی</th>
-                <th className="py-3.5 px-4 text-center min-w-[160px]">
+                  ردیف
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="name"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="min-w-[220px]"
+                >
+                  شرح کالا و دسته‌بندی
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="price"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[160px]"
+                >
                   {!isSecretMode || showPurchasePricePeek ? 'قیمت (فروش / خرید)' : 'قیمت فروش'}
-                </th>
-                <th className="py-3.5 px-4 text-center min-w-[170px]">موجودی و بسته‌بندی</th>
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="stock"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[150px]"
+                >
+                  موجودی کالا
+                </SortableTableHeader>
+
                 <th className="py-3.5 px-3 text-center w-28">عملیات</th>
               </tr>
             </thead>
@@ -1018,15 +1072,15 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             موجودی صفر
                           </div>
                         ) : isUnpack || ppc <= 1 ? (
-                          <div className="inline-flex px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md font-bold text-[10px] border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
+                          <div className={`inline-flex px-2 py-0.5 ${badges.draft} rounded-md font-bold text-[10px] whitespace-nowrap shrink-0`}>
                             بدون کارتن (دانه‌ای)
                           </div>
                         ) : cartonsInStock > 0 && remainderInStock > 0 ? (
-                          <div className="inline-flex px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-md font-black text-[10px] border border-blue-200 dark:border-blue-900/60 whitespace-nowrap shrink-0">
+                          <div className={`inline-flex px-2 py-0.5 ${badges.stock} rounded-md font-black text-[10px] whitespace-nowrap shrink-0`}>
                             {toPersianDigits(cartonsInStock)} کارتن + {toPersianDigits(remainderInStock)} دانه
                           </div>
                         ) : cartonsInStock > 0 ? (
-                          <div className="inline-flex px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-md font-black text-[10px] border border-blue-200 dark:border-blue-900/60 whitespace-nowrap shrink-0">
+                          <div className={`inline-flex px-2 py-0.5 ${badges.stock} rounded-md font-black text-[10px] whitespace-nowrap shrink-0`}>
                             {toPersianDigits(cartonsInStock)} کارتن کامل
                           </div>
                         ) : (
@@ -1034,9 +1088,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             {toPersianDigits(remainderInStock)} دانه (&lt; ۱ کارتن)
                           </div>
                         )}
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 max-w-[170px] truncate" title={formatProductPackagingSpec(prod)}>
-                          {formatProductPackagingSpec(prod)}
-                        </div>
                       </div>
                     </td>
 

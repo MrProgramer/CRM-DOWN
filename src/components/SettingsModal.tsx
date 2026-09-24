@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { StoreSettings, AppDesignMode } from '../types';
 import { ThemeColor, themes, designModes } from './ThemeConfig';
 import { 
+  fontFamilies, 
+  appFontSizes, 
+  invoiceFontSizes, 
+  applyTypographyToDOM 
+} from './TypographyConfig';
+import { toPersianDigits } from '../utils/formatters';
+import { 
   Settings, 
   Palette, 
   Building2, 
@@ -23,7 +30,10 @@ import {
   Cpu,
   Gem,
   Feather,
-  Wand2
+  Wand2,
+  Type,
+  Sliders,
+  ZoomIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,7 +46,7 @@ interface SettingsModalProps {
   onResetToDefault: () => void;
 }
 
-type SettingsTab = 'theme' | 'brand' | 'bank' | 'invoice';
+type SettingsTab = 'theme' | 'typography' | 'brand' | 'bank' | 'invoice';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
@@ -52,8 +62,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const currentTheme = themes[formData.themeColor] || themes.teal;
 
+  const updateTypography = (updates: Partial<StoreSettings>) => {
+    const updated = { ...formData, ...updates };
+    setFormData(updated);
+    applyTypographyToDOM(updated);
+  };
+
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    applyTypographyToDOM(formData);
     onSaveSettings(formData);
     setSavedSuccess(true);
     setTimeout(() => {
@@ -142,6 +159,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Palette className="w-4 h-4" style={{ color: currentTheme.hex }} />
             <span>پالت‌های رنگی و تم</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('typography')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'typography'
+                ? `bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/80 dark:border-slate-700`
+                : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50'
+            }`}
+          >
+            <Type className="w-4 h-4 text-indigo-500" />
+            <span>فونت‌ها و سایزبندی</span>
           </button>
 
           <button
@@ -356,6 +386,141 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'typography' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <Type className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    تنظیمات تخصصی قلم‌های رسمی و سایزبندی سامانه
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    فونت‌های معتبر و محبوب وب فارسی، اندازه رابط کاربری و نحوه نمایش ارقام
+                  </p>
+                </div>
+              </div>
+
+              {/* SECTION 1: OFFICIAL FONTS */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  ۱. لیست قلم‌های رسمی و استاندارد سامانه:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {Object.values(fontFamilies).map((font) => {
+                    const isSelected = (formData.fontFamily || 'vazirmatn') === font.id;
+                    return (
+                      <button
+                        key={`modal-font-${font.id}`}
+                        type="button"
+                        onClick={() => updateTypography({ fontFamily: font.id })}
+                        className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 shadow-xs ring-1 ring-teal-500/20'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span 
+                            className="font-black text-xs text-slate-900 dark:text-white"
+                            style={{ fontFamily: font.cssFamily }}
+                          >
+                            {font.nameFa}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                        </div>
+                        <span className="text-[10px] text-slate-400 block">{font.badge}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION 2: APP FONT SCALE */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  ۲. مقیاس و اندازه فونت کل برنامه:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Object.values(appFontSizes).map((scale) => {
+                    const isSelected = (formData.fontSizeScale || 'standard') === scale.id;
+                    return (
+                      <button
+                        key={`modal-appsize-${scale.id}`}
+                        type="button"
+                        onClick={() => updateTypography({ fontSizeScale: scale.id })}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 font-bold text-teal-700 dark:text-teal-300'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="text-xs font-black block">{scale.nameFa}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION 3: INVOICE PRINT SCALE */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  ۳. مقیاس و تراکم قلم چاپ فاکتور:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Object.values(invoiceFontSizes).map((scale) => {
+                    const isSelected = (formData.invoiceFontSizeScale || 'standard') === scale.id;
+                    return (
+                      <button
+                        key={`modal-invsize-${scale.id}`}
+                        type="button"
+                        onClick={() => updateTypography({ invoiceFontSizeScale: scale.id })}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 font-bold text-emerald-700 dark:text-emerald-300'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="text-xs font-black block">{scale.nameFa}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION 4: NUMBER FORMAT */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  ۴. نحوه نمایش ارقام مالی:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateTypography({ numberFormat: 'persian' })}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      formData.numberFormat !== 'latin'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 font-bold text-teal-700 dark:text-teal-300'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <span className="text-xs font-black block">اعداد فارسی (۱۲۳)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateTypography({ numberFormat: 'latin' })}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      formData.numberFormat === 'latin'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 font-bold text-teal-700 dark:text-teal-300'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <span className="text-xs font-black block">اعداد انگلیسی (123)</span>
+                  </button>
                 </div>
               </div>
             </div>

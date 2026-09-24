@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CustomerPayment, Customer, StoreSettings, ProductReturn, Invoice, Product, TreasuryTransaction } from '../types';
 export type { TreasuryTransaction };
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { SmartPriceInput } from './SmartPriceInput';
+import { SortableTableHeader } from './SortableTableHeader';
 import { 
   formatPrice, 
   formatAmountScale,
@@ -137,6 +138,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
   onDeletePayment,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = useMemo(() => getThemeBadges(settings.themeColor), [settings.themeColor]);
   const [activeMainTab, setActiveMainTab] = useState<'treasury' | 'inventory_capital' | 'audit_report' | 'logs'>('treasury');
   const [auditSubTab, setAuditSubTab] = useState<'products' | 'credits' | 'returns' | 'summary'>('products');
   const [timePeriod, setTimePeriod] = useState<TimePeriodFilter>(() => getSavedTimePeriod('month'));
@@ -175,7 +177,26 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
   // Pagination for logs
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
-  const [logSortOrder, setLogSortOrder] = useState<'desc' | 'asc'>('desc');
+  type LogSortField = 'date' | 'type' | 'amount' | 'desc';
+  const [logSortField, setLogSortField] = useState<LogSortField>('date');
+  const [logSortDirection, setLogSortDirection] = useState<'desc' | 'asc'>('desc');
+  const logSortOrder = logSortDirection;
+  const setLogSortOrder = (fnOrVal: any) => {
+    if (typeof fnOrVal === 'function') {
+      setLogSortDirection(prev => fnOrVal(prev));
+    } else {
+      setLogSortDirection(fnOrVal);
+    }
+  };
+
+  const handleLogSort = (field: LogSortField) => {
+    if (logSortField === field) {
+      setLogSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setLogSortField(field);
+      setLogSortDirection(field === 'type' || field === 'desc' ? 'asc' : 'desc');
+    }
+  };
   const [auditReturnsSortOrder, setAuditReturnsSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Liquidity & Treasury Breakdown Audit Inline state
@@ -829,16 +850,27 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
   const sortedLogs = useMemo(() => {
     return [...filteredLogs].sort((a, b) => {
-      if (a.timestamp && b.timestamp && a.timestamp !== b.timestamp) {
-        return logSortOrder === 'desc' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp;
+      let cmp = 0;
+      if (logSortField === 'amount') {
+        cmp = a.amount - b.amount;
+      } else if (logSortField === 'type') {
+        cmp = (a.type || '').localeCompare(b.type || '');
+      } else if (logSortField === 'desc') {
+        cmp = (a.description || '').localeCompare(b.description || '', 'fa');
+      } else {
+        // date / timestamp
+        if (a.timestamp && b.timestamp && a.timestamp !== b.timestamp) {
+          cmp = a.timestamp - b.timestamp;
+        } else {
+          cmp = (a.date || '').localeCompare(b.date || '');
+          if (cmp === 0) {
+            cmp = (a.time || '').localeCompare(b.time || '');
+          }
+        }
       }
-      const dateCmp = (b.date || '').localeCompare(a.date || '');
-      if (dateCmp !== 0) {
-        return logSortOrder === 'desc' ? dateCmp : -dateCmp;
-      }
-      return logSortOrder === 'desc' ? (b.time || '').localeCompare(a.time || '') : (a.time || '').localeCompare(b.time || '');
+      return logSortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredLogs, logSortOrder]);
+  }, [filteredLogs, logSortField, logSortDirection]);
 
   const totalPages = Math.ceil(sortedLogs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -3572,28 +3604,50 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                 <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold select-none">
                   <tr>
                     <th className="p-3.5 w-12 text-center">#</th>
-                    <th 
-                      className="p-3.5 w-36 cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors"
-                      onClick={() => setLogSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                      title="تغییر جهت مرتب‌سازی تاریخ (جدیدترین / قدیمی‌ترین)"
+
+                    <SortableTableHeader
+                      field="date"
+                      currentField={logSortField}
+                      currentDirection={logSortDirection}
+                      onSort={handleLogSort}
+                      className="w-36"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <span>تاریخ و ساعت</span>
-                        {logSortOrder === 'desc' ? (
-                          <ArrowDownWideNarrow className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                        ) : (
-                          <ArrowUpNarrowWide className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                        )}
-                        <span className="text-[10px] font-normal px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {logSortOrder === 'desc' ? 'جدید' : 'قدیم'}
-                        </span>
-                      </div>
-                    </th>
-                    <th className="p-3.5 w-32">نوع رویداد</th>
+                      تاریخ و ساعت
+                    </SortableTableHeader>
+
+                    <SortableTableHeader
+                      field="type"
+                      currentField={logSortField}
+                      currentDirection={logSortDirection}
+                      onSort={handleLogSort}
+                      className="w-32"
+                    >
+                      نوع رویداد
+                    </SortableTableHeader>
+
                     <th className="p-3.5">مبداء تراکنش</th>
                     <th className="p-3.5">مقصد / حساب</th>
-                    <th className="p-3.5 text-left w-36">مبلغ تراکنش</th>
-                    <th className="p-3.5">شرح و پیگیری</th>
+
+                    <SortableTableHeader
+                      field="amount"
+                      currentField={logSortField}
+                      currentDirection={logSortDirection}
+                      onSort={handleLogSort}
+                      align="left"
+                      className="w-36"
+                    >
+                      مبلغ تراکنش
+                    </SortableTableHeader>
+
+                    <SortableTableHeader
+                      field="desc"
+                      currentField={logSortField}
+                      currentDirection={logSortDirection}
+                      onSort={handleLogSort}
+                    >
+                      شرح و پیگیری
+                    </SortableTableHeader>
+
                     <th className="p-3.5 text-center w-28 no-print">عملیات</th>
                   </tr>
                 </thead>
@@ -3618,27 +3672,27 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                           </td>
                           <td className="p-3.5">
                             {log.type === 'inflow' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/40 font-black text-[11px]">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-[11px] border ${badges.cash}`}>
                                 <CheckCircle2 className="w-3 h-3" />
                                 دریافت از مشتری
                               </span>
                             ) : log.type === 'expense' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/40 font-black text-[11px]">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-[11px] border ${badges.debt}`}>
                                 <TrendingDown className="w-3 h-3" />
                                 هزینه انبار
                               </span>
                             ) : log.type === 'transfer' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 font-black text-[11px]">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-[11px] border ${badges.draft}`}>
                                 <RefreshCw className="w-3 h-3" />
                                 انتقال بین‌حساب
                               </span>
                             ) : log.type === 'return' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/40 font-black text-[11px]">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-[11px] border ${badges.returnOffset}`}>
                                 <RotateCcw className="w-3 h-3" />
                                 تسویه مرجوعی
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/40 font-black text-[11px]">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-[11px] border ${badges.stock}`}>
                                 <TrendingUp className="w-3 h-3" />
                                 افزایش اعتبار
                               </span>

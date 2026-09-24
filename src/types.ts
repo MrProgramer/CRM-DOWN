@@ -220,6 +220,37 @@ export type AppDesignMode =
   | 'minimal-nordic' // ۷. حالت مینیمال نوردیک اسکاندیناوی (خلوت، خطوط بسیار ظریف، آرامش دیداری و تمرکز بر داده‌ها)
   | 'aurora-sunset'; // ۸. حالت گرادیان شفق قطبی و پویای زنده (هاله‌های رنگین‌کمانی گرم و لایه‌های پرانرژی)
 
+// نوع فونت‌های رسمی، معتبر و پرمخاطب مناسب نرم‌افزارهای تجاری و حسابداری
+export type AppFontFamily = 
+  | 'vazirmatn'   // وزیرمتن (پیش‌فرض استاندارد، مدرن و خوانا)
+  | 'shabnam'     // شبنم (فوق‌العاده محبوب، نرم و چشم‌نواز)
+  | 'sahel'       // ساحل (رسمی، فاخر و باوقار اداری)
+  | 'samim'       // صمیم (هندسی، تمیز و مدرن با خوانایی عالی اعداد)
+  | 'parastoo'    // پرستو (کلاسیک، رسمی، اسنادی و سناتوری)
+  | 'dana'        // دانا / وب‌سنس مدرن (پرمخاطب فین‌تک، استارتاپ و سامانه‌های بانکی)
+  | 'cairo'       // کایرو اداری و شرکتی (هندسی، شارپ و تکنولوژیک)
+  | 'tahoma';     // تاهوما (کلاسیک و نوستالژیک حسابداری ویندوز)
+
+export type AppNumberFormat = 'persian' | 'latin';
+
+// برای حفظ سازگاری backward compatibility با داده‌های ذخیره‌شده
+export type AppNumberFontFamily = string;
+export type AppHeaderFontFamily = string;
+
+// مقیاس سایزبندی دقیق و مهندسی‌شده برنامه
+export type AppFontSizeScale = 
+  | 'compact'      // فشرده حسابداری (۸۸٪ - تراکم بالای اطلاعات)
+  | 'standard'     // استاندارد رسمی (۱۰۰٪ - متعادل و ارگونومیک)
+  | 'comfortable'  // راحت و خوانا (۱۱۰٪ - کاهش خستگی چشم)
+  | 'large';       // درشت و باز (۱۲۰٪ - مانیتورهای بزرگ)
+
+// مقیاس و تراکم فونت فاکتور
+export type AppInvoiceFontSizeScale =
+  | 'ultra-compact' // فوق متراکم (۸۵٪ - چاپ فاکتورهای طولانی در یک برگ)
+  | 'compact'       // متراکم و اقتصادی (۹۲٪)
+  | 'standard'      // استاندارد فاکتور (۱۰۰٪)
+  | 'large';        // درشت و برجسته (۱۱۰٪)
+
 export interface StoreSettings {
   brandName: string;
   storeNameFa?: string;
@@ -236,6 +267,13 @@ export interface StoreSettings {
   sellerStampName: string;
   themeColor: ThemeColor;
   designMode?: AppDesignMode; // سبک طراحی و معماری بصری برنامه (۸ حالت حرفه‌ای)
+  fontFamily?: AppFontFamily; // فونت رسمی متن برنامه و فاکتور
+  numberFormat?: AppNumberFormat; // نمایش ارقام فارسی یا لاتین
+  numberFontFamily?: AppNumberFontFamily; // فونت اختصاصی ارقام، مبالغ و جداول (اختیاری جهت سازگاری)
+  headerFontFamily?: AppHeaderFontFamily; // فونت تیتر و عناوین فاکتور (اختیاری جهت سازگاری)
+  fontSizeScale?: AppFontSizeScale; // سایز فونت کل برنامه
+  customFontScalePercent?: number; // درصد سفارشی مقیاس فونت برنامه (مثلا ۱۰۰)
+  invoiceFontSizeScale?: AppInvoiceFontSizeScale; // سایز و تراکم فونت فاکتور
   enableWatermark: boolean;
   watermarkText: string;
   showSignatureArea: boolean;

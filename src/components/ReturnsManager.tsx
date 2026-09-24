@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { ProductReturn, Product, Customer, StoreSettings, Invoice } from '../types';
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { CustomValidationMessage } from './CustomValidationMessage';
 import { Pagination } from './Pagination';
 import { SmartPriceInput } from './SmartPriceInput';
+import { SortableTableHeader } from './SortableTableHeader';
 import { 
   formatPrice, 
   toPersianDigits, 
@@ -73,9 +74,29 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
   onApproveRefund,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = useMemo(() => getThemeBadges(settings.themeColor), [settings.themeColor]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'to_supplier' | 'from_customer' | 'refunded' | 'pending'>('all');
-  const [returnSortOrder, setReturnSortOrder] = useState<'desc' | 'asc'>('desc');
+  type ReturnSortField = 'date' | 'item' | 'customer' | 'amount' | 'status';
+  const [sortField, setSortField] = useState<ReturnSortField>('date');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+  const returnSortOrder = sortDirection;
+  const setReturnSortOrder = (fnOrVal: any) => {
+    if (typeof fnOrVal === 'function') {
+      setSortDirection(prev => fnOrVal(prev));
+    } else {
+      setSortDirection(fnOrVal);
+    }
+  };
+
+  const handleSort = (field: ReturnSortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'item' || field === 'customer' ? 'asc' : 'desc');
+    }
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -211,18 +232,31 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
 
   const sortedReturns = useMemo(() => {
     return [...filteredReturns].sort((a, b) => {
-      const ta = a.createdAt || (a.date ? new Date(a.date.replace(/\//g, '-')).getTime() || 0 : 0);
-      const tb = b.createdAt || (b.date ? new Date(b.date.replace(/\//g, '-')).getTime() || 0 : 0);
-      if (ta && tb && ta !== tb) {
-        return returnSortOrder === 'desc' ? tb - ta : ta - tb;
+      let cmp = 0;
+      if (sortField === 'item') {
+        cmp = (a.productName || '').localeCompare(b.productName || '', 'fa');
+      } else if (sortField === 'customer') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '', 'fa');
+      } else if (sortField === 'amount') {
+        cmp = (a.totalAmount || 0) - (b.totalAmount || 0);
+      } else if (sortField === 'status') {
+        cmp = (a.isRefunded ? 1 : 0) - (b.isRefunded ? 1 : 0);
+      } else {
+        // date
+        const ta = a.createdAt || (a.date ? new Date(a.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        const tb = b.createdAt || (b.date ? new Date(b.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        if (ta && tb && ta !== tb) {
+          cmp = ta - tb;
+        } else {
+          cmp = (a.date || '').localeCompare(b.date || '');
+          if (cmp === 0) {
+            cmp = (a.time || '').localeCompare(b.time || '');
+          }
+        }
       }
-      const cmp = (b.date || '').localeCompare(a.date || '');
-      if (cmp !== 0) {
-        return returnSortOrder === 'desc' ? cmp : -cmp;
-      }
-      return returnSortOrder === 'desc' ? (b.time || '').localeCompare(a.time || '') : (a.time || '').localeCompare(b.time || '');
+      return sortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredReturns, returnSortOrder]);
+  }, [filteredReturns, sortField, sortDirection]);
 
   const totalPages = Math.ceil(sortedReturns.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -595,30 +629,59 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black select-none">
                 <th className="p-3.5 w-12 text-center">ردیف</th>
-                <th 
-                  className="p-3.5 cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors"
-                  onClick={() => setReturnSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                  title="تغییر جهت مرتب‌سازی تاریخ (جدیدترین / قدیمی‌ترین)"
+
+                <SortableTableHeader
+                  field="date"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span>تاریخ و ساعت</span>
-                    {returnSortOrder === 'desc' ? (
-                      <ArrowDownWideNarrow className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    ) : (
-                      <ArrowUpNarrowWide className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    )}
-                    <span className="text-[10px] font-normal px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      {returnSortOrder === 'desc' ? 'جدید' : 'قدیم'}
-                    </span>
-                  </div>
-                </th>
+                  تاریخ و ساعت
+                </SortableTableHeader>
+
                 <th className="p-3.5">نوع سند</th>
-                <th className="p-3.5">نام کالا</th>
+
+                <SortableTableHeader
+                  field="item"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  نام کالا
+                </SortableTableHeader>
+
                 <th className="p-3.5">تعداد مرجوعی</th>
                 <th className="p-3.5">قیمت واحد</th>
-                <th className="p-3.5">مبلغ کل</th>
-                <th className="p-3.5">طرف حساب / فاکتور</th>
-                <th className="p-3.5">وضعیت تسویه</th>
+
+                <SortableTableHeader
+                  field="amount"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="left"
+                >
+                  مبلغ کل
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="customer"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  طرف حساب / فاکتور
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="status"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                >
+                  وضعیت تسویه
+                </SortableTableHeader>
+
                 <th className="p-3.5 text-center w-28">عملیات</th>
               </tr>
             </thead>
@@ -660,12 +723,12 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
 
                       <td className="p-3.5 whitespace-nowrap">
                         {item.type === 'to_supplier' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-900/50 font-black text-[11px] whitespace-nowrap shrink-0">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-[11px] whitespace-nowrap shrink-0 border ${badges.purchase}`}>
                             <ArrowUpLeft className="w-3.5 h-3.5 shrink-0" />
                             <span>مرجوع به شرکت</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-900/50 font-black text-[11px] whitespace-nowrap shrink-0">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-[11px] whitespace-nowrap shrink-0 border ${badges.sale}`}>
                             <ArrowDownRight className="w-3.5 h-3.5 shrink-0" />
                             <span>مرجوع از مشتری</span>
                           </span>
@@ -713,7 +776,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                           <span>{item.customerName}</span>
                         </div>
                         {item.invoiceNumber && (
-                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black mt-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/40 w-max flex items-center gap-1 whitespace-nowrap shrink-0">
+                          <div className={`text-[10px] font-black mt-1 px-2 py-0.5 rounded-lg border w-max flex items-center gap-1 whitespace-nowrap shrink-0 ${badges.primaryPill} border-current/20`}>
                             <FileSpreadsheet className="w-3 h-3 shrink-0" />
                             <span>فاکتور: {toPersianDigits(item.invoiceNumber)}</span>
                           </div>
@@ -723,13 +786,13 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                       <td className="p-3.5 whitespace-nowrap">
                         {item.isRefunded ? (
                           item.refundMethod === 'invoice_offset' ? (
-                            <span className="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/80 text-[11px] font-black flex items-center gap-1.5 w-max shadow-2xs whitespace-nowrap shrink-0">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                            <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 w-max shadow-2xs whitespace-nowrap shrink-0 border ${badges.returnOffset}`}>
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                               <span>تهاتر با فاکتور {item.settlementInvoiceNumber ? `#${toPersianDigits(item.settlementInvoiceNumber)}` : ''} (دریافت جنس)</span>
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 text-[11px] font-black flex items-center gap-1.5 w-max shadow-2xs whitespace-nowrap shrink-0">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 w-max shadow-2xs whitespace-nowrap shrink-0 border ${badges.cash}`}>
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                               <span>تسویه شده ({item.refundMethod === 'cash' ? 'صندوق نقدی' : 'حساب بانکی'})</span>
                             </span>
                           )

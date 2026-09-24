@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Customer, CustomerType, Invoice, CustomerPayment, StoreSettings, ProductReturn } from '../types';
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { Pagination } from './Pagination';
+import { SortableTableHeader } from './SortableTableHeader';
 import { 
   formatPrice, 
   toPersianDigits, 
@@ -166,6 +167,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
   onShowAlert,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = getThemeBadges(settings.themeColor);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'debtor' | 'settled' | 'creditor'>('all');
   const [customerTypeFilter, setCustomerTypeFilter] = useState<string>('all');
@@ -198,7 +200,26 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
 
   // View Mode & Customer List Pagination State
   const [customerViewMode, setCustomerViewMode] = useState<'table' | 'cards'>('cards');
-  const [customerSortOrder, setCustomerSortOrder] = useState<'desc' | 'asc'>('desc');
+  type CustomerSortField = 'index' | 'name' | 'phone' | 'balance' | 'type';
+  const [custSortField, setCustSortField] = useState<CustomerSortField>('index');
+  const [custSortDirection, setCustSortDirection] = useState<'desc' | 'asc'>('desc');
+  const customerSortOrder = custSortDirection;
+  const setCustomerSortOrder = (fnOrVal: any) => {
+    if (typeof fnOrVal === 'function') {
+      setCustSortDirection(prev => fnOrVal(prev));
+    } else {
+      setCustSortDirection(fnOrVal);
+    }
+  };
+
+  const handleCustomerSort = (field: CustomerSortField) => {
+    if (custSortField === field) {
+      setCustSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setCustSortField(field);
+      setCustSortDirection(field === 'name' ? 'asc' : 'desc');
+    }
+  };
   const [customerCurrentPage, setCustomerCurrentPage] = useState(1);
   const [customerItemsPerPage, setCustomerItemsPerPage] = useState(20);
 
@@ -755,22 +776,35 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
     return true;
   });
 
-  // Sorted Customer List (Default: Newest Added First at the top)
+  // Sorted Customer List
   const sortedCustomers = React.useMemo(() => {
     return [...filteredCustomers].sort((a, b) => {
-      const getTimestamp = (item: Customer) => {
-        if (item.createdAt && typeof item.createdAt === 'number') return item.createdAt;
-        if (typeof item.id === 'string' && item.id.startsWith('cust-')) {
-          const num = Number(item.id.replace('cust-', ''));
-          if (!isNaN(num) && num > 1000) return num;
-        }
-        return 0;
-      };
-      const ta = getTimestamp(a);
-      const tb = getTimestamp(b);
-      return customerSortOrder === 'desc' ? tb - ta : ta - tb;
+      let cmp = 0;
+      if (custSortField === 'name') {
+        cmp = a.name.localeCompare(b.name, 'fa');
+      } else if (custSortField === 'phone') {
+        cmp = (a.phone || '').localeCompare(b.phone || '');
+      } else if (custSortField === 'balance') {
+        cmp = getCustomerLiveBalance(a) - getCustomerLiveBalance(b);
+      } else if (custSortField === 'type') {
+        cmp = (a.customerType || '').localeCompare(b.customerType || '');
+      } else {
+        // index / timestamp
+        const getTimestamp = (item: Customer) => {
+          if (item.createdAt && typeof item.createdAt === 'number') return item.createdAt;
+          if (typeof item.id === 'string' && item.id.startsWith('cust-')) {
+            const num = Number(item.id.replace('cust-', ''));
+            if (!isNaN(num) && num > 1000) return num;
+          }
+          return 0;
+        };
+        const ta = getTimestamp(a);
+        const tb = getTimestamp(b);
+        cmp = ta - tb;
+      }
+      return custSortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredCustomers, customerSortOrder]);
+  }, [filteredCustomers, custSortField, custSortDirection]);
 
   // Aggregate Stats
   const totalDebtorsCount = customers.filter((c) => getCustomerLiveBalance(c) > 0).length;
@@ -1352,15 +1386,15 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                               {/* Status Badge */}
                               <div className="shrink-0 text-left">
                                 {liveBal > 0 ? (
-                                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl text-[11px] font-black shadow-2xs">
+                                  <span className={`inline-block px-3 py-1 ${badges.debit} rounded-xl text-[11px] font-black shadow-2xs`}>
                                     بدهکار: {formatPrice(liveBal)}
                                   </span>
                                 ) : liveBal < 0 ? (
-                                  <span className={`inline-block px-3 py-1 ${theme.badgeBg} ${theme.badgeText} border ${theme.subtleBorder} rounded-xl text-[11px] font-black shadow-2xs`}>
+                                  <span className={`inline-block px-3 py-1 ${badges.credit} rounded-xl text-[11px] font-black shadow-2xs`}>
                                     بستانکار: {formatPrice(Math.abs(liveBal))}
                                   </span>
                                 ) : (
-                                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black shadow-2xs">
+                                  <span className={`inline-block px-3 py-1 ${badges.settled} rounded-xl text-[11px] font-black shadow-2xs`}>
                                     تسویه کامل
                                   </span>
                                 )}
@@ -1505,40 +1539,61 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       <table className="w-full text-right text-xs">
                         <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800">
                           <tr>
-                            <th 
-                              className="p-3.5 w-12 text-center cursor-pointer select-none hover:text-black dark:hover:text-white"
-                              onClick={() => setCustomerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                              title="مرتب‌سازی ترتیب نمایش"
+                            <SortableTableHeader
+                              field="index"
+                              currentField={custSortField}
+                              currentDirection={custSortDirection}
+                              onSort={handleCustomerSort}
+                              align="center"
+                              className="w-14"
                             >
-                              <div className="flex items-center justify-center gap-1">
-                                <span>#</span>
-                                {customerSortOrder === 'desc' ? (
-                                  <ArrowDownWideNarrow className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                                ) : (
-                                  <ArrowUpNarrowWide className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                                )}
-                              </div>
-                            </th>
-                            <th 
-                              className="p-3.5 cursor-pointer select-none hover:text-black dark:hover:text-white"
-                              onClick={() => setCustomerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                              title="مرتب‌سازی طرف‌های حساب بر اساس تاریخ ثبت (جدیدترین / قدیمی‌ترین)"
+                              #
+                            </SortableTableHeader>
+
+                            <SortableTableHeader
+                              field="name"
+                              currentField={custSortField}
+                              currentDirection={custSortDirection}
+                              onSort={handleCustomerSort}
                             >
-                              <div className="flex items-center gap-1.5">
-                                <span>طرف‌حساب</span>
-                                <span className="text-[10px] font-normal px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                  {customerSortOrder === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین'}
-                                </span>
-                              </div>
-                            </th>
-                            <th className="p-3.5 text-center">نوع حساب</th>
-                            <th className="p-3.5">تلفن / شهر</th>
+                              طرف‌حساب
+                            </SortableTableHeader>
+
+                            <SortableTableHeader
+                              field="type"
+                              currentField={custSortField}
+                              currentDirection={custSortDirection}
+                              onSort={handleCustomerSort}
+                              align="center"
+                            >
+                              نوع حساب
+                            </SortableTableHeader>
+
+                            <SortableTableHeader
+                              field="phone"
+                              currentField={custSortField}
+                              currentDirection={custSortDirection}
+                              onSort={handleCustomerSort}
+                            >
+                              تلفن / شهر
+                            </SortableTableHeader>
+
                             <th className="p-3.5 text-left">مانده اول دوره</th>
                             <th className="p-3.5 text-left">خرید نسیه</th>
                             <th className="p-3.5 text-left">بدهی دستی</th>
                             <th className="p-3.5 text-left">کل دریافتی</th>
                             <th className="p-3.5 text-left">گردش مرجوعی</th>
-                            <th className="p-3.5 text-left">مانده خالص</th>
+
+                            <SortableTableHeader
+                              field="balance"
+                              currentField={custSortField}
+                              currentDirection={custSortDirection}
+                              onSort={handleCustomerSort}
+                              align="left"
+                            >
+                              مانده خالص
+                            </SortableTableHeader>
+
                             <th className="p-3.5 text-center">وضعیت</th>
                             <th className="p-3.5 text-center">عملیات حسابداری</th>
                           </tr>
@@ -1620,15 +1675,15 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                                 </td>
                                 <td className="p-3.5 text-center whitespace-nowrap">
                                   {liveBal > 0 ? (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 text-[10px] font-bold whitespace-nowrap shrink-0">
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl ${badges.debit} text-[10px] font-bold whitespace-nowrap shrink-0`}>
                                       بدهکار
                                     </span>
                                   ) : liveBal < 0 ? (
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor} text-[10px] font-bold whitespace-nowrap shrink-0`}>
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl ${badges.credit} text-[10px] font-bold whitespace-nowrap shrink-0`}>
                                       بستانکار
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold whitespace-nowrap shrink-0">
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl ${badges.settled} text-[10px] font-bold whitespace-nowrap shrink-0`}>
                                       تسویه
                                     </span>
                                   )}

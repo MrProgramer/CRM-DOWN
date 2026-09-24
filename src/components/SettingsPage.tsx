@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { Product, Invoice, Customer, CustomerPayment, StoreSettings, AppDesignMode } from '../types';
 import { ThemeColor, themes, designModes } from './ThemeConfig';
-import { toPersianDigits } from '../utils/formatters';
+import { 
+  fontFamilies, 
+  appFontSizes, 
+  invoiceFontSizes, 
+  applyTypographyToDOM 
+} from './TypographyConfig';
+import { toPersianDigits, formatPrice } from '../utils/formatters';
 import { 
   Settings, 
   Palette, 
@@ -40,7 +46,11 @@ import {
   FileSpreadsheet,
   Gem,
   Feather,
-  Wand2
+  Wand2,
+  Type,
+  CaseSensitive,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -66,7 +76,7 @@ interface SettingsPageProps {
   mode?: 'business' | 'system';
 }
 
-type SettingsTab = 'theme' | 'security' | 'brand' | 'invoice' | 'bank';
+type SettingsTab = 'theme' | 'typography' | 'security' | 'brand' | 'invoice' | 'bank';
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   settings,
@@ -94,6 +104,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     enableWatermark: settings.enableWatermark !== false,
     watermarkText: settings.watermarkText || settings.brandName || 'بازرگانی رسمی',
     showSignatureArea: settings.showSignatureArea !== false,
+    fontFamily: settings.fontFamily || 'vazirmatn',
+    numberFormat: settings.numberFormat || 'persian',
+    fontSizeScale: settings.fontSizeScale || 'standard',
+    customFontScalePercent: settings.customFontScalePercent || 100,
+    invoiceFontSizeScale: settings.invoiceFontSizeScale || 'standard',
   });
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(mode === 'system' ? 'theme' : 'brand');
@@ -103,8 +118,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const currentTheme = themes[formData.themeColor] || themes.black;
 
+  const updateTypography = (updates: Partial<StoreSettings>) => {
+    const updated = { ...formData, ...updates };
+    setFormData(updated);
+    applyTypographyToDOM(updated);
+  };
+
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    applyTypographyToDOM(formData);
     onSaveSettings(formData);
     setSavedSuccess(true);
     setTimeout(() => {
@@ -249,7 +271,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   <Palette className="w-4 h-4" style={{ color: activeTab === 'theme' ? currentTheme.hex : undefined }} />
                   <div className="flex flex-col text-right">
                     <span>سبک طراحی و پالت رنگی</span>
-                    <span className="text-[10px] text-slate-400 font-normal">۶ حالت طراحی و ۸ رنگ</span>
+                    <span className="text-[10px] text-slate-400 font-normal">۸ حالت طراحی و پالت‌های رنگی</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('typography')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'typography'
+                      ? `${currentTheme.primaryLight} ${currentTheme.primaryText} font-black border ${currentTheme.borderColor} shadow-xs`
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Type className="w-4 h-4" style={{ color: activeTab === 'typography' ? currentTheme.hex : undefined }} />
+                  <div className="flex flex-col text-right">
+                    <span>تایپوگرافی و سایز فونت</span>
+                    <span className="text-[10px] text-slate-400 font-normal">۶ فونت، تفکیک ارقام و سایزبندی</span>
                   </div>
                 </button>
 
@@ -284,6 +321,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   <div className="flex flex-col text-right">
                     <span>مشخصات کسب‌وکار و لوگو</span>
                     <span className="text-[10px] text-slate-400 font-normal">سربرگ، آیکون و هویت برند</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('typography')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'typography'
+                      ? `${currentTheme.primaryLight} ${currentTheme.primaryText} font-black border ${currentTheme.borderColor} shadow-xs`
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Type className="w-4 h-4" style={{ color: activeTab === 'typography' ? currentTheme.hex : undefined }} />
+                  <div className="flex flex-col text-right">
+                    <span>فونت و اندازه قلم فاکتور</span>
+                    <span className="text-[10px] text-slate-400 font-normal">فونت متن، ارقام و سایز چاپ</span>
                   </div>
                 </button>
 
@@ -643,7 +695,480 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </div>
             )}
 
-            {/* 2. SECURITY & PIN TAB */}
+            {/* 2. TYPOGRAPHY, FONTS & SIZES TAB */}
+            {activeTab === 'typography' && (
+              <div className="space-y-10">
+                {/* Header Info */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <Type className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                      مرکز تخصصی تایپوگرافی، فونت‌های رسمی و سایزبندی سامانه
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      انتخاب از بین پرمخاطب‌ترین و استانداردترین قلم‌های رسمی وب فارسی به همراه سایزبندی متناسب و ارگونومیک
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateTypography({
+                          fontFamily: 'vazirmatn',
+                          fontSizeScale: 'standard',
+                          customFontScalePercent: 100,
+                          invoiceFontSizeScale: 'standard',
+                          numberFormat: 'persian'
+                        });
+                        if (onShowAlert) {
+                          onShowAlert('قلم و سایزبندی به حالت استاندارد رسمی بازنشانی شد.', 'info', 'تنظیمات اولیه');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                      title="بازگشت به مقادیر پیش‌فرض استاندارد"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>پیش‌فرض استاندارد</span>
+                    </button>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200/80 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-bold">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>اعمال آنی و سراسری</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Badges Row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block mb-1">فونت فعال سامانه:</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white truncate block" style={{ fontFamily: fontFamilies[formData.fontFamily || 'vazirmatn']?.cssFamily }}>
+                      {fontFamilies[formData.fontFamily || 'vazirmatn']?.nameFa}
+                    </span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block mb-1">مقیاس فونت برنامه:</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {appFontSizes[formData.fontSizeScale || 'standard']?.nameFa} ({formData.customFontScalePercent || appFontSizes[formData.fontSizeScale || 'standard']?.percentage}٪)
+                    </span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block mb-1">تراکم چاپ فاکتور:</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {invoiceFontSizes[formData.invoiceFontSizeScale || 'standard']?.nameFa}
+                    </span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block mb-1">فرمت ارقام و اعداد:</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {formData.numberFormat === 'latin' ? 'اعداد لاتین (123)' : 'اعداد فارسی (۱۲۳)'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* LIVE INTERACTIVE PREVIEW CARD */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        پیش‌نمایش زنده و واقعی با قلم «{fontFamilies[formData.fontFamily || 'vazirmatn']?.nameFa}»
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      طراحی هماهنگ تیترها، جداول حسابداری، اعداد و نمادهای مالی
+                    </span>
+                  </div>
+
+                  {/* Real Document Preview Card */}
+                  <div 
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-all"
+                    style={{
+                      fontFamily: fontFamilies[formData.fontFamily || 'vazirmatn']?.cssFamily,
+                    }}
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                            {formData.brandName || 'بازرگانی مرکزی رضایی'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
+                            فاکتور رسمی فروش
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block">
+                          توزیع و پخش سراسری کالا • انبار مرکزی شماره ۱
+                        </span>
+                      </div>
+
+                      <div className="text-left text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <span className="text-slate-400 text-[11px]">شماره سند:</span>
+                          <span className="font-black text-slate-900 dark:text-white">
+                            {formData.numberFormat === 'latin' ? 'INV-1048' : toPersianDigits('۱۰۴۸')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 justify-end text-slate-500 text-[11px]">
+                          <span>تاریخ صدور:</span>
+                          <span className="font-bold">
+                            {formData.numberFormat === 'latin' ? '1405/06/15' : toPersianDigits('۱۴۰۵/۰۶/۱۵')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sample Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-[11.5px] bg-slate-50/70 dark:bg-slate-800/40">
+                            <th className="text-right py-2.5 px-3 font-bold">شرح کالا</th>
+                            <th className="text-center py-2.5 px-3 font-bold">تعداد کارتن و دانه</th>
+                            <th className="text-center py-2.5 px-3 font-bold">قیمت واحد</th>
+                            <th className="text-left py-2.5 px-3 font-bold">مبلغ کل (تومان)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                          <tr>
+                            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
+                              شکلات کپل شیری صادراتی (طعم فندق)
+                            </td>
+                            <td className="text-center py-2.5 px-3 font-bold text-slate-700 dark:text-slate-300">
+                              {formData.numberFormat === 'latin' ? '12 Cartons + 20 Units' : toPersianDigits('۱۲ کارتن و ۲۰ دانه')}
+                            </td>
+                            <td className="text-center py-2.5 px-3 font-medium text-slate-600 dark:text-slate-400">
+                              {formData.numberFormat === 'latin' ? '925,000' : toPersianDigits(formatPrice(925000))}
+                            </td>
+                            <td className="text-left py-2.5 px-3 font-black text-slate-900 dark:text-white">
+                              {formData.numberFormat === 'latin' ? '18,500,000' : toPersianDigits(formatPrice(18500000))}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
+                              بیسکویت کرمدار پرتقالی کارتن ۴۸ تایی
+                            </td>
+                            <td className="text-center py-2.5 px-3 font-bold text-slate-700 dark:text-slate-300">
+                              {formData.numberFormat === 'latin' ? '25 Cartons' : toPersianDigits('۲۵ کارتن')}
+                            </td>
+                            <td className="text-center py-2.5 px-3 font-medium text-slate-600 dark:text-slate-400">
+                              {formData.numberFormat === 'latin' ? '1,248,000' : toPersianDigits(formatPrice(1248000))}
+                            </td>
+                            <td className="text-left py-2.5 px-3 font-black text-slate-900 dark:text-white">
+                              {formData.numberFormat === 'latin' ? '31,200,000' : toPersianDigits(formatPrice(31200000))}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Total Row */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                          جمع نهایی فاکتور:
+                        </span>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                          تسویه شده نقدی
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                          {formData.numberFormat === 'latin' ? '49,700,000' : toPersianDigits(formatPrice(49700000))}
+                        </span>
+                        <span className="text-xs text-slate-500 font-bold">تومان</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 1: OFFICIAL POPULAR PERSIAN FONTS */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <Type className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                        ۱. لیست فونت‌های رسمی، استاندارد و پرمخاطب وب فارسی
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        برترین قلم‌های استاندارد، اداری و تجاری مناسب سامانه‌های بازرگانی، حسابداری و فاکتور
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {Object.keys(fontFamilies).length} فونت برگزیده
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    {Object.values(fontFamilies).map((font) => {
+                      const isSelected = (formData.fontFamily || 'vazirmatn') === font.id;
+
+                      return (
+                        <div
+                          key={font.id}
+                          onClick={() => {
+                            updateTypography({ fontFamily: font.id });
+                            if (onShowAlert) {
+                              onShowAlert(`فونت سامانه به «${font.nameFa}» تنظیم شد.`, 'success', 'تغییر قلم');
+                            }
+                          }}
+                          className={`group relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-500 shadow-md ring-2 ring-teal-500/20'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                isSelected 
+                                  ? 'bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200' 
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                              }`}>
+                                {font.badge}
+                              </span>
+                              <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                isSelected ? 'bg-teal-600 border-teal-600 text-white' : 'border-slate-300 dark:border-slate-600'
+                              }`}>
+                                {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              </div>
+                            </div>
+
+                            <h5 
+                              className="font-black text-sm text-slate-900 dark:text-white"
+                              style={{ fontFamily: font.cssFamily }}
+                            >
+                              {font.nameFa}
+                            </h5>
+                            <span className="text-[10px] text-slate-400 font-medium block dir-ltr text-right mb-2">
+                              {font.nameEn} • {font.creator}
+                            </span>
+
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed min-h-[38px]">
+                              {font.description}
+                            </p>
+                          </div>
+
+                          {/* Font Features & Live Preview Line */}
+                          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                            <div className="flex flex-wrap gap-1">
+                              {font.features.map((feat, idx) => (
+                                <span key={idx} className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                  {feat}
+                                </span>
+                              ))}
+                            </div>
+                            <div 
+                              className="text-xs font-black text-slate-800 dark:text-slate-200 truncate"
+                              style={{ fontFamily: font.cssFamily }}
+                            >
+                              {font.previewText}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <hr className="border-slate-200 dark:border-slate-800" />
+
+                {/* SECTION 2 & 3: APP FONT SIZE SCALE & INVOICE PRINT SCALE */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* APP FONT SCALE */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                          <ZoomIn className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                          ۲. سایزبندی و مقیاس نمایشی سامانه (اندازه فونت برنامه)
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          تنظیم ابعاد متن منوها، فرم‌ها، جداول و داشبورد متناسب با رزولوشن نمایشگر شما
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {Object.values(appFontSizes).map((scale) => {
+                        const isSelected = (formData.fontSizeScale || 'standard') === scale.id;
+
+                        return (
+                          <button
+                            key={scale.id}
+                            type="button"
+                            onClick={() => {
+                              updateTypography({ 
+                                fontSizeScale: scale.id,
+                                customFontScalePercent: scale.percentage
+                              });
+                            }}
+                            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 text-teal-900 dark:text-teal-100 font-bold shadow-xs'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black">{scale.nameFa}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />}
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight">
+                              {scale.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Precision Fine-Tuning Slider */}
+                    <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">
+                          تنظیم دقیق درصدی اسلایدر:
+                        </span>
+                        <span className="font-black text-teal-600 dark:text-teal-400 dir-ltr">
+                          {formData.customFontScalePercent || appFontSizes[formData.fontSizeScale || 'standard']?.percentage || 100} %
+                        </span>
+                      </div>
+                      <input 
+                        type="range"
+                        min="85"
+                        max="125"
+                        step="1"
+                        value={formData.customFontScalePercent || appFontSizes[formData.fontSizeScale || 'standard']?.percentage || 100}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          let matchedScale: AppFontSizeScale = 'standard';
+                          if (val <= 90) matchedScale = 'compact';
+                          else if (val <= 104) matchedScale = 'standard';
+                          else if (val <= 114) matchedScale = 'comfortable';
+                          else matchedScale = 'large';
+
+                          updateTypography({
+                            customFontScalePercent: val,
+                            fontSizeScale: matchedScale
+                          });
+                        }}
+                        className="w-full accent-teal-600 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* INVOICE PRINT SCALE */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        ۳. مقیاس و تراکم قلم چاپ فاکتور (تعداد اقلام در یک برگ A4)
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        تنظیم فشردگی ردیف‌ها و فونت در خروجی چاپی و PDF برای جلوگیری از دو صفحه‌ای شدن فاکتور
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {Object.values(invoiceFontSizes).map((scale) => {
+                        const isSelected = (formData.invoiceFontSizeScale || 'standard') === scale.id;
+
+                        return (
+                          <button
+                            key={scale.id}
+                            type="button"
+                            onClick={() => {
+                              updateTypography({ invoiceFontSizeScale: scale.id });
+                            }}
+                            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-100 font-bold shadow-xs'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black">{scale.nameFa}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight">
+                              {scale.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-slate-200 dark:border-slate-800" />
+
+                {/* SECTION 4: NUMBER FORMAT (PERSIAN OR LATIN DIGITS) */}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      ۴. تنظیم فرمت نمایش ارقام و مبالغ (فارسی / انگلیسی)
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      انتخاب نمایش ارقام به صورت فارسی استاندارد (۱۲۳) یا انگلیسی بین‌المللی (123)
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-xl">
+                    <button
+                      type="button"
+                      onClick={() => updateTypography({ numberFormat: 'persian' })}
+                      className={`p-4 rounded-2xl border text-right transition-all cursor-pointer ${
+                        formData.numberFormat !== 'latin'
+                          ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 ring-2 ring-teal-500/20 shadow-xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">ارقام فارسی استاندارد (پیش‌فرض)</span>
+                        {formData.numberFormat !== 'latin' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mb-2">مناسب سیستم‌های مالی داخل ایران و تطابق کامل با نگارش فارسی</p>
+                      <div className="text-sm font-black text-teal-700 dark:text-teal-300">
+                        {toPersianDigits('۱۲,۴۵۰,۰۰۰ تومان (۲۵ کارتن)')}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => updateTypography({ numberFormat: 'latin' })}
+                      className={`p-4 rounded-2xl border text-right transition-all cursor-pointer ${
+                        formData.numberFormat === 'latin'
+                          ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 ring-2 ring-teal-500/20 shadow-xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">ارقام لاتین / انگلیسی</span>
+                        {formData.numberFormat === 'latin' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mb-2">مناسب فاکتورهای بین‌المللی و کار با داده‌های لاتین</p>
+                      <div className="text-sm font-black text-teal-700 dark:text-teal-300 dir-ltr text-right">
+                        12,450,000 Tomans (25 Cartons)
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Save Confirmation Button inside typography */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-xs text-slate-400">
+                    تمام تغییرات قلم و سایزبندی به صورت فوری و سراسری در تمامی پنجره‌ها و فاکتورها ذخیره و اعمال می‌شود.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl ${currentTheme.primaryBg} text-white font-black text-xs shadow-md hover:shadow-lg transition-all cursor-pointer`}
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>ذخیره نهایی تنظیمات قلم و سایز</span>
+                  </button>
+                </div>
+              </div>
+            )}
             {activeTab === 'security' && (
               <div className="space-y-6">
                 <div>

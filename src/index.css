@@ -4,7 +4,12 @@
 
 @layer base {
   :root {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --app-font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --app-header-font: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --app-number-font: 'Vazirmatn', sans-serif;
+    --app-font-scale: 1;
+    --invoice-font-scale: 1;
+    font-family: var(--app-font-family);
     font-feature-settings: "ss01" 1, "cv01" 1;
     font-variant-numeric: tabular-nums;
   }
@@ -14,8 +19,9 @@
   }
 
   body {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: var(--app-font-family) !important;
     font-feature-settings: "ss01" 1, "cv01" 1 !important;
+    font-size: calc(1rem * var(--app-font-scale, 1));
     letter-spacing: -0.018em;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
@@ -87,19 +93,41 @@
     color: #cbd5e1;
   }
 
-  input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6, .font-mono, code, kbd, pre {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6 {
+    font-family: var(--app-font-family);
+  }
+
+  /* Dedicated Number Font & Tabular Monospace for Finance, Prices and Quantities */
+  .font-mono, .font-number, [data-font="number"], code, kbd, pre {
+    font-family: var(--app-number-font) !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Invoice Header Titles & Display Typography */
+  .font-invoice-header, .font-header-title {
+    font-family: var(--app-header-font) !important;
+  }
+
+  /* Invoice typography scaling */
+  .invoice-scalable-view {
+    font-size: calc(1rem * var(--invoice-font-scale, 1));
+  }
+
+  /* Force Persian Digits in all Form Inputs & Textboxes unless Latin numbers selected */
+  html:not([data-number-format="latin"]):not([data-number-font="system-latin"]) input[type="text"], 
+  html:not([data-number-format="latin"]):not([data-number-font="system-latin"]) input[type="number"], 
+  html:not([data-number-format="latin"]):not([data-number-font="system-latin"]) input[type="tel"], 
+  html:not([data-number-format="latin"]):not([data-number-font="system-latin"]) textarea, 
+  html:not([data-number-format="latin"]):not([data-number-font="system-latin"]) select {
     font-feature-settings: "ss01" 1, "cv01" 1 !important;
   }
 
-  /* Force Persian Digits in all Form Inputs & Textboxes */
-  input[type="text"], input[type="number"], input[type="tel"], textarea, select {
-    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+  html[data-number-format="latin"] * {
+    font-feature-settings: "ss01" 0, "cv01" 0;
   }
 
   .font-display {
-    font-family: 'Lalezar', 'Vazirmatn', sans-serif !important;
-    font-feature-settings: "ss01" 1, "cv01" 1 !important;
+    font-family: var(--app-header-font, 'Lalezar', 'Vazirmatn', sans-serif) !important;
     letter-spacing: 0.02em;
   }
 

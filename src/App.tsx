@@ -19,6 +19,7 @@ import { SecurityAuthModal } from './components/SecurityAuthModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { ToastContainer, ConfirmModal, ToastItem, ConfirmModalOptions } from './components/CustomNotificationModal';
 import { themes, designModes } from './components/ThemeConfig';
+import { applyTypographyToDOM } from './components/TypographyConfig';
 import { ReturnsManager } from './components/ReturnsManager';
 import { LiquidityManager, TreasuryTransaction } from './components/LiquidityManager';
 import { calculateRealTimeLiquidity } from './utils/liquidityCalculations';
@@ -147,6 +148,17 @@ export default function App() {
     }
     return initialStoreSettings;
   });
+
+  // Apply typography, font family, number font, and font scale to the application
+  useEffect(() => {
+    applyTypographyToDOM(settings);
+  }, [
+    settings.fontFamily, 
+    settings.numberFontFamily, 
+    settings.headerFontFamily, 
+    settings.fontSizeScale, 
+    settings.invoiceFontSizeScale
+  ]);
 
   const [isSecretMode, setIsSecretMode] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SECRET_MODE) || localStorage.getItem('dastaval_secret_mode_v2');
@@ -2409,6 +2421,7 @@ export default function App() {
                 onOpenProfitAnalysis={(inv) => setProfitAnalysisInvoice(inv)}
                 products={products}
                 productReturns={productReturns}
+                invoices={invoices}
                 onShowAlert={showAlert}
                 onExportPDF={(inv) => {
                   addActivityLog(

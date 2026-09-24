@@ -18,11 +18,14 @@ import {
   Banknote,
   CreditCard,
   Clock,
-  FileCheck
+  FileCheck,
+  CheckCircle2
 } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { Pagination } from './Pagination';
+import { calculateInwardInvoiceSellThrough } from '../utils/inwardSellThrough';
+import { SortableTableHeader } from './SortableTableHeader';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -53,10 +56,22 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   onNewInvoice,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = getThemeBadges(settings.themeColor);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'sale' | 'purchase' | 'drafts'>(initialFilter);
-  const [invoiceSortOrder, setInvoiceSortOrder] = useState<'desc' | 'asc'>('desc');
+  type InvoiceSortField = 'customer' | 'date' | 'status' | 'amount';
+  const [sortField, setSortField] = useState<InvoiceSortField>('date');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+
+  const handleSort = (field: InvoiceSortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'customer' ? 'asc' : 'desc');
+    }
+  };
 
   // Synchronize when initialFilter changes from external navigation (e.g. from Dashboard)
   React.useEffect(() => {
@@ -138,28 +153,42 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     return matchesType && matchesSearch;
   });
 
-  // Reset page on filter change
+  // Reset page on filter or sort change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filterType, searchQuery, invoiceSortOrder]);
+  }, [filterType, searchQuery, sortField, sortDirection]);
 
-  // Global date-based sorting (default: descending / newest first)
+  // Multi-column sorting
   const sortedInvoices = React.useMemo(() => {
     return [...filteredInvoices].sort((a, b) => {
-      const timeA = a.createdAt || a.timestamp || (a.date ? new Date(a.date.replace(/\//g, '-')).getTime() || 0 : 0);
-      const timeB = b.createdAt || b.timestamp || (b.date ? new Date(b.date.replace(/\//g, '-')).getTime() || 0 : 0);
-      if (timeA && timeB && timeA !== timeB) {
-        return invoiceSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+      let cmp = 0;
+      if (sortField === 'customer') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '', 'fa');
+      } else if (sortField === 'amount') {
+        const amtA = a.finalAmount ?? a.totalAmount ?? 0;
+        const amtB = b.finalAmount ?? b.totalAmount ?? 0;
+        cmp = amtA - amtB;
+      } else if (sortField === 'status') {
+        const statA = a.paymentStatus || 'cash';
+        const statB = b.paymentStatus || 'cash';
+        cmp = statA.localeCompare(statB);
+      } else {
+        // Date / Document
+        const timeA = a.createdAt || a.timestamp || (a.date ? new Date(a.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        const timeB = b.createdAt || b.timestamp || (b.date ? new Date(b.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        if (timeA && timeB && timeA !== timeB) {
+          cmp = timeA - timeB;
+        } else {
+          cmp = (a.date || '').localeCompare(b.date || '');
+          if (cmp === 0) {
+            cmp = (a.invoiceNumber || '').localeCompare(b.invoiceNumber || '');
+          }
+        }
       }
-      const dateCmp = (b.date || '').localeCompare(a.date || '');
-      if (dateCmp !== 0) {
-        return invoiceSortOrder === 'desc' ? dateCmp : -dateCmp;
-      }
-      return invoiceSortOrder === 'desc'
-        ? (b.invoiceNumber || '').localeCompare(a.invoiceNumber || '')
-        : (a.invoiceNumber || '').localeCompare(b.invoiceNumber || '');
+
+      return sortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredInvoices, invoiceSortOrder]);
+  }, [filteredInvoices, sortField, sortDirection]);
 
   const totalPages = Math.ceil(sortedInvoices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -418,16 +447,16 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           {/* Sort Order Toggle */}
           <button
             type="button"
-            onClick={() => setInvoiceSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+            onClick={() => handleSort('date')}
             className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0 shadow-2xs whitespace-nowrap"
-            title={invoiceSortOrder === 'desc' ? 'مرتب‌سازی: جدیدترین در ابتدا (کلیک برای صعودی/قدیمی‌ترین)' : 'مرتب‌سازی: قدیمی‌ترین در ابتدا (کلیک برای نزولی/جدیدترین)'}
+            title={sortDirection === 'desc' ? 'مرتب‌سازی: جدیدترین در ابتدا (کلیک برای صعودی/قدیمی‌ترین)' : 'مرتب‌سازی: قدیمی‌ترین در ابتدا (کلیک برای نزولی/جدیدترین)'}
           >
-            {invoiceSortOrder === 'desc' ? (
+            {sortDirection === 'desc' ? (
               <ArrowDownWideNarrow className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
             ) : (
               <ArrowUpNarrowWide className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
             )}
-            <span>{invoiceSortOrder === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین'}</span>
+            <span>{sortDirection === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین'}</span>
           </button>
         </div>
       </div>
@@ -445,29 +474,49 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
                 <tr>
                   {/* Column 1: Customer / Party */}
-                  <th className="p-3.5 whitespace-nowrap min-w-[200px]">طرف‌حساب / مشتری</th>
+                  <SortableTableHeader
+                    field="customer"
+                    currentField={sortField}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                    className="min-w-[200px]"
+                  >
+                    طرف‌حساب / مشتری
+                  </SortableTableHeader>
 
                   {/* Column 2: Date, Document Number & Type */}
-                  <th 
-                    className="p-3.5 cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors whitespace-nowrap min-w-[170px]"
-                    onClick={() => setInvoiceSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                    title="تغییر جهت مرتب‌سازی تاریخ (جدیدترین / قدیمی‌ترین)"
+                  <SortableTableHeader
+                    field="date"
+                    currentField={sortField}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                    className="min-w-[170px]"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span>تاریخ و شماره سند</span>
-                      {invoiceSortOrder === 'desc' ? (
-                        <ArrowDownWideNarrow className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
-                      ) : (
-                        <ArrowUpNarrowWide className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
-                      )}
-                    </div>
-                  </th>
+                    تاریخ و شماره سند
+                  </SortableTableHeader>
 
-                  {/* Column 3: Settlement Status & Method (SWAPPED) */}
-                  <th className="p-3.5 whitespace-nowrap min-w-[180px]">نحوه و وضعیت تسویه</th>
+                  {/* Column 3: Settlement Status & Method */}
+                  <SortableTableHeader
+                    field="status"
+                    currentField={sortField}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                    className="min-w-[180px]"
+                  >
+                    نحوه و وضعیت تسویه
+                  </SortableTableHeader>
 
-                  {/* Column 4: Amount & Items Count (SWAPPED) */}
-                  <th className="p-3.5 text-left whitespace-nowrap min-w-[180px]">مبلغ نهایی و اقلام</th>
+                  {/* Column 4: Amount & Items Count */}
+                  <SortableTableHeader
+                    field="amount"
+                    currentField={sortField}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                    align="left"
+                    className="min-w-[180px]"
+                  >
+                    مبلغ نهایی و اقلام
+                  </SortableTableHeader>
 
                   {/* Column 5: Actions */}
                   <th className="p-3.5 text-center whitespace-nowrap min-w-[140px]">عملیات</th>
@@ -541,6 +590,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   const grossOriginalAmount = Math.max(0, rawGrossSubtotal - (inv.discount || 0) + (inv.tax || 0));
                   const effectiveFinalAmount = Math.max(0, grossOriginalAmount - totalReturnsAmount);
                   const hasReturns = totalReturnsAmount > 0;
+                  const inwardSellThrough = (isPurchaseMode && !inv.isDraft)
+                    ? calculateInwardInvoiceSellThrough(inv, invoices, products)
+                    : null;
 
                   return (
                     <tr 
@@ -552,7 +604,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                         <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
                           <span className="truncate max-w-[220px]">{inv.customerName}</span>
                           {(inv.customerName.includes('مدیریت انبار') || isPurchaseMode) && (
-                            <span className={`px-1.5 py-0.5 ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} font-bold text-[9px] rounded-md whitespace-nowrap shrink-0`}>
+                            <span className={`px-1.5 py-0.5 ${badges.supplier} font-bold text-[9px] rounded-md whitespace-nowrap shrink-0`}>
                               تأمین‌کننده
                             </span>
                           )}
@@ -580,18 +632,18 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
                           {inv.isDraft ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${badges.draft}`}>
                               <FileClock className="w-3 h-3 text-slate-400 shrink-0" />
                               <span>پیش‌نویس موقت</span>
                             </span>
                           ) : isPurchaseMode ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                              <Package className="w-3 h-3 text-purple-500 shrink-0" />
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${badges.purchase}`}>
+                              <Package className={`w-3 h-3 ${badges.purchaseIcon} shrink-0`} />
                               <span>ورود کالا (خرید)</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              <Receipt className="w-3 h-3 text-emerald-500 shrink-0" />
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${badges.sale}`}>
+                              <Receipt className={`w-3 h-3 ${badges.saleIcon} shrink-0`} />
                               <span>فاکتور فروش</span>
                             </span>
                           )}
@@ -610,23 +662,23 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                         <div className="flex flex-col items-start gap-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {inv.paymentMethod?.includes('نسیه') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold rounded-lg text-[10.5px] border border-amber-200/90 dark:border-amber-800/80 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 ${badges.creditTerm} font-bold rounded-lg text-[10.5px] whitespace-nowrap`}>
                                 <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
                                 <span>نسیه (اعتباری)</span>
                               </span>
                             ) : inv.paymentMethod?.includes('چک') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 font-bold rounded-lg text-[10.5px] border border-purple-200/90 dark:border-purple-800/80 whitespace-nowrap">
-                                <FileCheck className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 ${badges.check} font-bold rounded-lg text-[10.5px] whitespace-nowrap`}>
+                                <FileCheck className="w-3 h-3 shrink-0" />
                                 <span>چک صیادی</span>
                               </span>
                             ) : inv.paymentMethod?.includes('کارت') || inv.paymentAccount === 'bank' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 font-bold rounded-lg text-[10.5px] border border-blue-200/90 dark:border-blue-800/80 whitespace-nowrap">
-                                <CreditCard className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 ${badges.bank} font-bold rounded-lg text-[10.5px] whitespace-nowrap`}>
+                                <CreditCard className="w-3 h-3 shrink-0" />
                                 <span>کارتخوان (بانک)</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold rounded-lg text-[10.5px] border border-emerald-200/90 dark:border-emerald-800/80 whitespace-nowrap">
-                                <Banknote className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 ${badges.cash} font-bold rounded-lg text-[10.5px] whitespace-nowrap`}>
+                                <Banknote className="w-3 h-3 text-slate-600 dark:text-slate-400 shrink-0" />
                                 <span>{inv.paymentMethod || 'نقدی (صندوق)'}</span>
                               </span>
                             )}
@@ -667,6 +719,42 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium dir-rtl">
                               مبلغ خالص کل فاکتور
                             </span>
+                          )}
+
+                          {/* Sell-Through & Profit Status for Purchase/Inward Invoices */}
+                          {inwardSellThrough && !isSecretMode && (
+                            <div className="mt-1 flex items-center gap-1.5 justify-end flex-wrap dir-rtl">
+                              {inwardSellThrough.isFullySold ? (
+                                <>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.profit} font-black text-[10px]`}>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                    <span>کاملاً فروخته شده (۱۰۰٪)</span>
+                                  </span>
+                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${badges.profit} font-bold text-[10px] font-mono`}>
+                                    <span>سود کل فروش:</span>
+                                    <span className={`font-black ${badges.profitText}`}>+{formatPrice(inwardSellThrough.totalRealizedProfit)}</span>
+                                  </span>
+                                </>
+                              ) : inwardSellThrough.percentSold > 0 ? (
+                                <>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.stock} font-bold text-[10px]`}>
+                                    <span>{toPersianDigits(inwardSellThrough.percentSold)}٪ فروخته شده</span>
+                                    <span className="text-slate-400">•</span>
+                                    <span className="text-amber-700 dark:text-amber-300">{toPersianDigits(inwardSellThrough.percentRemaining)}٪ مانده</span>
+                                  </span>
+                                  {inwardSellThrough.totalRealizedProfit > 0 && (
+                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${badges.profit} font-bold text-[10px] font-mono`}>
+                                      <span>سود تا الان:</span>
+                                      <span className={`font-black ${badges.profitText}`}>+{formatPrice(inwardSellThrough.totalRealizedProfit)}</span>
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.draft} font-medium text-[10px]`}>
+                                  <span>موجودی کامل در انبار (۰٪ فروش)</span>
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>

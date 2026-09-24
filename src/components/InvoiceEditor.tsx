@@ -60,6 +60,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartPriceInput } from './SmartPriceInput';
+import { calculateInwardInvoiceSellThrough } from '../utils/inwardSellThrough';
 
 const getProductSmartLabel = (prod: Product): string => {
   return formatProductPackagingSpec(prod);
@@ -116,10 +117,18 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [pendingPriceUpdates, setPendingPriceUpdates] = useState<{ productId: string; newPurchasePrice: number; newSellingPrice?: number }[]>([]);
 
   // Combined product catalog for local view and modal selection within this invoice
+  // Allows modified products and newly created products in this invoice session to be reflected locally
+  // WITHOUT modifying the master product store until final invoice save
   const currentProductsList = useMemo(() => {
+    const pendingMap = new Map(pendingNewProducts.map(p => [p.id, p]));
+    const merged = products.map(p => pendingMap.get(p.id) || p);
     const existingIds = new Set(products.map(p => p.id));
-    const newOnes = pendingNewProducts.filter(p => !existingIds.has(p.id));
-    return [...products, ...newOnes];
+    pendingNewProducts.forEach(p => {
+      if (!existingIds.has(p.id)) {
+        merged.push(p);
+      }
+    });
+    return merged;
   }, [products, pendingNewProducts]);
 
   // Invoice Form State
@@ -230,6 +239,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [pickPurchasePrice, setPickPurchasePrice] = useState<number>(0);
   const [customDescription, setCustomDescription] = useState<string>('');
 
+  // Inward sell-through analysis (for purchase invoices)
+  const inwardSellThroughSummary = useMemo(() => {
+    if (invoiceType !== 'purchase' || !initialInvoice) return null;
+    return calculateInwardInvoiceSellThrough(initialInvoice, invoices, currentProductsList);
+  }, [invoiceType, initialInvoice, invoices, currentProductsList]);
+
   // Item Edit Modal State
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [editingOriginalMeta, setEditingOriginalMeta] = useState<{ id?: string; name?: string; productId?: string; category?: string }>({});
@@ -317,8 +332,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       notes: newProductNotes.trim(),
     };
 
-    onAddProduct?.(newProd);
-    onShowAlert?.(`کالای «${newProd.name}» با موفقیت به انبار افزوده شد و آماده درج در فاکتور است.`, 'success', 'ثبت کالا');
+    // Buffer new product in pendingNewProducts until final invoice save
+    setPendingNewProducts(prev => {
+      const filtered = prev.filter(p => p.id !== newProd.id);
+      return [...filtered, newProd];
+    });
+    onShowAlert?.(`کالای «${newProd.name}» به اقلام این فاکتور افزوده شد. (ثبت قطعی در انبار با ثبت نهایی فاکتور انجام می‌شود).`, 'success', 'ثبت کالا');
 
     // Reset form
     setNewProductName('');
@@ -368,16 +387,15 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     updateExistingProductPrice?: { productId: string; newPurchasePrice: number; newSellingPrice?: number },
     keepModalOpen?: boolean
   ) => {
-    // 1. Buffer brand new product locally and immediately register in catalog
+    // 1. Buffer brand new product locally (saved to warehouse catalog only on final invoice save)
     if (newProductToCreate) {
       setPendingNewProducts(prev => {
         const filtered = prev.filter(p => p.id !== newProductToCreate.id);
         return [...filtered, newProductToCreate];
       });
-      onAddProduct?.(newProductToCreate);
     }
 
-    // 2. Buffer price update locally and sync packaging to master product catalog
+    // 2. Buffer price update locally (saved to warehouse catalog only on final invoice save)
     if (updateExistingProductPrice) {
       setPendingPriceUpdates(prev => {
         const filtered = prev.filter(u => u.productId !== updateExistingProductPrice.productId);
@@ -385,9 +403,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       });
     }
 
-    // Sync packaging and details to existing product in warehouse catalog
-    if (item.productId && !newProductToCreate && onUpdateProduct) {
-      const existing = products.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
+    // 3. Sync packaging and details to local buffer (transient until final save)
+    if (item.productId && !newProductToCreate) {
+      const existing = currentProductsList.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
       if (existing) {
         const itemPacks = Number(item.packsCount) > 0 ? Number(item.packsCount) : (existing.packsPerCarton || 1);
         const itemPpp = Number(item.piecesPerPack) > 0 ? Number(item.piecesPerPack) : (existing.piecesPerPack || 1);
@@ -403,11 +421,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           sellingPrice: (item.unitSellingPrice && item.unitSellingPrice > 0) ? item.unitSellingPrice : existing.sellingPrice,
           updatedAt: Date.now()
         };
-        onUpdateProduct(updatedProd);
+        setPendingNewProducts(prev => {
+          const filtered = prev.filter(p => p.id !== updatedProd.id);
+          return [...filtered, updatedProd];
+        });
       }
     }
 
-    // 3. Merge with existing item if product ID and unit purchase price are identical; otherwise add as distinct row
+    // 4. Merge with existing item if product ID and unit purchase price are identical; otherwise add as distinct row
     setItems(prevItems => {
       const existingIdx = prevItems.findIndex(
         it => it.productId === item.productId && it.unitPurchasePrice === item.unitPurchasePrice
@@ -780,23 +801,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
       return updated;
     }));
-
-    if (onUpdateProduct && (updates.unitPurchasePrice !== undefined || updates.unitSellingPrice !== undefined)) {
-      const itemToUpdate = items.find(it => it.id === id);
-      if (itemToUpdate) {
-        const prod = currentProductsList.find(p => p.id === itemToUpdate.productId || (p.name && itemToUpdate.productName && p.name.trim().toLowerCase() === itemToUpdate.productName.trim().toLowerCase()));
-        if (prod) {
-          const newPur = (invoiceType === 'purchase' && updates.unitPurchasePrice !== undefined && updates.unitPurchasePrice > 0) ? updates.unitPurchasePrice : prod.purchasePrice;
-          const newSell = (updates.unitSellingPrice !== undefined && updates.unitSellingPrice > 0) ? updates.unitSellingPrice : prod.sellingPrice;
-          onUpdateProduct({
-            ...prod,
-            purchasePrice: newPur,
-            sellingPrice: newSell,
-            updatedAt: Date.now()
-          });
-        }
-      }
-    }
   };
 
   // Delete item
@@ -2134,6 +2138,62 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         </div>
       </div>
 
+      {/* Intelligent Inward Sell-Through & Realized Profit Summary for Purchase Invoices */}
+      {invoiceType === 'purchase' && !isSecretMode && inwardSellThroughSummary && (
+        <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-emerald-950/40 border border-purple-200/80 dark:border-purple-800/80 rounded-3xl shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
+                  وضعیت جامع فروش این فاکتور ورود کالا:
+                </span>
+                {inwardSellThroughSummary.isFullySold ? (
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>کاملاً فروخته شده (۱۰۰٪)</span>
+                  </span>
+                ) : inwardSellThroughSummary.percentSold > 0 ? (
+                  <span className="px-2.5 py-1 rounded-xl bg-sky-100 dark:bg-sky-900/80 text-sky-900 dark:text-sky-200 font-black text-xs border border-sky-300 dark:border-sky-700">
+                    {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروخته شده • {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ باقیمانده در انبار
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs border border-slate-200 dark:border-slate-700">
+                    ۰٪ فروش (موجودی کامل دست‌نخورده در انبار)
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                فروش‌رفته: {toPersianDigits(inwardSellThroughSummary.totalSoldPieces)} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces)} عدد کل اقلام فاکتور
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs px-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shrink-0">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                سود قطعی حاصل از فروش:
+              </div>
+              <div className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                +{formatPrice(inwardSellThroughSummary.totalRealizedProfit)}
+              </div>
+            </div>
+            {inwardSellThroughSummary.totalPotentialProfit > inwardSellThroughSummary.totalRealizedProfit && (
+              <div className="border-r border-slate-200 dark:border-slate-700 pr-3 text-right">
+                <div className="text-[10px] text-slate-400 font-medium">
+                  کل سود پیش‌بینی:
+                </div>
+                <div className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">
+                  {formatPrice(inwardSellThroughSummary.totalPotentialProfit)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Invoice Items Table Section */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden transition-colors">
         {/* Table top toolbar */}
@@ -2333,6 +2393,24 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   const marginPct = unitPur > 0 ? (unitDiff / unitPur) * 100 : 0;
                   const isLoss = rowProfit < 0;
 
+                  const rowSellThrough = inwardSellThroughSummary?.itemsSellThrough.find(s =>
+                    s.itemId === item.id ||
+                    (s.productId && item.productId && s.productId === item.productId) ||
+                    (s.productName && item.productName && s.productName.trim().toLowerCase() === item.productName.trim().toLowerCase())
+                  ) || (associatedProduct ? {
+                    itemId: item.id,
+                    productId: associatedProduct.id,
+                    productName: associatedProduct.name,
+                    purchasedPieces: item.totalPieces,
+                    soldPieces: associatedProduct.stockPieces <= 0 ? item.totalPieces : Math.max(0, item.totalPieces - associatedProduct.stockPieces),
+                    remainingPieces: Math.max(0, associatedProduct.stockPieces),
+                    percentSold: associatedProduct.stockPieces <= 0 ? 100 : (item.totalPieces > 0 ? Math.min(100, Math.max(0, Math.round(((item.totalPieces - Math.max(0, associatedProduct.stockPieces)) / item.totalPieces) * 100))) : 0),
+                    percentRemaining: associatedProduct.stockPieces <= 0 ? 0 : (item.totalPieces > 0 ? Math.max(0, Math.min(100, Math.round((Math.max(0, associatedProduct.stockPieces) / item.totalPieces) * 100))) : 100),
+                    isFullySold: associatedProduct.stockPieces <= 0,
+                    realizedProfit: 0,
+                    potentialProfit: 0
+                  } : null);
+
                   return (
                     <tr key={`edit-inv-item-${item.id || index}-${index}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                       {/* Row Index (ردیف) */}
@@ -2373,6 +2451,44 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                   <Zap className="w-3 h-3" />
                                   <span>شارژ انبار</span>
                                 </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Inward Sell-Through & Realized Profit Status */}
+                          {invoiceType === 'purchase' && !isSecretMode && rowSellThrough && (
+                            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                              {rowSellThrough.isFullySold ? (
+                                <>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-black text-[10px] border border-emerald-300 dark:border-emerald-800">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                    <span>کاملاً فروخته شده (۱۰۰٪)</span>
+                                  </span>
+                                  {rowSellThrough.realizedProfit > 0 && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800 font-mono">
+                                      <span>سود فروش:</span>
+                                      <span className="font-black">+{formatPrice(rowSellThrough.realizedProfit)}</span>
+                                    </span>
+                                  )}
+                                </>
+                              ) : rowSellThrough.percentSold > 0 ? (
+                                <>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 font-bold text-[10px] border border-sky-200 dark:border-sky-800">
+                                    <span>{toPersianDigits(rowSellThrough.percentSold)}٪ فروخته شده</span>
+                                    <span className="text-slate-400">•</span>
+                                    <span className="text-amber-700 dark:text-amber-300">{toPersianDigits(rowSellThrough.percentRemaining)}٪ باقیمانده</span>
+                                  </span>
+                                  {rowSellThrough.realizedProfit > 0 && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800 font-mono">
+                                      <span>سود فروش:</span>
+                                      <span className="font-black">+{formatPrice(rowSellThrough.realizedProfit)}</span>
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium text-[10px] border border-slate-200 dark:border-slate-700">
+                                  <span>موجودی کامل در انبار (۰٪ فروش)</span>
+                                </span>
                               )}
                             </div>
                           )}
@@ -4299,10 +4415,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         return it;
                       }));
 
-                      // 3. Broadcast to global product catalog
-                      onUpdateProduct?.(updatedProd);
-
-                      onShowAlert?.(`تغییرات کالا «${newName || editingItem.productName}» ذخیره و در انبار و کل فاکتورها همگام‌سازی شد.`, 'success', 'ویرایش یکپارچه کالا');
+                      // 3. Product changes are buffered locally in items and pending state, and will commit to warehouse on final invoice save
+                      onShowAlert?.(`تغییرات ردیف کالا «${newName || editingItem.productName}» در این فاکتور اعمال شد. (ذخیره قطعی در انبار با ثبت نهایی فاکتور انجام می‌شود).`, 'success', 'ویرایش ردیف فاکتور');
                       setEditingItem(null);
                     }
                   }}
