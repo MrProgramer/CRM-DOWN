@@ -41,6 +41,9 @@ const STORAGE_KEYS = {
   SETTINGS: 'bazargani_settings_v4',
   SECRET_MODE: 'bazargani_secret_mode_v3',
   CUSTOMERS: 'bazargani_customers_v6',
+  PAYMENTS: 'bazargani_payments_v2',
+  RETURNS: 'bazargani_returns_v2',
+  TREASURY: 'bazargani_treasury_v1',
   ACTIVITY_LOGS: 'bazargani_activity_logs_v1',
   SIDEBAR_COLLAPSED: 'bazargani_sidebar_collapsed_v1',
 };
@@ -54,22 +57,20 @@ export default function App() {
       'bazargani_products_v2',
       'bazargani_products_v1'
     ];
-    let loadedProducts: Product[] | null = null;
     for (const key of productKeys) {
       const saved = localStorage.getItem(key);
-      if (saved) {
+      if (saved !== null) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            loadedProducts = parsed;
-            break;
+          if (Array.isArray(parsed)) {
+            return parsed;
           }
         } catch (e) {
           console.error(`Failed to parse products from key ${key}`, e);
         }
       }
     }
-    return loadedProducts && loadedProducts.length > 0 ? loadedProducts : initialProducts;
+    return initialProducts;
   });
 
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
@@ -79,51 +80,42 @@ export default function App() {
       'bazargani_invoices_v2',
       'bazargani_invoices_v1'
     ];
-    let loadedInvoices: Invoice[] | null = null;
     for (const key of keys) {
       const saved = localStorage.getItem(key);
-      if (saved) {
+      if (saved !== null) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            loadedInvoices = parsed;
-            break;
+          if (Array.isArray(parsed)) {
+            return parsed.map(inv => ({
+              ...inv,
+              customerName: inv.customerName === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : (inv.customerName || ''),
+              customerPhone: inv.customerPhone === '09999123001' ? '09120000000' : (inv.customerPhone || ''),
+              customerCity: inv.customerCity === 'شبستر' ? 'مرکزی' : (inv.customerCity || ''),
+              customerAddress: inv.customerAddress?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : (inv.customerAddress || ''),
+              items: (inv.items || []).map(item => ({
+                ...item,
+                cartonsCount: Number(item.cartonsCount) || 0,
+                extraPieces: Number(item.extraPieces) || 0,
+                piecesPerCarton: Number(item.piecesPerCarton) || 1,
+                totalPieces: Number(item.totalPieces) || 0,
+                unitPurchasePrice: Number(item.unitPurchasePrice) || 0,
+                unitSellingPrice: Number(item.unitSellingPrice) || 0,
+                totalPrice: Number(item.totalPrice) || 0,
+                totalPurchaseCost: Number(item.totalPurchaseCost) || 0,
+                profitAmount: Number(item.profitAmount) || 0,
+                profitPercentage: Number(item.profitPercentage) || 0,
+              })),
+              subtotal: Number(inv.subtotal) || 0,
+              discount: Number(inv.discount) || 0,
+              tax: Number(inv.tax) || 0,
+              finalAmount: Number(inv.finalAmount) || 0,
+            }));
           }
         } catch (e) {
           console.error(`Failed to parse invoices from key ${key}`, e);
         }
       }
     }
-
-    if (loadedInvoices && loadedInvoices.length > 0) {
-      // User has real saved invoices in localStorage - preserve them 100% as saved without overriding user edits
-      return loadedInvoices.map(inv => ({
-        ...inv,
-        customerName: inv.customerName === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : (inv.customerName || ''),
-        customerPhone: inv.customerPhone === '09999123001' ? '09120000000' : (inv.customerPhone || ''),
-        customerCity: inv.customerCity === 'شبستر' ? 'مرکزی' : (inv.customerCity || ''),
-        customerAddress: inv.customerAddress?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : (inv.customerAddress || ''),
-        items: (inv.items || []).map(item => ({
-          ...item,
-          cartonsCount: Number(item.cartonsCount) || 0,
-          extraPieces: Number(item.extraPieces) || 0,
-          piecesPerCarton: Number(item.piecesPerCarton) || 1,
-          totalPieces: Number(item.totalPieces) || 0,
-          unitPurchasePrice: Number(item.unitPurchasePrice) || 0,
-          unitSellingPrice: Number(item.unitSellingPrice) || 0,
-          totalPrice: Number(item.totalPrice) || 0,
-          totalPurchaseCost: Number(item.totalPurchaseCost) || 0,
-          profitAmount: Number(item.profitAmount) || 0,
-          profitPercentage: Number(item.profitPercentage) || 0,
-        })),
-        subtotal: Number(inv.subtotal) || 0,
-        discount: Number(inv.discount) || 0,
-        tax: Number(inv.tax) || 0,
-        finalAmount: Number(inv.finalAmount) || 0,
-      }));
-    }
-
-    // First-time load with seed initial data:
     return initialInvoices;
   });
 
@@ -167,19 +159,22 @@ export default function App() {
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-    if (saved) {
+    if (saved !== null) {
       try {
-        const parsed: Customer[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(c => ({
-            ...c,
-            name: c.name === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : c.name,
-            company: (c.company === 'بازرگانی مرادیان' || c.company === 'پخش مویرگی شبستر') ? 'دفتر مرکزی بازرگانی' : c.company,
-            phone: c.phone === '09999123001' ? '09120000000' : c.phone,
-            city: c.city === 'شبستر' ? 'مرکزی' : c.city,
-            address: c.address?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : c.address,
-            notes: c.notes?.replace('شبستر', '') || c.notes,
-          }));
+        const parsed: any[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map(c => {
+            const { payments: _, ...cleanCust } = c;
+            return {
+              ...cleanCust,
+              name: cleanCust.name === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : cleanCust.name,
+              company: (cleanCust.company === 'بازرگانی مرادیان' || cleanCust.company === 'پخش مویرگی شبستر') ? 'دفتر مرکزی بازرگانی' : cleanCust.company,
+              phone: cleanCust.phone === '09999123001' ? '09120000000' : cleanCust.phone,
+              city: cleanCust.city === 'شبستر' ? 'مرکزی' : cleanCust.city,
+              address: cleanCust.address?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : cleanCust.address,
+              notes: cleanCust.notes?.replace('شبستر', '') || cleanCust.notes,
+            };
+          });
         }
       } catch (e) {
         console.error('Failed to parse customers', e);
@@ -189,13 +184,12 @@ export default function App() {
   });
 
   const [payments, setPayments] = useState<CustomerPayment[]>(() => {
-    let loadedPayments: CustomerPayment[] = [];
-    const saved = localStorage.getItem('bazargani_payments_v2');
-    if (saved) {
+    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENTS);
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          loadedPayments = parsed.map((p: any) => ({
+          return parsed.map((p: any) => ({
             ...p,
             amount: Number(p.amount) || 0
           }));
@@ -203,34 +197,6 @@ export default function App() {
       } catch (e) {
         console.error('Failed to parse payments', e);
       }
-    }
-
-    // Scan customers array in localStorage for any embedded payments
-    const savedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-    if (savedCustomers) {
-      try {
-        const parsedCusts = JSON.parse(savedCustomers);
-        if (Array.isArray(parsedCusts)) {
-          parsedCusts.forEach((c: any) => {
-            if (Array.isArray(c.payments)) {
-              c.payments.forEach((p: any) => {
-                if (p && p.id && !loadedPayments.some((existing) => existing.id === p.id)) {
-                  loadedPayments.push({
-                    ...p,
-                    amount: Number(p.amount) || 0
-                  });
-                }
-              });
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Failed to parse customer embedded payments', e);
-      }
-    }
-
-    if (loadedPayments.length > 0) {
-      return loadedPayments;
     }
 
     return [
@@ -308,26 +274,33 @@ export default function App() {
 
   // Returns state
   const [productReturns, setProductReturns] = useState<ProductReturn[]>(() => {
-    const saved = localStorage.getItem('bazargani_returns_v1');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.error('Failed to parse returns state', e);
+    const returnKeys = [
+      STORAGE_KEYS.RETURNS,
+      'bazargani_product_returns_v2',
+      'bazargani_returns_v1'
+    ];
+    for (const key of returnKeys) {
+      const saved = localStorage.getItem(key);
+      if (saved !== null) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+          console.error('Failed to parse returns state', e);
+        }
       }
     }
     return [];
   });
 
   useEffect(() => {
-    localStorage.setItem('bazargani_returns_v1', JSON.stringify(productReturns));
+    localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(productReturns));
   }, [productReturns]);
 
   // TreasuryTransactions state
   const [treasuryTransactions, setTreasuryTransactions] = useState<TreasuryTransaction[]>(() => {
-    const saved = localStorage.getItem('bazargani_treasury_v1');
-    if (saved) {
+    const saved = localStorage.getItem(STORAGE_KEYS.TREASURY);
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -339,7 +312,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('bazargani_treasury_v1', JSON.stringify(treasuryTransactions));
+    localStorage.setItem(STORAGE_KEYS.TREASURY, JSON.stringify(treasuryTransactions));
   }, [treasuryTransactions]);
 
   // Synchronize invoice items and totals whenever returns change
@@ -912,11 +885,15 @@ export default function App() {
   }, [isSecretMode]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+    const sanitizedCustomers = customers.map(c => {
+      const { payments: _, ...cleanCust } = c as any;
+      return cleanCust;
+    });
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(sanitizedCustomers));
   }, [customers]);
 
   useEffect(() => {
-    localStorage.setItem('bazargani_payments_v2', JSON.stringify(payments));
+    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments));
   }, [payments]);
 
   // Toggle Secret mode
@@ -932,7 +909,8 @@ export default function App() {
 
   // Customer handlers
   const handleAddCustomer = (newCustomer: Customer) => {
-    setCustomers([newCustomer, ...customers]);
+    const { payments: _, ...cleanCust } = newCustomer as any;
+    setCustomers([cleanCust, ...customers]);
     addActivityLog(
       'ثبت مشتری جدید',
       `مشتری «${newCustomer.name}» در سیستم ثبت شد.`,
@@ -945,9 +923,10 @@ export default function App() {
   const handleUpdateCustomer = (updatedCust: Customer) => {
     const oldCust = customers.find(c => c.id === updatedCust.id);
     const oldName = oldCust?.name?.trim().toLowerCase();
+    const { payments: _, ...cleanCust } = updatedCust as any;
 
     // 1. Update Customers list & storage
-    const updatedCustomers = customers.map(c => c.id === updatedCust.id ? updatedCust : c);
+    const updatedCustomers = customers.map(c => c.id === updatedCust.id ? cleanCust : c);
     setCustomers(updatedCustomers);
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
 
@@ -985,7 +964,7 @@ export default function App() {
       return p;
     });
     setPayments(updatedPayments);
-    localStorage.setItem('bazargani_payments_v2', JSON.stringify(updatedPayments));
+    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(updatedPayments));
 
     // 4. Relational Cascade update for all Product Returns
     const updatedReturns = productReturns.map(r => {
@@ -1001,7 +980,7 @@ export default function App() {
       return r;
     });
     setProductReturns(updatedReturns);
-    localStorage.setItem('bazargani_product_returns_v2', JSON.stringify(updatedReturns));
+    localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(updatedReturns));
 
     // 5. Update activeViewingInvoice if it belongs to this customer
     if (activeViewingInvoice) {
@@ -1062,7 +1041,7 @@ export default function App() {
       return true;
     });
     setPayments(updatedPayments);
-    localStorage.setItem('bazargani_payments_v2', JSON.stringify(updatedPayments));
+    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(updatedPayments));
 
     // 3. Cascade delete/clean customer sales invoices
     const updatedInvoices = invoices.filter(i => {
@@ -1080,7 +1059,7 @@ export default function App() {
       return true;
     });
     setProductReturns(updatedReturns);
-    localStorage.setItem('bazargani_product_returns_v2', JSON.stringify(updatedReturns));
+    localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(updatedReturns));
 
     addActivityLog(
       'حذف کامل پرونده مشتری و کلیه رکوردهای وابسته',
@@ -1104,7 +1083,7 @@ export default function App() {
           return idValid || nameValid;
         });
         if (cleaned.length !== prev.length) {
-          localStorage.setItem('bazargani_payments_v2', JSON.stringify(cleaned));
+          localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(cleaned));
           return cleaned;
         }
         return prev;
@@ -1118,7 +1097,7 @@ export default function App() {
           return idValid || nameValid;
         });
         if (cleaned.length !== prev.length) {
-          localStorage.setItem('bazargani_product_returns_v2', JSON.stringify(cleaned));
+          localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(cleaned));
           return cleaned;
         }
         return prev;
@@ -1162,7 +1141,7 @@ export default function App() {
     const updatedList = payments.map(p => p.id === updatedPayment.id ? updatedPayment : p);
     setPayments(updatedList);
     try {
-      localStorage.setItem('bazargani_payments_v2', JSON.stringify(updatedList));
+      localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(updatedList));
     } catch (e) {
       console.error('Error saving updated payments to localStorage', e);
     }
@@ -1180,14 +1159,30 @@ export default function App() {
     const cleanId = paymentId.startsWith('pay-') ? paymentId : `pay-${paymentId}`;
     let targetPayment: CustomerPayment | undefined = payments.find(p => p.id === paymentId || p.id === rawId || p.id === cleanId);
 
-    setPayments(prev => {
-      const filtered = prev.filter(p => p.id !== paymentId && p.id !== rawId && p.id !== cleanId);
+    // 1. Delete from payments state and persist to localStorage
+    const filtered = payments.filter(p => p.id !== paymentId && p.id !== rawId && p.id !== cleanId);
+    setPayments(filtered);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(filtered));
+    } catch (e) {
+      console.error('Error saving payments to localStorage', e);
+    }
+
+    // 2. Also scrub any nested payments from customer objects in state and localStorage
+    setCustomers(prevCusts => {
+      const scrubbed = prevCusts.map(c => {
+        if ((c as any).payments && Array.isArray((c as any).payments)) {
+          const nextP = (c as any).payments.filter((p: any) => p.id !== paymentId && p.id !== rawId && p.id !== cleanId);
+          return { ...c, payments: nextP };
+        }
+        return c;
+      });
       try {
-        localStorage.setItem('bazargani_payments_v2', JSON.stringify(filtered));
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(scrubbed));
       } catch (e) {
-        console.error('Error saving payments to localStorage', e);
+        console.error('Error saving cleaned customers to localStorage', e);
       }
-      return filtered;
+      return scrubbed;
     });
 
     if (targetPayment) {
@@ -2116,7 +2111,7 @@ export default function App() {
           }
 
           setPayments(importedPayments);
-          localStorage.setItem('bazargani_payments_v2', JSON.stringify(importedPayments));
+          localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(importedPayments));
 
           // Extract and restore product returns
           const rawReturns = bundle.productReturns || bundle.returns;
@@ -2124,7 +2119,7 @@ export default function App() {
           if (Array.isArray(rawReturns)) {
             importedReturns = rawReturns;
             setProductReturns(importedReturns);
-            localStorage.setItem('bazargani_returns_v1', JSON.stringify(importedReturns));
+            localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(importedReturns));
           }
 
           // Extract and restore treasury / liquidity transactions
@@ -2133,7 +2128,7 @@ export default function App() {
           if (Array.isArray(rawTreasury)) {
             importedTreasury = rawTreasury;
             setTreasuryTransactions(importedTreasury);
-            localStorage.setItem('bazargani_treasury_v1', JSON.stringify(importedTreasury));
+            localStorage.setItem(STORAGE_KEYS.TREASURY, JSON.stringify(importedTreasury));
           }
 
           // Extract and restore categories
@@ -2259,14 +2254,14 @@ export default function App() {
     }
 
     setPayments(importedPayments);
-    localStorage.setItem('bazargani_payments_v2', JSON.stringify(importedPayments));
+    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(importedPayments));
 
     // Restore product returns
     const rawReturns = snapshotData.productReturns || snapshotData.returns;
     let importedReturnsCount = 0;
     if (Array.isArray(rawReturns)) {
       setProductReturns(rawReturns);
-      localStorage.setItem('bazargani_returns_v1', JSON.stringify(rawReturns));
+      localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(rawReturns));
       importedReturnsCount = rawReturns.length;
     }
 
@@ -2275,7 +2270,7 @@ export default function App() {
     let importedTreasuryCount = 0;
     if (Array.isArray(rawTreasury)) {
       setTreasuryTransactions(rawTreasury);
-      localStorage.setItem('bazargani_treasury_v1', JSON.stringify(rawTreasury));
+      localStorage.setItem(STORAGE_KEYS.TREASURY, JSON.stringify(rawTreasury));
       importedTreasuryCount = rawTreasury.length;
     }
 

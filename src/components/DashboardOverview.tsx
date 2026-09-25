@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { AppTab } from './HeaderNav';
 import { DashboardCharts } from './DashboardCharts';
+import { SortableTableHeader } from './SortableTableHeader';
 import { themes, ThemeColor } from './ThemeConfig';
 import { Pagination } from './Pagination';
 
@@ -195,8 +196,41 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     return true;
   });
 
-  const tableTotalPages = Math.ceil(filteredTableInvoices.length / tableItemsPerPage) || 1;
-  const paginatedTableInvoices = filteredTableInvoices.slice(
+  type DashSortField = 'index' | 'invoiceNumber' | 'date' | 'customer' | 'amount';
+  const [dashSortField, setDashSortField] = useState<DashSortField>('date');
+  const [dashSortDirection, setDashSortDirection] = useState<'desc' | 'asc'>('desc');
+
+  const handleDashSort = (field: DashSortField) => {
+    if (dashSortField === field) {
+      setDashSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setDashSortField(field);
+      setDashSortDirection(field === 'customer' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortedTableInvoices = React.useMemo(() => {
+    return [...filteredTableInvoices].sort((a, b) => {
+      let cmp = 0;
+      if (dashSortField === 'invoiceNumber') {
+        cmp = (a.invoiceNumber || '').localeCompare(b.invoiceNumber || '');
+      } else if (dashSortField === 'customer') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '', 'fa');
+      } else if (dashSortField === 'amount') {
+        cmp = (a.finalAmount || 0) - (b.finalAmount || 0);
+      } else {
+        // date / timestamp
+        const ta = a.createdAt || (a.date ? new Date(a.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        const tb = b.createdAt || (b.date ? new Date(b.date.replace(/\//g, '-')).getTime() || 0 : 0);
+        if (ta && tb && ta !== tb) cmp = ta - tb;
+        else cmp = (a.date || '').localeCompare(b.date || '');
+      }
+      return dashSortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredTableInvoices, dashSortField, dashSortDirection]);
+
+  const tableTotalPages = Math.ceil(sortedTableInvoices.length / tableItemsPerPage) || 1;
+  const paginatedTableInvoices = sortedTableInvoices.slice(
     (tableCurrentPage - 1) * tableItemsPerPage,
     tableCurrentPage * tableItemsPerPage
   );
@@ -822,15 +856,53 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* The Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold">
+            <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold select-none">
               <tr>
                 <th className="p-3.5 w-12 text-center">#</th>
-                <th className="p-3.5 w-28">شماره سند</th>
-                <th className="p-3.5 w-28">تاریخ و ساعت</th>
-                <th className="p-3.5">طرف‌حساب (مشتری / طرف معامله)</th>
+
+                <SortableTableHeader
+                  field="invoiceNumber"
+                  currentField={dashSortField}
+                  currentDirection={dashSortDirection}
+                  onSort={handleDashSort}
+                  className="w-28"
+                >
+                  شماره سند
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="date"
+                  currentField={dashSortField}
+                  currentDirection={dashSortDirection}
+                  onSort={handleDashSort}
+                  className="w-28"
+                >
+                  تاریخ و ساعت
+                </SortableTableHeader>
+
+                <SortableTableHeader
+                  field="customer"
+                  currentField={dashSortField}
+                  currentDirection={dashSortDirection}
+                  onSort={handleDashSort}
+                >
+                  طرف‌حساب (مشتری / طرف معامله)
+                </SortableTableHeader>
+
                 <th className="p-3.5">نوع سند</th>
                 <th className="p-3.5">اقلام و شرح کالا</th>
-                <th className="p-3.5 text-left w-36">مبلغ کل فاکتور</th>
+
+                <SortableTableHeader
+                  field="amount"
+                  currentField={dashSortField}
+                  currentDirection={dashSortDirection}
+                  onSort={handleDashSort}
+                  align="left"
+                  className="w-36"
+                >
+                  مبلغ کل فاکتور
+                </SortableTableHeader>
+
                 <th className="p-3.5 text-left w-32">سود ناخالص</th>
                 <th className="p-3.5 text-center w-28">وضعیت تسویه</th>
                 <th className="p-3.5 text-center w-24">مشاهده</th>

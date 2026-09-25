@@ -1097,8 +1097,8 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                 سود قطعی حاصل از فروش:
               </div>
-              <div className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                +{formatPrice(inwardSellThroughSummary.totalRealizedProfit)}
+              <div className={`text-sm sm:text-base font-black ${inwardSellThroughSummary.totalRealizedProfit > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'} font-mono`}>
+                {inwardSellThroughSummary.totalRealizedProfit > 0 ? `+${formatPrice(inwardSellThroughSummary.totalRealizedProfit)}` : '۰ تومان'}
               </div>
             </div>
             {inwardSellThroughSummary.totalPotentialProfit > inwardSellThroughSummary.totalRealizedProfit && (
