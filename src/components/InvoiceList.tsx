@@ -721,37 +721,22 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                             </span>
                           )}
 
-                          {/* Sell-Through & Profit Status for Purchase/Inward Invoices */}
+                          {/* Inward Sell-Through: Clean single line without any box */}
                           {inwardSellThrough && !isSecretMode && (
-                            <div className="mt-1 flex items-center gap-1.5 justify-end flex-wrap dir-rtl">
+                            <div className="text-[10.5px] font-bold mt-0.5 whitespace-nowrap dir-rtl text-left font-mono">
                               {inwardSellThrough.isFullySold ? (
-                                <>
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.profit} font-black text-[10px]`}>
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                    <span>کاملاً فروخته شده (۱۰۰٪)</span>
-                                  </span>
-                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${badges.profit} font-bold text-[10px] font-mono`}>
-                                    <span>سود کل فروش:</span>
-                                    <span className={`font-black ${badges.profitText}`}>+{formatPrice(inwardSellThrough.totalRealizedProfit)}</span>
-                                  </span>
-                                </>
-                              ) : inwardSellThrough.percentSold > 0 ? (
-                                <>
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.stock} font-bold text-[10px]`}>
-                                    <span>{toPersianDigits(inwardSellThrough.percentSold)}٪ فروخته شده</span>
-                                    <span className="text-slate-400">•</span>
-                                    <span className="text-amber-700 dark:text-amber-300">{toPersianDigits(inwardSellThrough.percentRemaining)}٪ مانده</span>
-                                  </span>
-                                  {inwardSellThrough.totalRealizedProfit > 0 && (
-                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${badges.profit} font-bold text-[10px] font-mono`}>
-                                      <span>سود تا الان:</span>
-                                      <span className={`font-black ${badges.profitText}`}>+{formatPrice(inwardSellThrough.totalRealizedProfit)}</span>
-                                    </span>
-                                  )}
-                                </>
+                                <span className="text-emerald-600 dark:text-emerald-400 font-black">
+                                  ۱۰۰٪ فروش‌رفته
+                                </span>
                               ) : (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${badges.draft} font-medium text-[10px]`}>
-                                  <span>موجودی کامل در انبار (۰٪ فروش)</span>
+                                <span>
+                                  <span className="text-sky-600 dark:text-sky-400 font-black">
+                                    {toPersianDigits(inwardSellThrough.percentSold)}٪ فروش‌رفته
+                                  </span>
+                                  <span className="text-slate-300 dark:text-slate-600 mx-1.5 font-normal">|</span>
+                                  <span className="text-amber-600 dark:text-amber-400 font-black">
+                                    {toPersianDigits(inwardSellThrough.percentRemaining)}٪ مانده
+                                  </span>
                                 </span>
                               )}
                             </div>

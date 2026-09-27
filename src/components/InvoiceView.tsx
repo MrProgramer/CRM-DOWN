@@ -1,6 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Invoice, StoreSettings, Product, ProductReturn } from '../types';
-import { formatPrice, formatCartonText, toPersianDigits, getCurrentPersianDate, getCurrentPersianTime, getNetReturnAmount, formatProductPackagingSpec } from '../utils/formatters';
+import { 
+  formatPrice, 
+  formatCartonText, 
+  toPersianDigits, 
+  getCurrentPersianDate, 
+  getCurrentPersianTime, 
+  getNetReturnAmount, 
+  formatProductPackagingSpec 
+} from '../utils/formatters';
 import { calculateInwardInvoiceSellThrough } from '../utils/inwardSellThrough';
 import { themes, getThemeBadges } from './ThemeConfig';
 import { downloadInvoiceAsImage, downloadInvoiceAsPDF, copyInvoiceImageToClipboard } from '../utils/exportInvoice';
@@ -28,7 +36,11 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle2,
-  Package
+  Package,
+  Sun,
+  Moon,
+  Info,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,6 +48,7 @@ interface InvoiceViewProps {
   invoice: Invoice;
   settings: StoreSettings;
   isSecretMode: boolean;
+  isDarkMode?: boolean;
   onToggleSecretMode: () => void;
   onEdit?: (invoice: Invoice) => void;
   onBack?: () => void;
@@ -52,6 +65,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   invoice,
   settings,
   isSecretMode,
+  isDarkMode = false,
   onToggleSecretMode,
   onEdit,
   onBack,
@@ -64,22 +78,38 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   invoices = [],
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedCard, setCopiedCard] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isCopyingScreenshot, setIsCopyingScreenshot] = useState(false);
 
+  // Screen canvas appearance mode: 'auto' (respects app dark/light mode), 'dark' (forced dark), 'paper' (forced day/print preview)
+  const [viewPaperMode, setViewPaperMode] = useState<'auto' | 'dark' | 'paper'>('auto');
+
   // Presentation / Adjusted Display Price Mode (فاکتور نمایشی / قیمت ارائه به مشتری / همکار)
   const [isPresentationModeActive, setIsPresentationModeActive] = useState<boolean>(false);
   const [presentationModeType, setPresentationModeType] = useState<'percent' | 'fixed' | 'selling_price' | 'custom'>('percent');
-  const [markupPercent, setMarkupPercent] = useState<number>(10); // default 10%
-  const [fixedMarkupPerUnit, setFixedMarkupPerUnit] = useState<number>(1000); // default 1000 Toman per unit
+  const [markupPercent, setMarkupPercent] = useState<number>(10);
+  const [fixedMarkupPerUnit, setFixedMarkupPerUnit] = useState<number>(1000);
   const [customItemUnitPrices, setCustomItemUnitPrices] = useState<{ [itemKey: string]: number }>({});
   const [isPresentationPanelOpen, setIsPresentationPanelOpen] = useState<boolean>(false);
 
   const theme = themes[settings.themeColor] || themes.teal;
   const badges = getThemeBadges(settings.themeColor);
   const isPurchase = invoice.type === 'purchase';
+
+  // Determine if the canvas should currently render in dark style on screen
+  const isDarkCanvas = useMemo(() => {
+    if (viewPaperMode === 'dark') return true;
+    if (viewPaperMode === 'paper') return false;
+    // 'auto': follow app dark mode
+    if (typeof isDarkMode === 'boolean') return isDarkMode;
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  }, [viewPaperMode, isDarkMode]);
 
   // Inward invoice sell-through analysis
   const inwardSellThroughSummary = useMemo(() => {
@@ -169,7 +199,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
     return '';
   }, [invoice.items]);
 
-  // Find all matched returns for this invoice (both sales and purchase returns)
+  // Find all matched returns for this invoice
   const matchedReturns = (productReturns || []).filter(r => {
     if (isPurchase && r.type !== 'to_supplier') return false;
     if (!isPurchase && r.type !== 'from_customer') return false;
@@ -185,7 +215,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
 
   const totalInvoiceReturnsAmount = matchedReturns.reduce((sum, r) => sum + getNetReturnAmount(r), 0);
 
-  // 1. Current items sum
+  // Current items sum
   const itemsCurrentSubtotal = isPurchase
     ? invoice.items.reduce((sum, item, idx) => {
         const uPrice = getItemEffectiveUnitPrice(item, idx);
@@ -211,7 +241,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
     return sum + (item.totalPieces * (isPurchase ? pPrice : (item.unitSellingPrice || 0)));
   }, 0);
 
-  // 2. Original items sum if preserved in originalTotalPrice / originalTotalPieces
+  // Original items sum if preserved in originalTotalPrice / originalTotalPieces
   const itemsOriginalSubtotal = isPurchase
     ? invoice.items.reduce((sum, item, idx) => {
         const uPrice = getItemEffectiveUnitPrice(item, idx);
@@ -235,7 +265,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
         return sum + (uPrice > 0 ? origPieces * uPrice : (item.totalPrice || 0));
       }, 0);
 
-  // Gross subtotal before any return deduction:
+  // Gross subtotal before any return deduction
   const grossSubtotal = totalInvoiceReturnsAmount > 0
     ? (itemsOriginalSubtotal > itemsCurrentSubtotal
         ? itemsOriginalSubtotal
@@ -318,7 +348,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
       () => {
         if (onShowAlert) {
           onShowAlert(
-            '✅ عکس فاکتور در کلیپ‌بورد کپی شد! در تلگرام یا ایتا کلید Paste (Ctrl+V) را بزنید. (برای کپی متن کپشن نیز می‌توانید از دکمه «کپی متن خلاصه» استفاده کنید).',
+            '✅ عکس فاکتور در حافظه کپی شد! در تلگرام یا ایتا کلید Paste (Ctrl+V) را بزنید.',
             'success',
             'کپی عکس فاکتور'
           );
@@ -340,12 +370,22 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
     navigator.clipboard.writeText(text);
     setCopied(true);
     if (onShowAlert) {
-      onShowAlert('متن کامل کپشن و خلاصه فاکتور در کلیپ‌بورد کپی شد! اکنون می‌توانید در کادر کپشن تلگرام پیست کنید.', 'success', 'کپی متن خلاصه فاکتور');
+      onShowAlert('متن کامل کپشن و خلاصه فاکتور در کلیپ‌بورد کپی شد.', 'success', 'کپی متن خلاصه فاکتور');
     }
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // parse balance values
+  const handleCopyCardNumber = () => {
+    if (!settings.cardNumber) return;
+    navigator.clipboard.writeText(settings.cardNumber.replace(/\s+/g, ''));
+    setCopiedCard(true);
+    if (onShowAlert) {
+      onShowAlert('شماره کارت در کلیپ‌بورد کپی شد.', 'success', 'کپی شماره کارت');
+    }
+    setTimeout(() => setCopiedCard(false), 2000);
+  };
+
+  // Parse balance values
   const parseBalanceString = (str: string): number => {
     if (!str || str.includes('بی‌حساب') || str.includes('۰') || str.trim() === '') return 0;
     const cleanStr = str.replace(/[^\d]/g, '');
@@ -396,7 +436,6 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
   const hasAdjustments = (invoice.discount > 0) || (invoice.tax > 0) || (totalInvoiceReturnsAmount > 0) || Boolean(invoice.offsetReturnsTotal && invoice.offsetReturnsTotal > 0);
   const prevValNumber = parseBalanceString(invoice.previousBalance || '');
 
-  // Quick preset percentages & fixed addition values
   const percentPresets = [5, 8, 10, 12, 15, 20, 25];
   const fixedPresets = [500, 1000, 2000, 3000, 5000, 10000];
 
@@ -419,158 +458,194 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-16">
-      {/* Control Bar (Hidden when printing) - Flat, Clean & Modern */}
-      <div className="no-print mb-6 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 text-slate-900 dark:text-slate-100 transition-colors">
-        <div className="flex items-center gap-3 flex-wrap">
+    <div className="w-full max-w-5xl mx-auto pb-16 transition-colors">
+      {/* Control Bar (Hidden when printing) - Flat, Clean, Modern */}
+      <div className="no-print mb-5 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-slate-900 dark:text-slate-100 shadow-none transition-colors">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {onBack && (
             <button
               id="invoice-back-btn"
               onClick={onBack}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             >
-              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-              <span>بازگشت به لیست</span>
+              <ArrowRight className="w-4 h-4 stroke-[2]" />
+              <span>بازگشت</span>
             </button>
           )}
 
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+          <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} rounded-xl text-xs font-black whitespace-nowrap shrink-0`}>
-              <FileText className="w-3.5 h-3.5 shrink-0" />
-              <span>فاکتور #{toPersianDigits(invoice.invoiceNumber)}</span>
-            </div>
-            {invoice.type === 'purchase' ? (
-              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-black rounded-xl whitespace-nowrap shrink-0">
-                فاکتور خرید (ورود به انبار)
-              </span>
-            ) : (
-              <span className={`px-2.5 py-1 ${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor} text-xs font-black rounded-xl whitespace-nowrap shrink-0`}>
-                فاکتور فروش (مشتری)
-              </span>
-            )}
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold hidden md:inline-block whitespace-nowrap">
+          {/* Clean metadata badge */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="font-bold text-slate-900 dark:text-white">
+              فاکتور #{toPersianDigits(invoice.invoiceNumber)}
+            </span>
+            <span className="text-slate-400 dark:text-slate-600">·</span>
+            <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+              isPurchase 
+                ? 'bg-amber-100/70 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+                : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+            }`}>
+              {isPurchase ? 'ورود به انبار (خرید)' : 'فروش مشتری'}
+            </span>
+            <span className="text-slate-400 dark:text-slate-600 hidden md:inline">·</span>
+            <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] hidden md:inline">
               {toPersianDigits(invoice.date)}
             </span>
           </div>
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
-          {/* Custom Display / Fake Purchase Price Toggle Button */}
-          <button
-            id="toggle-presentation-price-btn"
-            onClick={() => {
-              if (!isPresentationModeActive && !isPresentationPanelOpen) {
-                setIsPresentationModeActive(true);
-                setIsPresentationPanelOpen(true);
-              } else {
-                setIsPresentationPanelOpen(!isPresentationPanelOpen);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              isPresentationModeActive
-                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-500/20'
-                : 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-            }`}
-            title="تنظیم قیمت نمایشی یا درصد افزایش روی قیمت خرید جهت ارائه فاکتور یا اسکرین‌شات"
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>
-              {isPresentationModeActive
-                ? `قیمت نمایشی: ${
-                    presentationModeType === 'percent'
-                      ? `+${toPersianDigits(markupPercent)}٪`
-                      : presentationModeType === 'fixed'
-                      ? `+${formatPrice(fixedMarkupPerUnit)}`
-                      : presentationModeType === 'selling_price'
-                      ? 'قیمت فروش انبار'
-                      : 'سفارشی'
-                  }`
-                : '✨ قیمت نمایشی (ارائه فاکتور)'}
-            </span>
-            {isPresentationPanelOpen ? (
-              <ChevronUp className="w-3.5 h-3.5 shrink-0 mr-0.5" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 shrink-0 mr-0.5" />
-            )}
-          </button>
+          {/* Day / Night View Canvas Toggle (Preview Mode) */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+            <button
+              type="button"
+              onClick={() => setViewPaperMode('auto')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
+                viewPaperMode === 'auto'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title="پیروی خودکار از حالت شب/روز کل برنامه"
+            >
+              <span>خودکار</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPaperMode('dark')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
+                viewPaperMode === 'dark'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title="نمایش فاکتور در تم تیره (حالت شب فلت)"
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span>تیره</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPaperMode('paper')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
+                viewPaperMode === 'paper'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title="پیش‌نمایش کاغذ سفید چاپی A4 روی صفحه"
+            >
+              <Sun className="w-3.5 h-3.5" />
+              <span>کاغذ چاپی</span>
+            </button>
+          </div>
+
+          {/* Presentation Mode Toggle Button */}
+          {isPurchase && (
+            <button
+              id="toggle-presentation-price-btn"
+              onClick={() => {
+                if (!isPresentationModeActive && !isPresentationPanelOpen) {
+                  setIsPresentationModeActive(true);
+                  setIsPresentationPanelOpen(true);
+                } else {
+                  setIsPresentationPanelOpen(!isPresentationPanelOpen);
+                }
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                isPresentationModeActive
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`}
+              title="قیمت نمایشی یا درصد افزایش روی قیمت خرید جهت ارائه به مشتری"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>
+                {isPresentationModeActive
+                  ? `قیمت نمایشی: ${
+                      presentationModeType === 'percent'
+                        ? `+${toPersianDigits(markupPercent)}٪`
+                        : presentationModeType === 'fixed'
+                        ? `+${formatPrice(fixedMarkupPerUnit)}`
+                        : presentationModeType === 'selling_price'
+                        ? 'قیمت فروش انبار'
+                        : 'سفارشی'
+                    }`
+                  : 'قیمت نمایشی'}
+              </span>
+              {isPresentationPanelOpen ? (
+                <ChevronUp className="w-3.5 h-3.5 mr-0.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 mr-0.5" />
+              )}
+            </button>
+          )}
 
           {/* Edit Invoice */}
           {onEdit && (
             <button
               id="invoice-edit-btn"
               onClick={() => onEdit(invoice)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer whitespace-nowrap shrink-0"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             >
-              <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span>ویرایش فاکتور</span>
+              <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>ویرایش</span>
             </button>
           )}
 
-          {/* Copy Screenshot for Telegram / WhatsApp (Direct clipboard image) */}
+          {/* Copy Screenshot */}
           <button
             id="invoice-copy-screenshot-btn"
             onClick={handleCopyScreenshot}
             disabled={isCopyingScreenshot}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-            title="کپی مستقیم عکس فاکتور در حافظه جهت ارسال سریع با Paste در تلگرام یا پیام‌رسان‌ها"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+            title="کپی مستقیم تصویر فاکتور در کلیپ‌بورد برای تلگرام یا ایتا"
           >
-            <Camera className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span>{isCopyingScreenshot ? 'در حال تهیه عکس...' : 'کپی اسکرین‌شات (تلگرام)'}</span>
+            <Camera className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+            <span>{isCopyingScreenshot ? 'کپی عکس...' : 'کپی عکس'}</span>
           </button>
 
-          {/* Copy Summary */}
+          {/* Copy Summary Text */}
           <button
             id="invoice-copy-summary-btn"
             onClick={handleCopySummary}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" /> : <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />}
-            <span>{copied ? 'کپی شد!' : 'کپی متن خلاصه'}</span>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+            <span>{copied ? 'کپی شد' : 'کپی متن'}</span>
           </button>
 
-          {/* Print / Export 3-Way Options Button */}
+          {/* Print / Export Button */}
           <button
             id="invoice-print-btn"
             onClick={() => setIsExportModalOpen(true)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black text-white transition-all cursor-pointer ${theme.primary} ${theme.primaryHover} whitespace-nowrap shrink-0`}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-800 dark:border-slate-700 transition-colors cursor-pointer"
           >
-            <Printer className="w-4 h-4 shrink-0" />
-            <span>چاپ و صدور فاکتور</span>
+            <Printer className="w-3.5 h-3.5" />
+            <span>چاپ و صدور</span>
           </button>
         </div>
       </div>
 
-      {/* Presentation / Fake Purchase Price Settings Panel */}
+      {/* Presentation Mode Settings Panel (Flat, Clean) */}
       <AnimatePresence>
         {isPresentationPanelOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0, y: -8 }}
+            initial={{ opacity: 0, height: 0, y: -4 }}
             animate={{ opacity: 1, height: 'auto', y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -8 }}
-            className="no-print mb-6 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/40 dark:via-amber-950/20 rounded-2xl border-2 border-amber-400/60 dark:border-amber-700/60 p-5 shadow-lg space-y-4 overflow-hidden"
+            exit={{ opacity: 0, height: 0, y: -4 }}
+            className="no-print mb-5 bg-white dark:bg-slate-900 rounded-xl border border-amber-300 dark:border-amber-800/80 p-4 space-y-3 overflow-hidden text-xs"
           >
-            {/* Header with Switch */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-amber-200 dark:border-amber-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-500 text-white shadow-xs">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>تنظیم قیمت نمایشی فاکتور (جهت ارائه به مشتری / تهیه عکس و اسکرین‌شات)</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/80 dark:text-amber-200">
-                      فقط جنبه نمایشی / بدون تغییر انبار
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    با فعال‌سازی این بخش، قیمت‌های خرید در پیش‌نمایش، اسکرین‌شات و پی‌دی‌اف به میزان دلخواه شما افزایش می‌یابند.
-                  </p>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="font-black text-slate-900 dark:text-white">
+                  تنظیم قیمت نمایشی فاکتور (ارائه به همکار / اسکرین‌شات)
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-bold">
+                  بدون تغییر انبار
+                </span>
               </div>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -578,200 +653,162 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                     onChange={(e) => setIsPresentationModeActive(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                  <span className="mr-2 text-xs font-black text-slate-800 dark:text-slate-200">
-                    {isPresentationModeActive ? 'حالت نمایشی فعال' : 'حالت نمایشی خاموش'}
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                  <span className="mr-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isPresentationModeActive ? 'فعال' : 'غیرفعال'}
                   </span>
                 </label>
 
                 <button
                   onClick={() => setIsPresentationPanelOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer"
-                  title="بستن پنل تنظیمات"
+                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Mode Tabs */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {/* 1. Percent Markup */}
+            {/* Mode selection tabs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setPresentationModeType('percent');
                   if (!isPresentationModeActive) setIsPresentationModeActive(true);
                 }}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
                   presentationModeType === 'percent' && isPresentationModeActive
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-amber-300'
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}
               >
-                <Percent className="w-4 h-4 shrink-0" />
-                <span>افزایش درصدی (+{toPersianDigits(markupPercent)}٪)</span>
+                <Percent className="w-3.5 h-3.5" />
+                <span>درصدی (+{toPersianDigits(markupPercent)}٪)</span>
               </button>
 
-              {/* 2. Fixed Amount Markup */}
               <button
                 type="button"
                 onClick={() => {
                   setPresentationModeType('fixed');
                   if (!isPresentationModeActive) setIsPresentationModeActive(true);
                 }}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
                   presentationModeType === 'fixed' && isPresentationModeActive
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-amber-300'
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}
               >
-                <Coins className="w-4 h-4 shrink-0" />
-                <span>مبلغ ثابت روی هر واحد (+{formatPrice(fixedMarkupPerUnit)})</span>
+                <Coins className="w-3.5 h-3.5" />
+                <span>مبلغ ثابت (+{formatPrice(fixedMarkupPerUnit)})</span>
               </button>
 
-              {/* 3. Selling Price of Warehouse */}
               <button
                 type="button"
                 onClick={() => {
                   setPresentationModeType('selling_price');
                   if (!isPresentationModeActive) setIsPresentationModeActive(true);
                 }}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
                   presentationModeType === 'selling_price' && isPresentationModeActive
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-amber-300'
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}
               >
-                <TrendingUp className="w-4 h-4 shrink-0" />
-                <span>قیمت فروش کالا در انبار</span>
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>قیمت فروش انبار</span>
               </button>
 
-              {/* 4. Custom Item Prices */}
               <button
                 type="button"
                 onClick={() => {
                   setPresentationModeType('custom');
                   if (!isPresentationModeActive) setIsPresentationModeActive(true);
                 }}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
                   presentationModeType === 'custom' && isPresentationModeActive
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-amber-300'
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}
               >
-                <SlidersHorizontal className="w-4 h-4 shrink-0" />
-                <span>قیمت‌گذاری دلخواه اقلام</span>
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>قیمت‌گذاری دلخواه</span>
               </button>
             </div>
 
-            {/* Sub Controls according to selected mode */}
+            {/* Sub-controls */}
             {isPresentationModeActive && (
-              <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-4 border border-amber-200/80 dark:border-amber-900/50 space-y-3">
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2.5">
                 {presentationModeType === 'percent' && (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                        انتخاب یا ورود درصد افزایش روی قیمت خرید:
-                      </span>
-                      <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                        +{toPersianDigits(markupPercent)} درصد سود روی هر قلم
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      {percentPresets.map((pct) => (
-                        <button
-                          key={pct}
-                          type="button"
-                          onClick={() => setMarkupPercent(pct)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                            markupPercent === pct
-                              ? 'bg-amber-500 text-white shadow-xs'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                          }`}
-                        >
-                          +{toPersianDigits(pct)}٪
-                        </button>
-                      ))}
-
-                      {/* Custom Percentage Input */}
-                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">درصد دلخواه:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="500"
-                          step="0.5"
-                          value={markupPercent || ''}
-                          onChange={(e) => setMarkupPercent(Math.max(0, parseFloat(e.target.value) || 0))}
-                          className="w-16 text-center font-black text-xs bg-transparent text-slate-900 dark:text-white outline-none border-b border-amber-400"
-                          placeholder="مثلاً ۱۰"
-                        />
-                        <span className="text-xs font-bold text-slate-500">٪</span>
-                      </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">انتخاب درصد:</span>
+                    {percentPresets.map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setMarkupPercent(pct)}
+                        className={`px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+                          markupPercent === pct
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        +{toPersianDigits(pct)}٪
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 mr-auto">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">درصد دلخواه:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500"
+                        step="0.5"
+                        value={markupPercent || ''}
+                        onChange={(e) => setMarkupPercent(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-12 text-center font-bold text-xs bg-transparent text-slate-900 dark:text-white outline-none"
+                      />
+                      <span className="text-[10px] text-slate-500">٪</span>
                     </div>
                   </div>
                 )}
 
                 {presentationModeType === 'fixed' && (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                        مبلغ افزایشی ثابت روی هر دانه/واحد کالا (تومان):
-                      </span>
-                      <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                        +{formatPrice(fixedMarkupPerUnit)} روی هر دانه
-                      </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">مبلغ افزایشی روی هر دانه:</span>
+                    {fixedPresets.map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setFixedMarkupPerUnit(amt)}
+                        className={`px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+                          fixedMarkupPerUnit === amt
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        +{formatPrice(amt)}
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 mr-auto">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">مبلغ دلخواه:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="100"
+                        value={fixedMarkupPerUnit || ''}
+                        onChange={(e) => setFixedMarkupPerUnit(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-20 text-center font-bold text-xs bg-transparent text-slate-900 dark:text-white outline-none"
+                      />
+                      <span className="text-[10px] text-slate-500">تومان</span>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      {fixedPresets.map((amt) => (
-                        <button
-                          key={amt}
-                          type="button"
-                          onClick={() => setFixedMarkupPerUnit(amt)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                            fixedMarkupPerUnit === amt
-                              ? 'bg-amber-500 text-white shadow-xs'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                          }`}
-                        >
-                          +{formatPrice(amt)}
-                        </button>
-                      ))}
-
-                      {/* Custom Amount Input */}
-                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">مبلغ دلخواه:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="100"
-                          value={fixedMarkupPerUnit || ''}
-                          onChange={(e) => setFixedMarkupPerUnit(Math.max(0, parseInt(e.target.value) || 0))}
-                          className="w-24 text-center font-black text-xs bg-transparent text-slate-900 dark:text-white outline-none border-b border-amber-400"
-                          placeholder="مثلاً ۱۰۰۰"
-                        />
-                        <span className="text-[10px] text-slate-500">تومان</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {presentationModeType === 'selling_price' && (
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>قیمت تمام اقلام فاکتور خرید دقیقا مطابق با قیمت‌های فروش تعریف شده در انبار محاسبه و نمایش داده می‌شوند.</span>
                   </div>
                 )}
 
                 {presentationModeType === 'custom' && (
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      تنظیم دستی قیمت هر قلم (قیمت واحد مورد نظر را برای هر کالا وارد کنید):
+                  <div className="space-y-1.5">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium block">
+                      تنظیم قیمت واحد هر قلم:
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1 max-h-48 overflow-y-auto p-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
                       {invoice.items.map((item, idx) => {
                         const itemKey = item.id || `item-${idx}`;
                         const currentVal = customItemUnitPrices[itemKey] !== undefined 
@@ -779,16 +816,16 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                           : getItemEffectiveUnitPrice(item, idx);
 
                         return (
-                          <div key={itemKey} className="bg-slate-50 dark:bg-slate-800/80 p-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
+                          <div key={itemKey} className="bg-white dark:bg-slate-700/60 p-2 rounded border border-slate-200 dark:border-slate-600 flex items-center justify-between gap-2 text-xs">
                             <span className="font-bold truncate max-w-[120px]" title={item.productName}>
-                              {item.productName}:
+                              {item.productName}
                             </span>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={currentVal || ''}
                                 onChange={(e) => handleApplyCustomItemPrice(itemKey, parseFloat(e.target.value) || 0)}
-                                className="w-20 text-center font-black text-xs p-1 bg-white dark:bg-slate-900 rounded border border-amber-400 text-slate-900 dark:text-white"
+                                className="w-18 text-center font-bold text-xs p-1 bg-slate-50 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                               />
                               <span className="text-[10px] text-slate-500">تومان</span>
                             </div>
@@ -799,50 +836,20 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                   </div>
                 )}
 
-                {/* Comparison & Quick Action Footer */}
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500">بهای واقعی خرید:</span>
-                      <strong className="text-slate-700 dark:text-slate-300">{formatPrice(realOriginalSubtotal)}</strong>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-amber-600 dark:text-amber-400 font-bold">مبلغ نمایشی جدید:</span>
-                      <strong className="text-amber-600 dark:text-amber-400 text-sm font-black">{formatPrice(netPayableAmount)}</strong>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                      <span>اختلاف / سود فرضی:</span>
-                      <strong className="font-black">+{formatPrice(Math.max(0, netPayableAmount - realOriginalSubtotal))}</strong>
-                    </div>
+                {/* Footer comparison */}
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                    <span>خرید واقعی: <strong>{formatPrice(realOriginalSubtotal)}</strong></span>
+                    <span>مبلغ نمایشی: <strong className="text-amber-600 dark:text-amber-400">{formatPrice(netPayableAmount)}</strong></span>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCopyScreenshot}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-xs cursor-pointer"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>کپی اسکرین‌شات (تلگرام)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadImage}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 text-white font-black text-xs cursor-pointer"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>ذخیره عکس</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetToRealPrices}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 cursor-pointer"
-                      title="بازنشانی قیمت‌ها به بهای اصلی خرید"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>بازنشانی به واقعی</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetToRealPrices}
+                    className="flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>بازنشانی به قیمت‌های واقعی</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -850,288 +857,152 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         )}
       </AnimatePresence>
 
-      {/* Active Presentation Mode Subtle Banner (Screen Only) */}
-      {isPresentationModeActive && !isPresentationPanelOpen && (
-        <div className="no-print mb-4 p-3 bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
-          <div className="flex items-center gap-2 font-black">
-            <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              حالت قیمت نمایشی فعال است (
-              {presentationModeType === 'percent'
-                ? `افزایش +${toPersianDigits(markupPercent)}٪`
-                : presentationModeType === 'fixed'
-                ? `افزایش +${formatPrice(fixedMarkupPerUnit)}`
-                : presentationModeType === 'selling_price'
-                ? 'قیمت فروش انبار'
-                : 'قیمت‌گذاری دلخواه'}
-              ). مبالغ زیر جهت ارائه یا اسکرین‌شات تنظیم شده‌اند.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setIsPresentationPanelOpen(true)}
-              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg cursor-pointer"
-            >
-              تنظیمات
-            </button>
-            <button
-              onClick={handleResetToRealPrices}
-              className="px-2.5 py-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 font-bold rounded-lg cursor-pointer hover:bg-slate-100"
-            >
-              بازگشت به واقعی
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Draft Warning Banner */}
-      {invoice.isDraft && (
-        <div className="no-print mb-6 p-4 bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-900 dark:text-amber-200">
-          <div className="flex items-center gap-3">
-            <FileText className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div>
-              <h4 className="font-black text-sm">این سند به عنوان «پیش‌نویس» ثبت شده است</h4>
-              <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
-                اقلام این پیش‌نویس از موجودی انبار کسر نگردیده‌اند و در حساب خریدار اعمال نشده‌اند.
-              </p>
+      {/* Comprehensive Sell-Through & Inventory Audit Banner for Inward Purchase Invoices (درصدی، تومانی، کارتنی، عددی) */}
+      {isPurchase && !isSecretMode && inwardSellThroughSummary && (
+        <div className="no-print mb-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-xs transition-colors shadow-2xs space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                <Package className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    وضعیت جامع فروش و موجودی این فاکتور ورود کالا:
+                  </span>
+                  {inwardSellThroughSummary.isFullySold ? (
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                      ۱۰۰٪ فروش رفته (تکمیل)
+                    </span>
+                  ) : inwardSellThroughSummary.percentSold > 0 ? (
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300">
+                      {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش رفته · {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ در انبار
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                      موجودی کامل در انبار (۰٪ فروش)
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  ردیابی خروج کالا و سود قطعی حاصل از این بار ورودی بر مبنای حسابداری انبارداری FIFO
+                </p>
+              </div>
             </div>
-          </div>
-          {onEdit && (
-            <button
-              onClick={() => onEdit(invoice)}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs rounded-xl shrink-0 cursor-pointer transition-colors"
-            >
-              ویرایش و ثبت نهایی فاکتور
-            </button>
-          )}
-        </div>
-      )}
 
-      {/* 4-Way Export / Print Modal */}
-      <AnimatePresence>
-        {isExportModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md no-print">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6"
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className={`p-2.5 rounded-xl ${theme.badgeBg} ${theme.primaryText}`}>
-                    <Printer className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-base text-slate-900 dark:text-white">
-                      صدور، چاپ و اشتراک‌گذاری فاکتور
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      فاکتور #{toPersianDigits(invoice.invoiceNumber)} - خریدار: {invoice.customerName}
-                    </p>
+            {/* Profit Pill */}
+            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+              <div className="text-right">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">سود قطعی محقق‌شده:</div>
+                <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {inwardSellThroughSummary.totalRealizedProfit > 0 ? `+${formatPrice(inwardSellThroughSummary.totalRealizedProfit)}` : '۰ تومان'}
+                </div>
+              </div>
+              {inwardSellThroughSummary.totalPotentialProfit > inwardSellThroughSummary.totalRealizedProfit && (
+                <div className="border-r border-slate-200 dark:border-slate-700 pr-3 text-right">
+                  <div className="text-[10px] text-slate-400 font-medium">کل سود پیش‌بینی:</div>
+                  <div className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">
+                    {formatPrice(inwardSellThroughSummary.totalPotentialProfit)}
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsExportModalOpen(false)}
-                  className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Export Options Grid */}
-              <div className="space-y-3">
-                {/* 0. Direct Screenshot / Clipboard (Telegram / WhatsApp) */}
-                <button
-                  type="button"
-                  onClick={handleCopyScreenshot}
-                  disabled={isCopyingScreenshot}
-                  className="w-full text-right p-4 rounded-xl border-2 border-indigo-500/80 bg-indigo-50/70 dark:bg-indigo-950/50 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 transition-all flex items-start gap-4 group cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  <div className="p-3 rounded-xl bg-indigo-600 text-white group-hover:scale-105 transition-transform shrink-0 shadow-sm">
-                    <Camera className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-black text-sm text-indigo-950 dark:text-indigo-100 flex items-center gap-2">
-                      <span>۱. کپی مستقیم عکس فاکتور (ارسال تلگرام / ایتا)</span>
-                      <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap">سریع‌ترین</span>
-                    </div>
-                    <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 leading-relaxed">
-                      عکس باکیفیت مستقیم در حافظه سیستم (کلیپ‌بورد) کپی می‌شود؛ کافیست در چت تلگرام یا پیام‌رسان کلید <kbd className="px-1.5 py-0.5 rounded bg-indigo-200 dark:bg-indigo-800 font-mono font-bold">Ctrl+V</kbd> یا گزینه Paste را بزنید.
-                    </p>
-                  </div>
-                </button>
-
-                {/* Copy Summary text option */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleCopySummary();
-                    setIsExportModalOpen(false);
-                  }}
-                  className="w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 bg-slate-50 dark:bg-slate-950 hover:bg-sky-50/40 dark:hover:bg-sky-950/40 transition-all flex items-start gap-4 group cursor-pointer"
-                >
-                  <div className="p-3 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 group-hover:scale-105 transition-transform shrink-0">
-                    <Copy className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>۲. کپی متن خلاصه (کپشن تلگرام)</span>
-                      <span className="text-[10px] bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">متن کپشن</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      متن فرمت‌شده مشخصات فاکتور، مانده حساب، کارتن‌ها و شماره کارت جهت قرار دادن در کادر کپشن تلگرام.
-                    </p>
-                  </div>
-                </button>
-
-                {/* 1. PDF Export */}
-                <button
-                  type="button"
-                  onClick={handleDownloadPDF}
-                  disabled={isExportingPDF || isExportingImage || isCopyingScreenshot}
-                  className={`w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-800 ${theme.accentHoverBorder} bg-slate-50 dark:bg-slate-950 ${theme.accentHoverBg} transition-all flex items-start gap-4 group cursor-pointer disabled:opacity-50`}
-                >
-                  <div className={`p-3 rounded-xl ${theme.badgeBg} ${theme.primaryText} group-hover:scale-105 transition-transform shrink-0`}>
-                    <FileDown className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>{isExportingPDF ? 'در حال صدور و ایجاد فایل PDF...' : 'دانلود فایل پی‌دی‌اف (PDF)'}</span>
-                      <span className={`text-[10px] ${theme.badgeBg} ${theme.badgeText} px-2 py-0.5 rounded-full font-bold whitespace-nowrap`}>پیشنهادی</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      خروجی باکیفیت و استاندارد A4 مناسب جهت چاپ مستقیم، بایگانی یا ارسال رسمی به مشتری.
-                    </p>
-                  </div>
-                </button>
-
-                {/* 2. Image Export (PNG) */}
-                <button
-                  type="button"
-                  onClick={handleDownloadImage}
-                  disabled={isExportingImage || isCopyingScreenshot}
-                  className="w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-slate-50 dark:bg-slate-950 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 transition-all flex items-start gap-4 group cursor-pointer disabled:opacity-50"
-                >
-                  <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 group-hover:scale-105 transition-transform shrink-0">
-                    <ImageIcon className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-black text-sm text-slate-900 dark:text-white">
-                      {isExportingImage ? 'در حال تبدیل و ذخیره عکس...' : 'دانلود فایل عکس (PNG)'}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      تبدیل فاکتور به فایل تصویر با کیفیت بالا و ذخیره روی دستگاه شما.
-                    </p>
-                  </div>
-                </button>
-
-                {/* 3. Direct Print */}
-                <button
-                  type="button"
-                  onClick={handleDirectPrint}
-                  className="w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500 bg-slate-50 dark:bg-slate-950 hover:bg-amber-50/40 dark:hover:bg-amber-950/40 transition-all flex items-start gap-4 group cursor-pointer"
-                >
-                  <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 group-hover:scale-105 transition-transform shrink-0">
-                    <Printer className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-black text-sm text-slate-900 dark:text-white">
-                      چاپ مستقیم (دستگاه پرینتر)
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      ارسال مستقیم به دستگاه پرینتر متصل به سیستم یا چاپگر حرارتی بدون ذخیره فایل اضافی.
-                    </p>
-                  </div>
-                </button>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => setIsExportModalOpen(false)}
-                  className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  انصراف
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Intelligent Inward Sell-Through & Realized Profit Banner (No-Print) */}
-      {isPurchase && !isSecretMode && inwardSellThroughSummary && (
-        <div className="no-print p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-emerald-950/40 border border-purple-200/80 dark:border-purple-800/80 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Package className="w-5 h-5" />
+              )}
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
-                  وضعیت جامع فروش این فاکتور ورود کالا:
-                </span>
-                {inwardSellThroughSummary.isFullySold ? (
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>کاملاً فروخته شده (۱۰۰٪)</span>
-                  </span>
-                ) : inwardSellThroughSummary.percentSold > 0 ? (
-                  <span className="px-2.5 py-1 rounded-xl bg-sky-100 dark:bg-sky-900/80 text-sky-900 dark:text-sky-200 font-black text-xs border border-sky-300 dark:border-sky-700">
-                    {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروخته شده • {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ باقیمانده در انبار
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs border border-slate-200 dark:border-slate-700">
-                    ۰٪ فروش (موجودی کامل دست‌نخورده در انبار)
-                  </span>
+          </div>
+
+          {/* 4 Pillars of Sell-Through: درصدی، کارتنی، عددی، تومانی */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-right">
+            {/* 1. درصدی */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                ۱. درصد فروش و باقیمانده:
+              </span>
+              <div className="flex items-center justify-between text-xs font-black">
+                <span className="text-sky-600 dark:text-sky-400">{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش</span>
+                <span className="text-amber-600 dark:text-amber-400">{toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ مانده</span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden flex">
+                <div 
+                  className="bg-sky-500 h-full transition-all duration-300"
+                  style={{ width: `${inwardSellThroughSummary.percentSold}%` }}
+                />
+                <div 
+                  className="bg-amber-400 h-full transition-all duration-300"
+                  style={{ width: `${inwardSellThroughSummary.percentRemaining}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 2. عددی */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                ۲. تعداد عددی:
+              </span>
+              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                فروش: <span className="text-sky-600 dark:text-sky-400 font-black">{toPersianDigits(inwardSellThroughSummary.totalSoldPieces.toLocaleString())}</span> عدد
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                مانده: {toPersianDigits(inwardSellThroughSummary.remainingPieces.toLocaleString())} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces.toLocaleString())} عدد
+              </div>
+            </div>
+
+            {/* 3. کارتنی */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                ۳. تفکیک کارتنی:
+              </span>
+              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                فروش: <span className="text-sky-600 dark:text-sky-400 font-black">{toPersianDigits(inwardSellThroughSummary.totalSoldCartons)} کارتن</span>
+                {inwardSellThroughSummary.totalSoldExtraPieces > 0 && (
+                  <span className="text-[10px] text-slate-500"> ({toPersianDigits(inwardSellThroughSummary.totalSoldExtraPieces)} دانه)</span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                فروش‌رفته: {toPersianDigits(inwardSellThroughSummary.totalSoldPieces)} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces)} عدد کل اقلام فاکتور
-              </p>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                مانده: {toPersianDigits(inwardSellThroughSummary.totalRemainingCartons)} کارتن
+                {inwardSellThroughSummary.totalRemainingExtraPieces > 0 && ` (${toPersianDigits(inwardSellThroughSummary.totalRemainingExtraPieces)} دانه)`}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs px-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shrink-0">
-            <div className="text-right">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                سود قطعی حاصل از فروش:
+            {/* 4. تومانی */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                ۴. ارزش تومانی:
+              </span>
+              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                فروش: <span className="text-sky-600 dark:text-sky-400">{formatPrice(inwardSellThroughSummary.totalSoldCost)}</span>
               </div>
-              <div className={`text-sm sm:text-base font-black ${inwardSellThroughSummary.totalRealizedProfit > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'} font-mono`}>
-                {inwardSellThroughSummary.totalRealizedProfit > 0 ? `+${formatPrice(inwardSellThroughSummary.totalRealizedProfit)}` : '۰ تومان'}
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                مانده انبار: {formatPrice(inwardSellThroughSummary.totalRemainingCost)}
               </div>
             </div>
-            {inwardSellThroughSummary.totalPotentialProfit > inwardSellThroughSummary.totalRealizedProfit && (
-              <div className="border-r border-slate-200 dark:border-slate-700 pr-3 text-right">
-                <div className="text-[10px] text-slate-400 font-medium">
-                  کل سود پیش‌بینی:
-                </div>
-                <div className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">
-                  {formatPrice(inwardSellThroughSummary.totalPotentialProfit)}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* A4 Paper Canvas Replica - Pure Crisp White Base with Theme Palette Accents */}
+      {/* ========================================================================= */}
+      {/* THE FLAT, MODERN INVOICE CANVAS (Supports Dark Mode & Standard Paper Mode) */}
+      {/* ========================================================================= */}
       <div 
         id="invoice-paper"
-        className="invoice-paper-container invoice-scalable-view relative bg-white text-slate-900 rounded-2xl border border-slate-200/90 p-8 sm:p-12 overflow-hidden print:p-0 print:border-none print:shadow-none print:bg-white print:text-black shadow-sm"
+        className={`invoice-paper-container invoice-scalable-view relative rounded-xl border p-6 sm:p-10 overflow-hidden transition-colors ${
+          isDarkCanvas 
+            ? 'bg-[#0b0f19] text-slate-100 border-slate-800/90 shadow-none' 
+            : 'bg-white text-slate-900 border-slate-200 shadow-none'
+        } print:p-0 print:border-none print:shadow-none print:bg-white print:text-black`}
         style={{ minHeight: '297mm', fontFamily: "var(--app-font-family)" }}
       >
         {/* Subtle Watermark */}
         {settings.enableWatermark && (
           <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none -rotate-[35deg]"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none -rotate-[30deg]"
             style={{ 
               zIndex: 0,
-              opacity: settings.watermarkOpacity !== undefined ? settings.watermarkOpacity : 0.08
+              opacity: isDarkCanvas ? 0.03 : (settings.watermarkOpacity !== undefined ? settings.watermarkOpacity : 0.05)
             }}
           >
             <span 
-              className="font-black text-slate-900 print:text-slate-900 tracking-widest text-center whitespace-normal max-w-2xl block leading-snug"
+              className={`font-black tracking-widest text-center whitespace-normal max-w-2xl block leading-snug ${
+                isDarkCanvas ? 'text-slate-100' : 'text-slate-900'
+              } print:text-slate-900`}
               style={{ fontSize: `${settings.watermarkFontSize || 54}px` }}
             >
               {settings.watermarkText || settings.brandName}
@@ -1142,194 +1013,203 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         {/* Draft Watermark */}
         {invoice.isDraft && (
           <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.08] -rotate-45"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.06] -rotate-45"
             style={{ zIndex: 1 }}
           >
-            <span className="text-[120px] font-black text-amber-900 tracking-widest whitespace-nowrap">
-              پیش‌نویس (غیر قابل استناد)
+            <span className="text-[100px] font-black text-amber-500 tracking-widest whitespace-nowrap">
+              پیش‌نویس
             </span>
           </div>
         )}
 
         <div className="relative z-10 space-y-6 print:space-y-4">
-          {/* Top Decorative Brand Stripe */}
-          <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: theme.hex }} />
-
-          {/* Header Section - Modern Clean Header */}
-          <div className="flex flex-col items-center justify-between pb-5 print:pb-3 border-b border-slate-200 print:border-slate-200">
-            {/* Top row with Meta, Center and Brand */}
-            <div className="w-full flex items-start justify-between gap-4">
-              {/* Document Number & Date (Top Left) - Clean White Card */}
-              <div className="text-right space-y-1.5 print:space-y-0.5 bg-white p-3.5 print:p-2 rounded-2xl border border-slate-200 text-xs min-w-[175px] print:border-slate-300 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-600">
-                  <span className="text-slate-500 font-medium">شماره سند:</span>
-                  <span className="font-black text-sm font-mono tracking-wide" style={{ color: theme.hex }}>{toPersianDigits(invoice.invoiceNumber)}</span>
+          {/* Header Section: Modern, Flat, Balanced */}
+          <div className={`pb-5 print:pb-3 border-b ${
+            isDarkCanvas ? 'border-slate-800' : 'border-slate-200'
+          } print:border-slate-300`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              
+              {/* Right Side: Brand & Business Info */}
+              <div className="space-y-1 text-right">
+                <div className="flex items-center gap-2">
+                  <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                    isDarkCanvas ? 'text-white' : 'text-slate-900'
+                  } print:text-slate-900`}>
+                    {settings.brandName || 'بازرگانی'}
+                  </h1>
                 </div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span className="text-slate-500 font-medium">تــاریخ:</span>
-                  <span className="font-bold text-slate-800 font-mono">{toPersianDigits(invoice.date)}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span className="text-slate-500 font-medium">ساعت ثبت:</span>
-                  <span className="font-bold text-slate-700 font-mono">{toPersianDigits(invoice.time || '')}</span>
-                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 font-medium">
+                  {settings.subtitle || (isPurchase ? 'مرکز ورود و تأمین کالا' : 'فروش عمده و توزیع کالا و خدمات')}
+                </p>
+                {settings.bismillah && (
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 print:text-slate-400 tracking-wider">
+                    {settings.bismillah}
+                  </p>
+                )}
               </div>
 
-              {/* Center Title & Bismillah */}
-              <div className="text-center flex-1 px-4">
-                <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
-                  {settings.bismillah || 'هوالرزاق'}
-                </p>
-                <div 
-                  className="inline-flex items-center gap-2 px-6 py-1.5 rounded-xl font-black text-xs bg-white border-2 shadow-2xs whitespace-nowrap"
-                  style={{ borderColor: theme.hex }}
-                >
-                  <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: theme.hex }} />
-                  <span style={{ color: theme.hex }}>
-                    {invoice.type === 'purchase' 
-                      ? (isPresentationModeActive ? 'فاکتور تامین و تحویل کالا' : 'فاکتور خرید و ورود کالا به انبار')
-                      : (settings.subtitle || 'فاکتور فروش کالا و خدمات')}
+              {/* Center: Document Title */}
+              <div className="text-center sm:text-center self-center sm:self-auto py-1">
+                <span className={`inline-block px-4 py-1.5 rounded-lg text-sm font-black tracking-wide border ${
+                  isDarkCanvas
+                    ? 'bg-slate-800/80 text-white border-slate-700'
+                    : 'bg-slate-100 text-slate-900 border-slate-200'
+                } print:bg-white print:text-black print:border-slate-300`}>
+                  {invoice.type === 'purchase'
+                    ? (isPresentationModeActive ? 'فاکتور تامین و تحویل کالا' : 'فاکتور ورود کالا به انبار')
+                    : 'فاکتور فروش کالا و خدمات'}
+                </span>
+                {invoice.isDraft && (
+                  <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                    (نسخه پیش‌نویس)
+                  </span>
+                )}
+              </div>
+
+              {/* Left Side: Metadata Card (Invoice #, Date, Time) */}
+              <div className={`p-3 rounded-lg border text-xs min-w-[170px] space-y-1 ${
+                isDarkCanvas
+                  ? 'bg-slate-800/40 border-slate-800 text-slate-300'
+                  : 'bg-slate-50 border-slate-200 text-slate-700'
+              } print:bg-white print:border-slate-300 print:text-slate-800`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">شماره سند:</span>
+                  <span className={`font-mono font-bold ${
+                    isDarkCanvas ? 'text-white' : 'text-slate-900'
+                  } print:text-black`}>
+                    {toPersianDigits(invoice.invoiceNumber)}
                   </span>
                 </div>
-                <h1 
-                  className="font-invoice-header text-2xl sm:text-3xl font-black mt-2 tracking-tight text-slate-900 print:text-slate-900"
-                >
-                  {settings.brandName || 'بازرگانی'}
-                </h1>
-              </div>
-
-              {/* Brand Logo (Top Right) - Clean White Box */}
-              <div className="flex flex-col items-center justify-center p-2 min-w-[140px]">
-                <div 
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center font-black border border-slate-200 bg-white print:border-slate-300 shadow-2xs"
-                  style={{ borderColor: `${theme.hex}40` }}
-                >
-                  <Sparkles className="w-6 h-6" style={{ color: theme.hex }} />
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">تــاریخ:</span>
+                  <span className="font-mono font-medium">{toPersianDigits(invoice.date)}</span>
                 </div>
-                <span className="text-xs font-black text-slate-800 print:text-slate-800 mt-1.5">{settings.brandName || 'بازرگانی'}</span>
+                {invoice.time && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">ساعت ثبت:</span>
+                    <span className="font-mono font-medium">{toPersianDigits(invoice.time)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">روش تسویه:</span>
+                  <span className="font-bold">{invoice.paymentMethod || 'نقدی'}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Seller & Customer Information Grid - Clean White */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-2.5 text-xs">
-            {/* Seller / Supplier Box */}
-            <div className="bg-white rounded-2xl p-4 print:p-3 border border-slate-200 space-y-2.5 print:space-y-1 print:border-slate-300 shadow-2xs">
-              <div 
-                className="flex items-center justify-between pb-2 print:pb-1.5 border-b border-slate-200"
-              >
-                <div className="flex items-center gap-2 font-black text-xs text-slate-900">
-                  <Building2 className="w-4 h-4 shrink-0" style={{ color: theme.hex }} />
-                  <span>{invoice.type === 'purchase' ? 'مشخصات تامین‌کننده (فروشنده کالا):' : 'مشخصات فروشنده:'}</span>
-                </div>
-                <span 
-                  className="px-2 py-0.5 text-[10px] font-bold rounded-lg border whitespace-nowrap shrink-0"
-                  style={{ borderColor: `${theme.hex}50`, color: theme.hex, backgroundColor: `${theme.hex}10` }}
-                >
+          {/* Parties Section: Clean Flat 2-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 print:gap-2.5 text-xs">
+            {/* Supplier / Seller Column */}
+            <div className={`p-3.5 rounded-lg border space-y-1.5 ${
+              isDarkCanvas
+                ? 'bg-slate-800/30 border-slate-800/90 text-slate-300'
+                : 'bg-slate-50/60 border-slate-200 text-slate-700'
+            } print:bg-white print:border-slate-300 print:text-slate-800`}>
+              <div className={`flex items-center justify-between pb-1.5 border-b font-bold text-xs ${
+                isDarkCanvas ? 'border-slate-800 text-white' : 'border-slate-200 text-slate-900'
+              } print:border-slate-200 print:text-black`}>
+                <span>{invoice.type === 'purchase' ? 'مشخصات تامین‌کننده (فروشنده):' : 'مشخصات فروشنده:'}</span>
+                <span className="text-[10px] text-slate-500">
                   {invoice.type === 'purchase' ? 'طرف‌حساب' : 'صادرکننده'}
                 </span>
               </div>
-              <div className="space-y-1.5 print:space-y-0.5 text-slate-700 leading-relaxed print:leading-normal">
+              <div className="space-y-1 leading-relaxed">
                 <div className="flex items-start">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">نام شخص / واحد:</span>
-                  <span className="font-black text-slate-900">
-                    {invoice.type === 'purchase' ? (invoice.customerName || 'تامین‌کننده ناشناس') : (settings.brandName || 'فروشگاه')}
-                  </span>
+                  <span className="text-slate-500 min-w-[85px] shrink-0">نام شخص / واحد:</span>
+                  <strong className={isDarkCanvas ? 'text-white' : 'text-slate-900'}>
+                    {invoice.type === 'purchase' ? (invoice.customerName || 'تامین‌کننده') : (settings.brandName || 'فروشگاه')}
+                  </strong>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">تلفن تماس:</span>
-                  <span className="font-medium text-slate-800 font-mono">
+                  <span className="text-slate-500 min-w-[85px] shrink-0">تلفن تماس:</span>
+                  <span className="font-mono">
                     {toPersianDigits(invoice.type === 'purchase' ? (invoice.customerPhone || '-') : (settings.phone || '-'))}
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">شهر / آدرس:</span>
-                  <span className="font-medium text-slate-800">
+                  <span className="text-slate-500 min-w-[85px] shrink-0">نشانی / شهر:</span>
+                  <span>
                     {invoice.type === 'purchase' ? (invoice.customerCity || invoice.customerAddress || '-') : (settings.address || '-')}
                   </span>
                 </div>
-                {settings.economicCode && (
+                {settings.economicCode && invoice.type !== 'purchase' && (
                   <div className="flex items-center">
-                    <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">کد اقتصادی:</span>
-                    <span className="font-medium text-slate-800 font-mono">{toPersianDigits(settings.economicCode)}</span>
+                    <span className="text-slate-500 min-w-[85px] shrink-0">کد اقتصادی:</span>
+                    <span className="font-mono">{toPersianDigits(settings.economicCode)}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Buyer / Receiver Box */}
-            <div className="bg-white rounded-2xl p-4 print:p-3 border border-slate-200 space-y-2.5 print:space-y-1 print:border-slate-300 shadow-2xs">
-              <div 
-                className="flex items-center justify-between pb-2 print:pb-1.5 border-b border-slate-200"
-              >
-                <div className="flex items-center gap-2 font-black text-xs text-slate-900">
-                  <Building2 className="w-4 h-4 shrink-0" style={{ color: theme.hex }} />
-                  <span>{invoice.type === 'purchase' ? 'مشخصات خریدار (تحویل‌گیرنده):' : 'مشخصات خریدار (مشتری):'}</span>
-                </div>
-                <span 
-                  className="px-2 py-0.5 text-[10px] font-bold rounded-lg border whitespace-nowrap shrink-0"
-                  style={{ borderColor: `${theme.hex}50`, color: theme.hex, backgroundColor: `${theme.hex}10` }}
-                >
+            {/* Buyer / Customer Column */}
+            <div className={`p-3.5 rounded-lg border space-y-1.5 ${
+              isDarkCanvas
+                ? 'bg-slate-800/30 border-slate-800/90 text-slate-300'
+                : 'bg-slate-50/60 border-slate-200 text-slate-700'
+            } print:bg-white print:border-slate-300 print:text-slate-800`}>
+              <div className={`flex items-center justify-between pb-1.5 border-b font-bold text-xs ${
+                isDarkCanvas ? 'border-slate-800 text-white' : 'border-slate-200 text-slate-900'
+              } print:border-slate-200 print:text-black`}>
+                <span>{invoice.type === 'purchase' ? 'مشخصات خریدار (تحویل‌گیرنده):' : 'مشخصات خریدار (مشتری):'}</span>
+                <span className="text-[10px] text-slate-500">
                   {invoice.type === 'purchase' ? 'انبار مرکزی' : 'طرف‌حساب'}
                 </span>
               </div>
-              <div className="space-y-1.5 print:space-y-0.5 text-slate-700 leading-relaxed print:leading-normal">
+              <div className="space-y-1 leading-relaxed">
                 <div className="flex items-start">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">نام شخص / واحد:</span>
-                  <span className="font-black text-slate-900">
-                    {invoice.type === 'purchase' ? (settings.brandName || 'انبار و بازرگانی') : invoice.customerName}
-                  </span>
+                  <span className="text-slate-500 min-w-[85px] shrink-0">نام شخص / واحد:</span>
+                  <strong className={isDarkCanvas ? 'text-white' : 'text-slate-900'}>
+                    {invoice.type === 'purchase' ? (settings.brandName || 'انبار مرکزی') : (invoice.customerName || 'مشتری')}
+                  </strong>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">تلفن همراه:</span>
-                  <span className="font-medium text-slate-800 font-mono">
+                  <span className="text-slate-500 min-w-[85px] shrink-0">تلفن همراه:</span>
+                  <span className="font-mono">
                     {toPersianDigits(invoice.type === 'purchase' ? (settings.phone || '-') : (invoice.customerPhone || '-'))}
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-slate-400 print:text-slate-400 min-w-[95px] shrink-0">شهر / آدرس:</span>
-                  <span className="font-medium text-slate-800">
+                  <span className="text-slate-500 min-w-[85px] shrink-0">نشانی / شهر:</span>
+                  <span>
                     {invoice.type === 'purchase' ? settings.address : (invoice.customerCity || invoice.customerAddress || '-')}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-1 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <span className="text-slate-400 print:text-slate-400">روش تسویه:</span>
-                    <span 
-                      className="px-2 py-0.5 rounded-lg font-black text-[11px] bg-white text-slate-800 border border-slate-200 shadow-2xs whitespace-nowrap shrink-0"
-                    >
-                      {invoice.paymentMethod || 'نقدی'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-slate-400 print:text-slate-400">مانده قبلی:</span>
-                    <span className="font-bold text-slate-800 whitespace-nowrap shrink-0 font-mono">{invoice.previousBalance || 'بی‌حساب'}</span>
+                <div className="flex items-center gap-4 pt-0.5 text-[11px]">
+                  <div>
+                    <span className="text-slate-500">وضعیت مانده: </span>
+                    <span className="font-bold">{invoice.previousBalance || 'بی‌حساب'}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Items Table - Clean White Base, Theme Border Accent */}
-          <div className="rounded-2xl border border-slate-200 overflow-hidden print:border-slate-300 bg-white shadow-2xs">
+          {/* Items Table: Flat, Clean, Crisp Typography */}
+          <div className={`rounded-lg border overflow-hidden ${
+            isDarkCanvas ? 'border-slate-800' : 'border-slate-200'
+          } print:border-slate-300`}>
             <table className="w-full text-right border-collapse text-xs">
               <thead>
-                <tr 
-                  className="bg-white text-slate-900 print:bg-white print:text-slate-900 font-black border-b-2"
-                  style={{ borderBottomColor: theme.hex }}
-                >
-                  <th className="py-3 px-3 print:py-1.5 print:px-2 text-center w-12 whitespace-nowrap shrink-0 font-black">ردیف</th>
-                  <th className="py-3 px-4 print:py-1.5 print:px-3 font-black">شرح کالا و مشخصات بسته‌بندی</th>
-                  <th className="py-3 px-3 print:py-1.5 print:px-2 text-center min-w-[140px] whitespace-nowrap shrink-0 font-black">تعداد (واحد / کارتن)</th>
-                  <th className="py-3 px-3 print:py-1.5 print:px-2 text-center w-32 whitespace-nowrap shrink-0 font-black">
-                    {isPurchase ? (isPresentationModeActive ? 'قیمت واحد (تومان)' : 'قیمت خرید واحد (تومان)') : 'قیمت واحد (تومان)'}
+                <tr className={`border-b text-xs font-bold ${
+                  isDarkCanvas
+                    ? 'bg-slate-800/80 text-slate-200 border-slate-700'
+                    : 'bg-slate-100/90 text-slate-800 border-slate-200'
+                } print:bg-slate-100 print:text-black print:border-slate-300`}>
+                  <th className="py-2.5 px-3 text-center w-12 shrink-0">ردیف</th>
+                  <th className="py-2.5 px-4">شرح کالا و مشخصات</th>
+                  <th className="py-2.5 px-3 text-center min-w-[130px] shrink-0">تعداد (واحد / کارتن)</th>
+                  <th className="py-2.5 px-3 text-center w-32 shrink-0">
+                    {isPurchase ? (isPresentationModeActive ? 'قیمت واحد (تومان)' : 'قیمت خرید (تومان)') : 'قیمت واحد (تومان)'}
                   </th>
-                  <th className="py-3 px-3 print:py-1.5 print:px-2 text-center w-36 whitespace-nowrap shrink-0 font-black">
+                  <th className="py-2.5 px-3 text-center w-36 shrink-0">
                     {isPurchase ? (isPresentationModeActive ? 'مبلغ کل (تومان)' : 'مبلغ کل خرید (تومان)') : 'مبلغ کل (تومان)'}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 print:divide-slate-200 bg-white print:bg-white">
+              <tbody className={`divide-y ${
+                isDarkCanvas ? 'divide-slate-800' : 'divide-slate-200'
+              } print:divide-slate-200`}>
                 {invoice.items.map((item, index) => {
                   const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
                   const correctPiecesPerCarton = prod?.piecesPerCarton || item.piecesPerCarton || 1;
@@ -1345,155 +1225,141 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                     item.customDescription.trim() !== 'نامشخص' &&
                     !item.customDescription.includes('کارتن')
                   );
-                  
+
                   const itemReturns = matchedReturns.filter(r => r.productId === item.productId || r.productName?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
                   const itemReturnedCartons = itemReturns.reduce((sum, r) => sum + (r.cartonsCount || 0), 0);
                   const itemReturnedExtraPieces = itemReturns.reduce((sum, r) => sum + (r.extraPieces || 0), 0);
                   const itemReturnedTotalAmount = itemReturns.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
                   const itemNetPrice = Math.max(0, item.totalPrice - itemReturnedTotalAmount);
 
-                  // Calculate effective unit price with support for presentation mode
                   const displayUnitPrice = getItemEffectiveUnitPrice(item, index);
                   const displayLineTotal = (item.totalPieces * displayUnitPrice);
-
-                  const rowSellThrough = isPurchase ? (inwardSellThroughSummary?.itemsSellThrough.find(s =>
-                    s.itemId === item.id ||
-                    (s.productId && item.productId && s.productId === item.productId) ||
-                    (s.productName && item.productName && s.productName.trim().toLowerCase() === item.productName.trim().toLowerCase())
-                  ) || (prod ? {
-                    itemId: item.id,
-                    productId: prod.id,
-                    productName: prod.name,
-                    purchasedPieces: item.totalPieces,
-                    soldPieces: prod.stockPieces <= 0 ? item.totalPieces : Math.max(0, item.totalPieces - prod.stockPieces),
-                    remainingPieces: Math.max(0, prod.stockPieces),
-                    percentSold: prod.stockPieces <= 0 ? 100 : (item.totalPieces > 0 ? Math.min(100, Math.max(0, Math.round(((item.totalPieces - Math.max(0, prod.stockPieces)) / item.totalPieces) * 100))) : 0),
-                    percentRemaining: prod.stockPieces <= 0 ? 0 : (item.totalPieces > 0 ? Math.max(0, Math.min(100, Math.round((Math.max(0, prod.stockPieces) / item.totalPieces) * 100))) : 100),
-                    isFullySold: prod.stockPieces <= 0,
-                    realizedProfit: 0,
-                    potentialProfit: 0
-                  } : null)) : null;
 
                   return (
                     <tr 
                       key={`inv-item-${item.id || index}-${index}`}
-                      className="bg-white print:bg-white hover:bg-slate-50/70 transition-colors"
+                      className={`transition-colors ${
+                        isDarkCanvas 
+                          ? 'hover:bg-slate-800/30' 
+                          : 'hover:bg-slate-50/60'
+                      } print:hover:bg-transparent`}
                     >
                       {/* Row Index */}
-                      <td className="py-3 px-3 print:py-1.5 print:px-2 text-center font-bold text-slate-400 print:text-slate-400 font-mono">
+                      <td className="py-2.5 px-3 text-center text-slate-400 font-mono">
                         {toPersianDigits(index + 1)}
                       </td>
 
-                      {/* Product Name & Packaging Details */}
-                      <td className="py-3 px-4 print:py-1.5 print:px-3">
-                        <div className={`font-black text-sm print:text-xs leading-snug ${
+                      {/* Product Name & Packaging Specs */}
+                      <td className="py-2.5 px-4">
+                        <div className={`font-bold text-sm leading-snug ${
                           itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0)
-                            ? 'line-through decoration-rose-500 decoration-2 text-slate-400 print:text-slate-400 font-bold opacity-80'
-                            : 'text-slate-900 print:text-slate-900'
-                        }`}>
+                            ? 'line-through text-slate-400'
+                            : (isDarkCanvas ? 'text-white' : 'text-slate-900')
+                        } print:text-black`}>
                           {item.productName}
-                          {itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) && (
-                            <span className="mr-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-black text-[10px] no-underline whitespace-nowrap shrink-0">
-                              مرجوع شده کاملاً
-                            </span>
-                          )}
                         </div>
 
-                        {/* Packaging Information Line */}
-                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                            !isUnknown
-                              ? 'bg-slate-100 print:bg-slate-100 text-slate-700 print:text-slate-800 border-slate-200'
-                              : 'bg-slate-50 print:bg-slate-50 text-slate-500 border-slate-200'
-                          }`}>
-                            <span>{packagingSpec || 'نامشخص'}</span>
-                          </span>
+                        {/* Quiet unboxed packaging spec */}
+                        <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                          {!isUnknown && <span>{packagingSpec}</span>}
                           {hasCustomNote && (
-                            <span className="text-[10px] text-slate-500 print:text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
-                              {item.customDescription}
-                            </span>
+                            <>
+                              <span>·</span>
+                              <span>{item.customDescription}</span>
+                            </>
                           )}
                         </div>
+
+                        {/* Return note if applicable */}
                         {itemReturns.length > 0 && (
-                          <div className="inline-flex items-start gap-1.5 px-2.5 py-1 mt-1.5 rounded-lg bg-rose-50 text-rose-800 font-bold text-[11px] border border-rose-200 leading-snug">
-                            <RotateCcw className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                            <div>
-                              <span>
-                                مرجوع شده: {toPersianDigits(itemReturnedCartons)} کارتن
-                                {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''}
-                                <span className="mr-1 text-rose-900 font-black dir-ltr inline-block">
-                                  (-{formatPrice(itemReturnedTotalAmount)})
-                                </span>
-                              </span>
-                              {itemReturns.some(r => r.reason) && (
-                                <div className="text-[10px] text-rose-700 font-medium mt-0.5">
-                                  علت مرجوعی: <span className="font-extrabold text-rose-950">{itemReturns.map(r => r.reason).filter(Boolean).join(' | ')}</span>
-                                </div>
-                              )}
-                            </div>
+                          <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold mt-1">
+                            مرجوع شده: {toPersianDigits(itemReturnedCartons)} کارتن
+                            {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''}
+                            <span className="mr-1 dir-ltr inline-block">(-{formatPrice(itemReturnedTotalAmount)})</span>
                           </div>
                         )}
 
-                        {/* Sell-Through & Profit Status for Inward Purchase Invoices */}
-                        {isPurchase && !isSecretMode && rowSellThrough && (
-                          <div className="no-print mt-1.5 flex items-center gap-1.5 flex-wrap">
-                            {rowSellThrough.isFullySold ? (
-                              <>
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-black text-[10px] border ${badges.profit}`}>
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                  <span>کاملاً فروخته شده (۱۰۰٪)</span>
-                                </span>
-                                {rowSellThrough.realizedProfit > 0 && (
-                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-bold text-[10px] border font-mono ${badges.profit}`}>
-                                    <span>سود فروش:</span>
-                                    <span className="font-black">+{formatPrice(rowSellThrough.realizedProfit)}</span>
+                        {/* Inward Sell-Through & Stock Remaining (زیر هر کالا: چقدر مانده، چقدر فروخته شده، کارتنی، عددی، درصدی و تومانی) */}
+                        {isPurchase && !isSecretMode && !isPresentationModeActive && (() => {
+                          const rowSellThrough = inwardSellThroughSummary?.itemsSellThrough.find(s => 
+                            (item.productId && s.productId === item.productId) ||
+                            (s.itemId && s.itemId === item.id) ||
+                            (s.productName && item.productName && s.productName.trim().toLowerCase() === item.productName.trim().toLowerCase())
+                          );
+                          if (!rowSellThrough) return null;
+
+                          return (
+                            <div className="mt-2 p-2 rounded-lg border text-[11px] space-y-1 bg-slate-50/90 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 print:bg-slate-50 print:border-slate-300">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                {/* Sold Part */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-slate-500 dark:text-slate-400">فروخته شده:</span>
+                                  {rowSellThrough.percentSold > 0 ? (
+                                    <span className="font-bold text-sky-700 dark:text-sky-300 font-mono">
+                                      {toPersianDigits(rowSellThrough.soldPieces)} عدد
+                                      {rowSellThrough.piecesPerCarton > 1 && (
+                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-1">
+                                          ({toPersianDigits(rowSellThrough.soldCartons)} کارتن{rowSellThrough.soldExtraPieces > 0 ? ` و ${toPersianDigits(rowSellThrough.soldExtraPieces)} دانه` : ''})
+                                        </span>
+                                      )}
+                                      <span className="mr-1 text-emerald-600 dark:text-emerald-400 font-black">({toPersianDigits(rowSellThrough.percentSold)}٪)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 font-medium">۰ عدد (۰٪)</span>
+                                  )}
+                                </div>
+
+                                {/* Remaining Part */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-slate-500 dark:text-slate-400">مانده در انبار:</span>
+                                  <span className={`font-bold font-mono ${rowSellThrough.remainingPieces > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-400'}`}>
+                                    {toPersianDigits(rowSellThrough.remainingPieces)} عدد
+                                    {rowSellThrough.piecesPerCarton > 1 && (
+                                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-1">
+                                        ({toPersianDigits(rowSellThrough.remainingCartons)} کارتن{rowSellThrough.remainingExtraPieces > 0 ? ` و ${toPersianDigits(rowSellThrough.remainingExtraPieces)} دانه` : ''})
+                                      </span>
+                                    )}
+                                    <span className="mr-1 font-black">({toPersianDigits(rowSellThrough.percentRemaining)}٪)</span>
                                   </span>
-                                )}
-                              </>
-                            ) : rowSellThrough.percentSold > 0 ? (
-                              <>
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold text-[10px] border ${badges.stock}`}>
-                                  <span>{toPersianDigits(rowSellThrough.percentSold)}٪ فروخته شده</span>
-                                  <span className="text-slate-400">•</span>
-                                  <span className="text-amber-700">{toPersianDigits(rowSellThrough.percentRemaining)}٪ باقیمانده</span>
+                                </div>
+                              </div>
+
+                              {/* Financial Value of Sold vs Remaining */}
+                              <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200/60 dark:border-slate-800/60 text-[10px] text-slate-500 dark:text-slate-400">
+                                <span>
+                                  ارزش فروش‌رفته: <strong className="font-mono text-slate-800 dark:text-slate-200">{formatPrice(rowSellThrough.soldPurchaseAmount)}</strong>
+                                  {rowSellThrough.realizedProfit > 0 && (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold mr-1.5 font-mono">(سود: +{formatPrice(rowSellThrough.realizedProfit)})</span>
+                                  )}
                                 </span>
-                                {rowSellThrough.realizedProfit > 0 && (
-                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-bold text-[10px] border font-mono ${badges.profit}`}>
-                                    <span>سود فروش:</span>
-                                    <span className="font-black">+{formatPrice(rowSellThrough.realizedProfit)}</span>
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium text-[10px] border ${badges.draft}`}>
-                                <span>موجودی کامل در انبار (۰٪ فروش)</span>
-                              </span>
-                            )}
-                          </div>
-                        )}
+                                <span>
+                                  ارزش مانده انبار: <strong className="font-mono text-slate-800 dark:text-slate-200">{formatPrice(rowSellThrough.remainingPurchaseAmount)}</strong>
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
-                      {/* Quantity & Carton Pill */}
-                      <td className="py-3 px-3 print:py-1.5 print:px-2 text-center whitespace-nowrap shrink-0">
-                        <div className="flex flex-col items-center justify-center gap-1 my-0.5">
-                          <span className="font-black text-slate-900 print:text-slate-900 text-sm print:text-xs leading-none whitespace-nowrap font-mono">
-                            {toPersianDigits(item.totalPieces.toLocaleString())} {unitTitle}
-                          </span>
-                          <span 
-                            className="inline-flex items-center justify-center px-2 py-0.5 rounded-lg font-bold text-[10px] print:text-[9px] leading-tight bg-white text-slate-700 print:bg-white print:text-slate-700 border border-slate-200 print:border-slate-300 shadow-2xs whitespace-nowrap shrink-0"
-                          >
-                            {cartonLabel}
-                          </span>
+                      {/* Quantity & Carton text */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="font-bold font-mono text-sm leading-none">
+                          {toPersianDigits(item.totalPieces.toLocaleString())} {unitTitle}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          {cartonLabel}
                         </div>
                       </td>
 
                       {/* Unit Price */}
-                      <td className="py-3 px-3 print:py-1.5 print:px-2 text-center font-bold text-slate-800 print:text-slate-800 text-sm print:text-xs whitespace-nowrap shrink-0 dir-ltr font-mono">
-                        <span>{toPersianDigits(displayUnitPrice.toLocaleString())}</span>
+                      <td className="py-2.5 px-3 text-center font-mono text-sm whitespace-nowrap">
+                        {toPersianDigits(displayUnitPrice.toLocaleString())}
                       </td>
 
-                      {/* Total Line Price */}
-                      <td className="py-3 px-3 print:py-1.5 print:px-2 text-center font-black text-slate-900 print:text-slate-900 text-sm print:text-xs whitespace-nowrap shrink-0 dir-ltr font-mono">
+                      {/* Total Price */}
+                      <td className={`py-2.5 px-3 text-center font-mono font-bold text-sm whitespace-nowrap ${
+                        isDarkCanvas ? 'text-white' : 'text-slate-900'
+                      } print:text-black`}>
                         {toPersianDigits(displayLineTotal.toLocaleString())}
                       </td>
                     </tr>
@@ -1503,235 +1369,213 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             </table>
           </div>
 
-          {/* Bottom Summary & Banking Details Grid - Pure White Base with Theme Palette Accents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-2.5 text-xs pt-1 print:pt-0">
-            {/* Left Box: Totals & Balance Breakdown */}
-            <div className="bg-white rounded-2xl p-4 print:p-3 border border-slate-200 space-y-2.5 print:space-y-1.5 print:bg-white print:border-slate-300 shadow-2xs">
-              {/* Row 1: Invoice Amount Details */}
-              {hasAdjustments ? (
-                <>
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 print:border-slate-200">
-                    <span className="text-slate-600 print:text-slate-600 font-medium">
-                      جمع ناخالص اقلام ({toPersianDigits(invoice.items.length)} قلم{invoiceCartonBreakdownText ? ` - ${invoiceCartonBreakdownText}` : ''}):
-                    </span>
-                    <span className="text-xs font-bold text-slate-800 print:text-slate-800 font-mono">
-                      {formatPrice(grossAmount)}
-                    </span>
-                  </div>
-
-                  {invoice.discount > 0 && (
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 print:border-slate-200 text-emerald-700 font-bold text-[11px]">
-                      <span>تخفیف ویژه:</span>
-                      <span className="dir-ltr font-mono">-{formatPrice(invoice.discount)}</span>
-                    </div>
-                  )}
-
-                  {invoice.tax > 0 && (
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 print:border-slate-200 text-slate-700 font-bold text-[11px]">
-                      <span>مالیات / ارزش افزوده:</span>
-                      <span className="dir-ltr font-mono">+{formatPrice(invoice.tax)}</span>
-                    </div>
-                  )}
-
-                  {totalInvoiceReturnsAmount > 0 && (
-                    <div className="flex items-center justify-between pb-1.5 border-b border-rose-200 print:border-rose-200 text-rose-700 print:text-rose-700 font-bold text-[11px]">
-                      <span className="flex items-center gap-1"><RotateCcw className="w-3 h-3 shrink-0" /> کسر بابت مرجوعی کالا:</span>
-                      <span className="dir-ltr font-mono">-{formatPrice(totalInvoiceReturnsAmount)}</span>
-                    </div>
-                  )}
-
-                  {invoice.offsetReturnsTotal && invoice.offsetReturnsTotal > 0 && (
-                    <div className="flex items-center justify-between pb-1.5 border-b border-purple-200 print:border-purple-200 text-purple-700 print:text-purple-700 font-bold text-[11px]">
-                      <span className="flex items-center gap-1"><RotateCcw className="w-3 h-3 shrink-0" /> کسر بابت تهاتر مرجوعی (دریافت جنس):</span>
-                      <span className="dir-ltr font-mono">-{formatPrice(invoice.offsetReturnsTotal)}</span>
-                    </div>
-                  )}
-
-                  {/* Net Payable Themed Highlight Card (Pure White with Theme Border) */}
-                  <div 
-                    className="p-3.5 rounded-2xl bg-white border-2 flex items-center justify-between shadow-2xs transition-colors print:bg-white"
-                    style={{ borderColor: theme.hex }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: theme.hex }}
-                      />
-                      <span className="text-slate-900 print:text-slate-900 font-black text-xs sm:text-sm">
-                        مبلغ خالص قابل پرداخت:
-                      </span>
-                    </div>
-                    <span 
-                      className="text-base sm:text-lg font-black font-mono tracking-tight"
-                      style={{ color: theme.hex }}
-                    >
-                      {formatPrice(netPayableAmount)}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div 
-                  className="p-3.5 rounded-2xl bg-white border-2 flex items-center justify-between shadow-2xs transition-colors print:bg-white"
-                  style={{ borderColor: theme.hex }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: theme.hex }}
-                    />
-                    <span className="text-slate-900 print:text-slate-900 font-black text-xs sm:text-sm">
-                      {isPurchase ? (isPresentationModeActive ? 'مبلغ کل فاکتور' : 'مجموع بهای خرید فاکتور') : 'مبلغ کل فاکتور'} ({toPersianDigits(invoice.items.length)} قلم{invoiceCartonBreakdownText ? ` - ${invoiceCartonBreakdownText}` : ''}):
-                    </span>
-                  </div>
-                  <span 
-                    className="text-base sm:text-lg font-black font-mono tracking-tight"
-                    style={{ color: theme.hex }}
-                  >
-                    {formatPrice(netPayableAmount)}
+          {/* Comprehensive Inward Invoice Audit Panel (جمع‌بندی کاملاً فاکتور: درصدی، کارتنی، عددی، تومانی) */}
+          {isPurchase && !isSecretMode && !isPresentationModeActive && inwardSellThroughSummary && (
+            <div className={`mb-3 p-3.5 sm:p-4 rounded-xl border ${
+              isDarkCanvas
+                ? 'bg-slate-800/40 border-slate-800 text-slate-200'
+                : 'bg-slate-50/90 border-slate-200 text-slate-800'
+            } print:bg-white print:border-slate-300 print:text-black space-y-2.5`}>
+              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-extrabold text-xs sm:text-sm">
+                    جمع‌بندی جامع فروش و وضعیت انبار این فاکتور ورود کالا
                   </span>
                 </div>
-              )}
-
-              {/* Row 2: Payment Settlement Status */}
-              {isCashPayment ? (
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 print:border-slate-200 text-xs">
-                  <span className="text-slate-600 font-medium">وضعیت تسویه:</span>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-black text-[11px] border border-emerald-200 whitespace-nowrap shrink-0">
-                    ✓ تسویه نقدی کامل ({formatPrice(netPayableAmount)})
-                  </span>
-                </div>
-              ) : isPartialPayment ? (
-                <div className="space-y-1.5 pb-2 border-b border-slate-200 print:border-slate-200 text-xs">
-                  <div className="flex items-center justify-between text-emerald-700 font-bold">
-                    <span>مبلغ پرداخت‌شده (نقدی / بیعانه):</span>
-                    <span className="font-black font-mono">{formatPrice(paidAmount)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-amber-700 font-bold">
-                    <span>مانده بدهی این فاکتور (نسیه):</span>
-                    <span className="font-black font-mono">{formatPrice(remainingDebtAmount)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 print:border-slate-200 text-xs">
-                  <span className="text-slate-600 font-medium">وضعیت تسویه:</span>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-white text-slate-800 font-black text-[11px] border border-slate-300 whitespace-nowrap shrink-0">
-                    نسیه کامل / حساب دفتری
-                  </span>
-                </div>
-              )}
-
-              {/* Row 3: Customer Previous & Final Balance */}
-              {prevValNumber !== 0 && (
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>مانده حساب گذشته مشتری:</span>
-                  <span className="font-bold text-slate-700 font-mono">
-                    {invoice.previousBalance || '۰ تومان'}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-slate-700 print:text-slate-700 pt-0.5">
-                <span className="font-bold">{invoice.type === 'purchase' ? 'مانده نهایی تأمین‌کننده:' : 'مانده نهایی کل حساب:'}</span>
-                <span 
-                  className="font-black px-2.5 py-1 rounded-xl bg-white text-slate-900 border-2 text-xs whitespace-nowrap shrink-0 font-mono shadow-2xs print:bg-white"
-                  style={{ borderColor: theme.hex }}
-                >
-                  {finalBalanceDisplay}
+                <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  سود قطعی فروش: {inwardSellThroughSummary.totalRealizedProfit > 0 ? `+${formatPrice(inwardSellThroughSummary.totalRealizedProfit)}` : '۰ تومان'}
                 </span>
               </div>
 
-              {/* Inward Sell-Through & Realized Profit (Screen Only, completely hidden when isSecretMode is true or in presentation mode) */}
-              {isPurchase && !isSecretMode && !isPresentationModeActive && inwardSellThroughSummary && (
-                <div 
-                  className="mt-3 p-3.5 rounded-2xl bg-white border-2 shadow-2xs print:hidden space-y-2.5" 
-                  style={{ borderColor: `${theme.hex}50` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 shrink-0" style={{ color: theme.hex }} />
-                      <span className="font-black text-xs text-slate-900">
-                        تحلیل فروش و سودآوری ورود کالا به انبار (FIFO):
-                      </span>
-                    </div>
-                    {inwardSellThroughSummary.isFullySold ? (
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1 ${badges.profit}`}>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>۱۰۰٪ فروخته شده</span>
-                      </span>
-                    ) : inwardSellThroughSummary.percentSold > 0 ? (
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black border ${badges.profit}`}>
-                        <span>{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروخته شده</span>
-                      </span>
-                    ) : (
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black border ${badges.draft}`}>
-                        <span>۰٪ فروش (موجودی کامل در انبار)</span>
-                      </span>
-                    )}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-right">
+                {/* 1. درصدی */}
+                <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 space-y-1">
+                  <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 block">
+                    ۱. درصد فروش و باقیمانده:
+                  </span>
+                  <div className="text-xs font-bold font-mono">
+                    <span className="text-sky-600 dark:text-sky-400">{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش</span>
+                    <span className="text-slate-400 mx-1">·</span>
+                    <span className="text-amber-600 dark:text-amber-400">{toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ مانده</span>
                   </div>
-
-                  {/* Progress bar */}
-                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex border border-slate-200">
-                    <div 
-                      className="h-full rounded-full transition-all duration-500" 
-                      style={{ 
-                        width: `${inwardSellThroughSummary.percentSold}%`,
-                        backgroundColor: theme.hex 
-                      }} 
-                    />
-                  </div>
-
-                  {/* Metrics grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">سود حاصل شده تا الان:</span>
-                      <span className="font-black text-xs font-mono" style={{ color: theme.hex }}>
-                        +{formatPrice(inwardSellThroughSummary.totalRealizedProfit)}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">اقلام فروخته شده:</span>
-                      <span className="font-black text-xs font-mono text-slate-800">
-                        {toPersianDigits(inwardSellThroughSummary.soldPieces)} دانه ({toPersianDigits(inwardSellThroughSummary.percentSold)}٪)
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 col-span-2 sm:col-span-1">
-                      <span className="text-slate-500 block text-[10px]">مانده فعلی در انبار:</span>
-                      <span className="font-black text-xs font-mono text-slate-800">
-                        {toPersianDigits(inwardSellThroughSummary.remainingPieces)} دانه ({toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪)
-                      </span>
-                    </div>
-                  </div>
-
-                  {inwardSellThroughSummary.totalPotentialProfit > 0 && (
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-600">
-                      <span>سود بالقوه کل بار (در صورت فروش کامل):</span>
-                      <span className="font-black font-mono text-emerald-700">+{formatPrice(inwardSellThroughSummary.totalPotentialProfit)}</span>
-                    </div>
-                  )}
                 </div>
-              )}
+
+                {/* 2. کارتنی */}
+                <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 space-y-1">
+                  <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 block">
+                    ۲. تفکیک کارتنی:
+                  </span>
+                  <div className="text-xs font-bold font-mono">
+                    فروش: <span className="text-sky-600 dark:text-sky-400">{toPersianDigits(inwardSellThroughSummary.totalSoldCartons)} کارتن</span>
+                    {inwardSellThroughSummary.totalSoldExtraPieces > 0 && ` (${toPersianDigits(inwardSellThroughSummary.totalSoldExtraPieces)} دانه)`}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    مانده: {toPersianDigits(inwardSellThroughSummary.totalRemainingCartons)} کارتن
+                    {inwardSellThroughSummary.totalRemainingExtraPieces > 0 && ` (${toPersianDigits(inwardSellThroughSummary.totalRemainingExtraPieces)} دانه)`}
+                  </div>
+                </div>
+
+                {/* 3. عددی */}
+                <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 space-y-1">
+                  <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 block">
+                    ۳. تعداد عددی کل:
+                  </span>
+                  <div className="text-xs font-bold font-mono">
+                    فروش: <span className="text-sky-600 dark:text-sky-400">{toPersianDigits(inwardSellThroughSummary.totalSoldPieces.toLocaleString())} عدد</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    مانده: {toPersianDigits(inwardSellThroughSummary.remainingPieces.toLocaleString())} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces.toLocaleString())}
+                  </div>
+                </div>
+
+                {/* 4. تومانی */}
+                <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 space-y-1">
+                  <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 block">
+                    ۴. ارزش تومانی:
+                  </span>
+                  <div className="text-xs font-bold font-mono">
+                    فروش: <span className="text-sky-600 dark:text-sky-400">{formatPrice(inwardSellThroughSummary.totalSoldCost)}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    مانده انبار: {formatPrice(inwardSellThroughSummary.totalRemainingCost)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Summary: Flat, Professional, Modern */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 print:gap-2.5 text-xs pt-1">
+            {/* Left Column: Totals & Financial Settlement */}
+            <div className={`p-4 rounded-lg border space-y-2.5 ${
+              isDarkCanvas
+                ? 'bg-slate-800/30 border-slate-800/90 text-slate-300'
+                : 'bg-slate-50/60 border-slate-200 text-slate-700'
+            } print:bg-white print:border-slate-300 print:text-slate-800`}>
+              
+              {/* Detailed Breakdown */}
+              <div className="space-y-1.5 pb-2 border-b border-slate-200 dark:border-slate-800 print:border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">
+                    جمع ناخالص ({toPersianDigits(invoice.items.length)} قلم{invoiceCartonBreakdownText ? ` · ${invoiceCartonBreakdownText}` : ''}):
+                  </span>
+                  <span className="font-mono font-bold">{formatPrice(grossAmount)}</span>
+                </div>
+
+                {invoice.discount > 0 && (
+                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>تخفیف:</span>
+                    <span className="font-mono dir-ltr">-{formatPrice(invoice.discount)}</span>
+                  </div>
+                )}
+
+                {invoice.tax > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">مالیات / ارزش افزوده:</span>
+                    <span className="font-mono dir-ltr">+{formatPrice(invoice.tax)}</span>
+                  </div>
+                )}
+
+                {totalInvoiceReturnsAmount > 0 && (
+                  <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 font-bold">
+                    <span>کسر بابت مرجوعی:</span>
+                    <span className="font-mono dir-ltr">-{formatPrice(totalInvoiceReturnsAmount)}</span>
+                  </div>
+                )}
+
+                {invoice.offsetReturnsTotal && invoice.offsetReturnsTotal > 0 && (
+                  <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 font-bold">
+                    <span>کسر بابت تهاتر مرجوعی:</span>
+                    <span className="font-mono dir-ltr">-{formatPrice(invoice.offsetReturnsTotal)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Net Payable: Clean, Bold, Flat Panel (Fix Black Box Issue) */}
+              <div className={`p-3.5 rounded-lg flex items-center justify-between border ${
+                isDarkCanvas
+                  ? 'bg-slate-800/80 border-slate-700/80 text-white'
+                  : 'bg-emerald-50/70 border-emerald-300 text-slate-900'
+              } print:bg-slate-50 print:border-slate-300 print:text-black`}>
+                <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100 print:text-black">
+                  {isPurchase ? (isPresentationModeActive ? 'مبلغ نهایی فاکتور:' : 'مبلغ کل خرید فاکتور:') : 'مبلغ خالص قابل پرداخت:'}
+                </span>
+                <span className={`font-black font-mono text-xl ${
+                  isDarkCanvas ? 'text-emerald-400' : 'text-emerald-700'
+                } print:text-black`}>
+                  {formatPrice(netPayableAmount)}
+                </span>
+              </div>
+
+              {/* Settlement Status */}
+              <div className="space-y-1 pt-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">وضعیت پرداخت:</span>
+                  <span className="font-bold">
+                    {isCashPayment
+                      ? `تسویه نقدی کامل (${formatPrice(netPayableAmount)})`
+                      : isPartialPayment
+                      ? `پرداخت بیعانه: ${formatPrice(paidAmount)} · مانده: ${formatPrice(remainingDebtAmount)}`
+                      : 'نسیه کامل / دفتری'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800 print:border-slate-200">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">
+                    {invoice.type === 'purchase' ? 'مانده نهایی تأمین‌کننده:' : 'مانده نهایی حساب مشتری:'}
+                  </span>
+                  <span className="font-black font-mono text-sm">
+                    {finalBalanceDisplay}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Right Box: Bank Details, Terms & Signatures */}
-            <div className="bg-white rounded-2xl p-4 print:p-3 border border-slate-200 space-y-3 print:space-y-1.5 print:bg-white print:border-slate-300 shadow-2xs flex flex-col justify-between">
-              <div>
-                {/* Bank Card Box */}
+            {/* Right Column: Bank Details, Terms & Signatures */}
+            <div className={`p-4 rounded-lg border space-y-3 flex flex-col justify-between ${
+              isDarkCanvas
+                ? 'bg-slate-800/30 border-slate-800/90 text-slate-300'
+                : 'bg-slate-50/60 border-slate-200 text-slate-700'
+            } print:bg-white print:border-slate-300 print:text-slate-800`}>
+              <div className="space-y-2.5">
+                {/* Bank Card Details */}
                 {(settings.cardNumber || settings.sheba) && (
-                  <div className="p-3 print:p-2 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5 print:space-y-0.5 print:bg-white print:border-slate-300 mb-3 shadow-2xs">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] pb-1 border-b border-slate-200">
-                      <CreditCard className="w-3.5 h-3.5 shrink-0" style={{ color: theme.hex }} />
-                      <span>اطلاعات حساب جهت واریز وجه:</span>
+                  <div className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                    isDarkCanvas
+                      ? 'bg-slate-800/60 border-slate-800'
+                      : 'bg-white border-slate-200'
+                  } print:bg-white print:border-slate-300`}>
+                    <div className="flex items-center justify-between font-bold pb-1 border-b border-slate-200 dark:border-slate-800 print:border-slate-200">
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-slate-500" />
+                        <span>اطلاعات حساب بانکی:</span>
+                      </div>
+                      {settings.cardNumber && (
+                        <button
+                          type="button"
+                          onClick={handleCopyCardNumber}
+                          className="no-print text-[10px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer flex items-center gap-1"
+                        >
+                          {copiedCard ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedCard ? 'کپی شد' : 'کپی کارت'}</span>
+                        </button>
+                      )}
                     </div>
                     {settings.cardNumber && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">شماره کارت ({settings.cardHolder || settings.brandName}):</span>
-                        <span className="font-black text-slate-900 font-mono tracking-wider">{toPersianDigits(settings.cardNumber)}</span>
+                        <span className={`font-mono font-bold tracking-wider ${
+                          isDarkCanvas ? 'text-white' : 'text-slate-900'
+                        } print:text-black`}>
+                          {toPersianDigits(settings.cardNumber)}
+                        </span>
                       </div>
                     )}
                     {settings.sheba && (
-                      <div className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center justify-between">
                         <span className="text-slate-500">شماره شبا (IR):</span>
-                        <span className="font-mono text-slate-700">{toPersianDigits(settings.sheba)}</span>
+                        <span className="font-mono">{toPersianDigits(settings.sheba)}</span>
                       </div>
                     )}
                   </div>
@@ -1739,28 +1583,153 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
 
                 {/* Terms / Notes */}
                 {(invoice.notes || settings.invoiceTerms) && (
-                  <div className="text-[11px] text-slate-600 space-y-1 leading-relaxed">
-                    <span className="font-bold text-slate-700 block">شرایط و توضیحات فاکتور:</span>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 print:text-slate-600 leading-relaxed">
+                    <strong className="block text-slate-700 dark:text-slate-300 print:text-black mb-0.5">شرایط و توضیحات:</strong>
                     <p>{invoice.notes || settings.invoiceTerms}</p>
                   </div>
                 )}
               </div>
 
-              {/* Signatures Row */}
-              <div className="grid grid-cols-2 gap-4 pt-4 print:pt-2 border-t border-slate-200 print:border-slate-200 text-center text-xs">
-                <div className="space-y-6 print:space-y-4">
-                  <span className="text-slate-500 font-medium">مهر و امضای فروشنده:</span>
-                  <div className="h-8 border-b-2 border-dashed border-slate-300 print:border-slate-300" />
+              {/* Signatures */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 print:border-slate-300 text-center text-xs">
+                <div className="space-y-6">
+                  <span className="text-slate-500 font-medium">مهر و امضای فروشنده</span>
+                  <div className="h-6 border-b border-dashed border-slate-300 dark:border-slate-700 print:border-slate-400" />
                 </div>
-                <div className="space-y-6 print:space-y-4">
-                  <span className="text-slate-500 font-medium">امضای خریدار / تحویل‌گیرنده:</span>
-                  <div className="h-8 border-b-2 border-dashed border-slate-300 print:border-slate-300" />
+                <div className="space-y-6">
+                  <span className="text-slate-500 font-medium">امضای خریدار / تحویل‌گیرنده</span>
+                  <div className="h-6 border-b border-dashed border-slate-300 dark:border-slate-700 print:border-slate-400" />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Export / Print Modal (Flat, Clean) */}
+      <AnimatePresence>
+        {isExportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs no-print">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Printer className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                      صدور و چاپ فاکتور
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      فاکتور #{toPersianDigits(invoice.invoiceNumber)} · {invoice.customerName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsExportModalOpen(false)}
+                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Options */}
+              <div className="space-y-2">
+                {/* 1. Direct Screenshot to Clipboard */}
+                <button
+                  type="button"
+                  onClick={handleCopyScreenshot}
+                  disabled={isCopyingScreenshot}
+                  className="w-full text-right p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors flex items-center gap-3 cursor-pointer disabled:opacity-50"
+                >
+                  <div className="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">
+                      کپی مستقیم عکس فاکتور (ارسال تلگرام / ایتا)
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      عکس باکیفیت در حافظه کپی می‌شود؛ در پیام‌رسان Paste (Ctrl+V) را بزنید.
+                    </p>
+                  </div>
+                </button>
+
+                {/* 2. Download PDF */}
+                <button
+                  type="button"
+                  onClick={handleDownloadPDF}
+                  disabled={isExportingPDF || isExportingImage || isCopyingScreenshot}
+                  className="w-full text-right p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors flex items-center gap-3 cursor-pointer disabled:opacity-50"
+                >
+                  <div className="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                    <FileDown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">
+                      {isExportingPDF ? 'در حال صدور PDF...' : 'دانلود فایل پی‌دی‌اف (PDF)'}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      نسخه استاندارد کاغذ سفید A4 جهت چاپ رسمی یا ارسال به مشتری.
+                    </p>
+                  </div>
+                </button>
+
+                {/* 3. Download Image */}
+                <button
+                  type="button"
+                  onClick={handleDownloadImage}
+                  disabled={isExportingImage || isCopyingScreenshot}
+                  className="w-full text-right p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors flex items-center gap-3 cursor-pointer disabled:opacity-50"
+                >
+                  <div className="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">
+                      {isExportingImage ? 'در حال تبدیل به عکس...' : 'دانلود فایل تصویر (PNG)'}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      ذخیره تصویر فاکتور روی دستگاه شما.
+                    </p>
+                  </div>
+                </button>
+
+                {/* 4. Direct Browser Print */}
+                <button
+                  type="button"
+                  onClick={handleDirectPrint}
+                  className="w-full text-right p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors flex items-center gap-3 cursor-pointer"
+                >
+                  <div className="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                    <Printer className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">
+                      چاپ مستقیم پرینتر
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      ارسال مستقیم به دستگاه چاپگر یا چاپگر حرارتی.
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setIsExportModalOpen(false)}
+                  className="w-full py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  انصراف
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

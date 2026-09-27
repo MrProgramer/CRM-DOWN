@@ -14,6 +14,16 @@ export interface ItemSellThroughInfo {
   potentialProfit: number;
   unitPurchasePrice: number;
   unitSellingPrice: number;
+  // Carton and financial breakdown
+  piecesPerCarton: number;
+  totalCartons: number;
+  totalExtraPieces: number;
+  soldCartons: number;
+  soldExtraPieces: number;
+  remainingCartons: number;
+  remainingExtraPieces: number;
+  soldPurchaseAmount: number;
+  remainingPurchaseAmount: number;
 }
 
 export interface InvoiceSellThroughSummary {
@@ -28,6 +38,18 @@ export interface InvoiceSellThroughSummary {
   isFullySold: boolean;
   totalRealizedProfit: number;
   totalPotentialProfit: number;
+  // Comprehensive Carton Breakdown
+  totalPurchasedCartons: number;
+  totalPurchasedExtraPieces: number;
+  totalSoldCartons: number;
+  totalSoldExtraPieces: number;
+  totalRemainingCartons: number;
+  totalRemainingExtraPieces: number;
+  // Comprehensive Tomans Breakdown
+  totalInvoiceCost: number;
+  totalSoldCost: number;
+  totalRemainingCost: number;
+  totalSoldRevenue: number;
   itemsSellThrough: ItemSellThroughInfo[];
 }
 
@@ -130,6 +152,16 @@ export function calculateInwardInvoiceSellThrough(
       isFullySold: false,
       totalRealizedProfit: 0,
       totalPotentialProfit: 0,
+      totalPurchasedCartons: 0,
+      totalPurchasedExtraPieces: 0,
+      totalSoldCartons: 0,
+      totalSoldExtraPieces: 0,
+      totalRemainingCartons: 0,
+      totalRemainingExtraPieces: 0,
+      totalInvoiceCost: 0,
+      totalSoldCost: 0,
+      totalRemainingCost: 0,
+      totalSoldRevenue: 0,
       itemsSellThrough: []
     };
   }
@@ -163,6 +195,18 @@ export function calculateInwardInvoiceSellThrough(
     const unitProfit = Math.max(0, unitSellingPrice - unitPurchasePrice);
     const potentialProfit = unitProfit * totalPieces;
 
+    const packsCount = item.packsCount || prod?.packsPerCarton || 1;
+    const piecesPerPack = item.piecesPerPack || prod?.piecesPerPack || 1;
+    const piecesPerCarton = (item.piecesPerCarton && item.piecesPerCarton > 0)
+      ? item.piecesPerCarton
+      : (prod?.piecesPerCarton && prod.piecesPerCarton > 0
+        ? prod.piecesPerCarton
+        : (packsCount * piecesPerPack) || 1);
+
+    const isCartonPackaging = piecesPerCarton > 1 && !item.isUnpackaged && !prod?.isUnpackaged;
+    const totalCartons = isCartonPackaging ? Math.floor(totalPieces / piecesPerCarton) : 0;
+    const totalExtraPieces = isCartonPackaging ? (totalPieces % piecesPerCarton) : totalPieces;
+
     if (totalPieces === 0) {
       return {
         itemId: item.id,
@@ -177,7 +221,16 @@ export function calculateInwardInvoiceSellThrough(
         realizedProfit: 0,
         potentialProfit: 0,
         unitPurchasePrice,
-        unitSellingPrice
+        unitSellingPrice,
+        piecesPerCarton,
+        totalCartons: 0,
+        totalExtraPieces: 0,
+        soldCartons: 0,
+        soldExtraPieces: 0,
+        remainingCartons: 0,
+        remainingExtraPieces: 0,
+        soldPurchaseAmount: 0,
+        remainingPurchaseAmount: 0
       };
     }
 
@@ -280,6 +333,15 @@ export function calculateInwardInvoiceSellThrough(
     // Strict safety guard: If soldPieces is 0, realized profit MUST be 0!
     const finalRealizedProfit = soldPieces > 0 ? batchRealizedProfit : 0;
 
+    const soldCartons = isCartonPackaging ? Math.floor(soldPieces / piecesPerCarton) : 0;
+    const soldExtraPieces = isCartonPackaging ? (soldPieces % piecesPerCarton) : soldPieces;
+
+    const remainingCartons = isCartonPackaging ? Math.floor(remainingPieces / piecesPerCarton) : 0;
+    const remainingExtraPieces = isCartonPackaging ? (remainingPieces % piecesPerCarton) : remainingPieces;
+
+    const soldPurchaseAmount = soldPieces * unitPurchasePrice;
+    const remainingPurchaseAmount = remainingPieces * unitPurchasePrice;
+
     return {
       itemId: item.id,
       productId: item.productId || prod?.id || '',
@@ -293,7 +355,16 @@ export function calculateInwardInvoiceSellThrough(
       realizedProfit: finalRealizedProfit,
       potentialProfit,
       unitPurchasePrice,
-      unitSellingPrice
+      unitSellingPrice,
+      piecesPerCarton,
+      totalCartons,
+      totalExtraPieces,
+      soldCartons,
+      soldExtraPieces,
+      remainingCartons,
+      remainingExtraPieces,
+      soldPurchaseAmount,
+      remainingPurchaseAmount
     };
   });
 
@@ -305,6 +376,18 @@ export function calculateInwardInvoiceSellThrough(
   const isFullySold = remainingPieces === 0 && totalPieces > 0;
   const totalRealizedProfit = soldPieces > 0 ? itemsSellThrough.reduce((sum, it) => sum + it.realizedProfit, 0) : 0;
   const totalPotentialProfit = itemsSellThrough.reduce((sum, it) => sum + it.potentialProfit, 0);
+
+  const totalPurchasedCartons = itemsSellThrough.reduce((sum, it) => sum + (it.totalCartons || 0), 0);
+  const totalPurchasedExtraPieces = itemsSellThrough.reduce((sum, it) => sum + (it.totalExtraPieces || 0), 0);
+  const totalSoldCartons = itemsSellThrough.reduce((sum, it) => sum + (it.soldCartons || 0), 0);
+  const totalSoldExtraPieces = itemsSellThrough.reduce((sum, it) => sum + (it.soldExtraPieces || 0), 0);
+  const totalRemainingCartons = itemsSellThrough.reduce((sum, it) => sum + (it.remainingCartons || 0), 0);
+  const totalRemainingExtraPieces = itemsSellThrough.reduce((sum, it) => sum + (it.remainingExtraPieces || 0), 0);
+
+  const totalInvoiceCost = itemsSellThrough.reduce((sum, it) => sum + (it.totalPieces * it.unitPurchasePrice), 0);
+  const totalSoldCost = itemsSellThrough.reduce((sum, it) => sum + (it.soldPurchaseAmount || 0), 0);
+  const totalRemainingCost = itemsSellThrough.reduce((sum, it) => sum + (it.remainingPurchaseAmount || 0), 0);
+  const totalSoldRevenue = totalSoldCost + totalRealizedProfit;
 
   return {
     invoiceId: purchaseInvoice.id,
@@ -318,6 +401,29 @@ export function calculateInwardInvoiceSellThrough(
     isFullySold,
     totalRealizedProfit,
     totalPotentialProfit,
+    totalPurchasedCartons,
+    totalPurchasedExtraPieces,
+    totalSoldCartons,
+    totalSoldExtraPieces,
+    totalRemainingCartons,
+    totalRemainingExtraPieces,
+    totalInvoiceCost,
+    totalSoldCost,
+    totalRemainingCost,
+    totalSoldRevenue,
     itemsSellThrough
   };
+}
+
+/**
+ * Formats carton and extra pieces cleanly into Persian text
+ */
+export function formatCartonPiecesSummary(cartons: number, extraPieces: number, unitTitle: string = 'دانه'): string {
+  if (cartons > 0 && extraPieces > 0) {
+    return `${cartons} کارتن و ${extraPieces} ${unitTitle}`;
+  }
+  if (cartons > 0) {
+    return `${cartons} کارتن`;
+  }
+  return `${extraPieces} ${unitTitle}`;
 }

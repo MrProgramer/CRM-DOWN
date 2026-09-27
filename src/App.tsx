@@ -2410,6 +2410,7 @@ export default function App() {
                 invoice={activeViewingInvoice}
                 settings={settings}
                 isSecretMode={isSecretMode}
+                isDarkMode={isDarkMode}
                 onToggleSecretMode={handleToggleSecretMode}
                 onEdit={handleStartEditInvoice}
                 onBack={handleInvoiceViewBack}

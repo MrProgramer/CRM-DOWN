@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, Invoice, Customer, CustomerPayment, StoreSettings, AppDesignMode } from '../types';
+import { Product, Invoice, Customer, CustomerPayment, StoreSettings, AppDesignMode, AppFontSizeScale } from '../types';
 import { ThemeColor, themes, designModes } from './ThemeConfig';
 import { 
   fontFamilies, 
