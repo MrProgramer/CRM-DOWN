@@ -813,7 +813,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={handleAdminModeToggle}
-                className={`relative group overflow-hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-sans font-black text-xs transition-all cursor-pointer select-none ${
+                className={`relative group overflow-hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer select-none ${
                   isSecurityLocked
                     ? 'bg-slate-900 dark:bg-slate-950 text-white hover:bg-slate-800'
                     : `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
@@ -831,7 +831,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
                     </span>
                     <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="hidden sm:inline font-sans font-black text-[11px]">امنیت</span>
+                    <span className="hidden sm:inline font-black text-[11px]">امنیت</span>
                     <span className="px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[9px] font-black">
                       قفل
                     </span>
@@ -843,7 +843,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                     </span>
                     <ShieldCheck className="w-3.5 h-3.5 text-white shrink-0" />
-                    <span className="hidden sm:inline font-sans font-black text-[11px]">مدیر</span>
+                    <span className="hidden sm:inline font-black text-[11px]">مدیر</span>
                     <span className="px-1 py-0.2 rounded bg-white/25 text-white text-[9px] font-black">
                       آزاد
                     </span>
@@ -970,7 +970,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       handleAdminModeToggle();
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-sans font-black transition-all cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       isSecurityLocked
                         ? `bg-slate-900 dark:bg-slate-800 text-white border border-slate-700`
                         : `${theme.primary} text-white shadow-md`

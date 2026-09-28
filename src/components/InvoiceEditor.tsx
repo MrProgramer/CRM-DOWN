@@ -5,6 +5,7 @@ import {
   formatAmountScale,
   formatCartonText, 
   toPersianDigits, 
+  toEnglishDigits,
   getCurrentPersianDate, 
   getCurrentPersianTime,
   numberToPersianWords,
@@ -951,12 +952,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     }
   }, [finalAmount, paymentStatus]);
 
-  // parse previous balance string
+  // parse previous balance string accurately (with Persian / English digits support)
   const parseBalanceNumber = (str: string): number => {
-    if (!str || str.includes('بی‌حساب') || str.trim() === '') return 0;
-    const cleanStr = str.replace(/[^\d]/g, '');
-    const val = parseInt(cleanStr) || 0;
-    if (str.includes('بستانکار') || str.includes('طلبکار')) return -val;
+    if (!str || str.trim() === '' || str.includes('بی‌حساب (۰)') || str === 'بی‌حساب' || str === '۰') return 0;
+    const eng = toEnglishDigits(str);
+    const cleanStr = eng.replace(/[^\d]/g, '');
+    if (!cleanStr) return 0;
+    const val = parseInt(cleanStr, 10) || 0;
+    if (str.includes('بستانکار') || str.includes('طلبکار') || str.includes('-')) return -val;
     return val;
   };
 

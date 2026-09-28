@@ -193,7 +193,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
   const [copiedText, setCopiedText] = useState(false);
   const [isExportingShot, setIsExportingShot] = useState(false);
   const [isCopyingShotImage, setIsCopyingShotImage] = useState(false);
-  const [shotThemeMode, setShotThemeMode] = useState<'day' | 'night'>(() => isDarkMode ? 'night' : 'day');
+  const [shotThemeMode, setShotThemeMode] = useState<'day' | 'night'>('night');
   const [shotInvoiceLimit, setShotInvoiceLimit] = useState<number>(5);
   const [shotFilterType, setShotFilterType] = useState<'all' | 'invoices' | 'payments'>('all');
   const [shotRecentRowsLimit, setShotRecentRowsLimit] = useState<number>(5);
@@ -3025,36 +3025,42 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   </div>
 
                   {/* Embedded High-Contrast Telegram/Messenger Summary Caption Box (Rendered on Image) */}
-                  <div className={`p-3 rounded-2xl border space-y-1.5 relative z-10 ${
+                  <div className={`p-3.5 rounded-2xl border space-y-2 relative z-10 ${
                     shotThemeMode === 'day'
-                      ? 'bg-slate-900 text-white border-slate-950 shadow-sm'
-                      : 'bg-indigo-950/80 text-white border-indigo-900/90 shadow-sm'
+                      ? 'bg-slate-100/90 text-slate-900 border-slate-200 shadow-xs'
+                      : 'bg-slate-900/95 text-slate-100 border-slate-800 shadow-lg'
                   }`}>
-                    <div className="flex items-center justify-between text-[10px] font-black border-b pb-1.5 border-white/15">
-                      <span className="flex items-center gap-1 text-emerald-400">
+                    <div className={`flex items-center justify-between text-[10px] font-black border-b pb-1.5 ${
+                      shotThemeMode === 'day' ? 'border-slate-200/80 text-slate-800' : 'border-slate-800 text-slate-200'
+                    }`}>
+                      <span className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400">
                         <FileText className="w-3.5 h-3.5" />
-                        خلاصه صورت‌حساب جهت ارائه در تلگرام/پیام‌رسان:
+                        خلاصه صورت‌حساب مالی طرف‌حساب:
                       </span>
-                      <span className="text-[9px] text-slate-300 font-mono">
+                      <span className={`text-[9px] font-mono ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>
                         {toPersianDigits(getCurrentPersianDate())}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
-                      <div>👤 طرف‌حساب: <span className="font-black text-white">{targetShotCustomer.name}</span></div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px]">
                       <div>
-                        🔴 مانده حساب: <span className={`font-black font-mono ${targetShotLiveBal > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                        <span className={shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}>👤 طرف‌حساب: </span>
+                        <span className={`font-black ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>{targetShotCustomer.name}</span>
+                      </div>
+                      <div>
+                        <span className={shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}>🔴 مانده حساب: </span>
+                        <span className={`font-black font-mono ${targetShotLiveBal > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
                           {targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : 'تسویه‌شده (۰)'}
                         </span>
                       </div>
-                      <div>💳 مجموع دریافتی‌ها: <span className="font-black font-mono text-emerald-300">{formatPrice(targetShotTotalPaid)}</span></div>
-                      <div>🧾 گردش فاکتورها: <span className="font-black font-mono text-amber-300">{formatPrice(targetShotTotalInvoicesAmount)}</span></div>
-                    </div>
-                    {(settings.cardNumber || settings.phone) && (
-                      <div className="pt-1.5 border-t border-white/15 flex items-center justify-between text-[9px] text-slate-300 font-mono">
-                        {settings.cardNumber ? <span>💳 شماره کارت: {settings.cardNumber} ({settings.cardHolder || settings.brandName})</span> : <span />}
-                        {settings.phone ? <span>📞 تماس: {toPersianDigits(settings.phone)}</span> : <span />}
+                      <div>
+                        <span className={shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}>💳 مجموع دریافتی‌ها: </span>
+                        <span className="font-black font-mono text-emerald-500 dark:text-emerald-400">{formatPrice(targetShotTotalPaid)}</span>
                       </div>
-                    )}
+                      <div>
+                        <span className={shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}>🧾 گردش فاکتورها: </span>
+                        <span className="font-black font-mono text-amber-500 dark:text-amber-400">{formatPrice(targetShotTotalInvoicesAmount)}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Clean Flat Footer */}
@@ -3083,8 +3089,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
 🔴 *مانده بدهکاری فعلی:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه‌شده)'}
 💳 *مجموع واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
 🧾 *مبلغ ${shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور اخیر` : 'کل فاکتورها'}:* ${formatPrice(targetShotTotalInvoicesAmount)}
-${settings.cardNumber ? `💳 *شماره کارت جهت واریز:* ${settings.cardNumber} (${settings.cardHolder || settings.brandName})` : ''}
-${settings.phone ? `📞 *شماره تماس:* ${toPersianDigits(settings.phone)}` : ''}
 
 ${shotFilterType === 'invoices' ? `🔍 حالت نمایش: فقط فاکتورها` : shotFilterType === 'payments' ? `🔍 حالت نمایش: فقط واریزی‌ها` : `🔍 حالت نمایش: کلیه گردش‌ها`}
 با تشکر از همکاری شما 🙏`;
@@ -3123,8 +3127,6 @@ ${shotFilterType === 'invoices' ? `🔍 حالت نمایش: فقط فاکتور
 🔴 *مانده بدهکاری فعلی:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه‌شده)'}
 💳 *مجموع واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
 🧾 *مبلغ ${shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور اخیر` : 'کل فاکتورها'}:* ${formatPrice(targetShotTotalInvoicesAmount)}
-${settings.cardNumber ? `💳 *شماره کارت:* ${settings.cardNumber} (${settings.cardHolder || settings.brandName})` : ''}
-${settings.phone ? `📞 *تماس:* ${toPersianDigits(settings.phone)}` : ''}
 
 ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterType === 'payments' ? `🔍 فقط واریزی‌ها` : `🔍 کلیه گردش‌ها`}
 با تشکر 🙏`;
@@ -3180,8 +3182,7 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
 👤 *نام مشتری:* ${targetShotCustomer.name} ${targetShotCustomer.company ? `(${targetShotCustomer.company})` : ''}
 📅 *تاریخ:* ${toPersianDigits(getCurrentPersianDate())}
 🔴 *مانده بدهکاری:* ${targetShotLiveBal > 0 ? formatPrice(targetShotLiveBal) : '۰ (تسویه)'}
-💳 *واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}
-${settings.cardNumber ? `💳 *شماره کارت:* ${settings.cardNumber}` : ''}`;
+💳 *واریزی‌ها:* ${formatPrice(targetShotTotalPaid)}`;
                         const tgUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(shotTextSummary)}`;
                         window.open(tgUrl, '_blank');
                       }}

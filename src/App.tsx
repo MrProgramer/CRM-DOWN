@@ -2417,6 +2417,8 @@ export default function App() {
                 onOpenProfitAnalysis={(inv) => setProfitAnalysisInvoice(inv)}
                 products={products}
                 productReturns={productReturns}
+                customers={customers}
+                payments={payments}
                 invoices={invoices}
                 onShowAlert={showAlert}
                 onExportPDF={(inv) => {
