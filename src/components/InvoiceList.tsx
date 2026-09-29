@@ -596,11 +596,8 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   const discountPct = inv.discountPercent || (rawGrossSubtotal > 0 && invDiscountAmount > 0 ? Math.round((invDiscountAmount / rawGrossSubtotal) * 100 * 10) / 10 : 0);
 
                   const grossOriginalAmount = Math.max(0, rawGrossSubtotal + (inv.tax || 0));
-                  const expDeductions = inv.expensesTotalDeduction || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-                  const expAdditions = inv.expensesTotalAddition || (inv.expenses || []).filter(e => e.action === 'add').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-                  const effectiveFinalAmount = Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount - expDeductions + expAdditions);
+                  const effectiveFinalAmount = Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
                   const hasReturns = totalReturnsAmount > 0;
-                  const hasExpensesAdjustment = expDeductions > 0 || expAdditions > 0;
                   const inwardSellThrough = (isPurchaseMode && !inv.isDraft)
                     ? calculateInwardInvoiceSellThrough(inv, invoices, products)
                     : null;
@@ -708,7 +705,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                               {toPersianDigits(inv.items.length)} قلم کالا
                             </span>
                             <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
-                              {hasInvDiscount || hasReturns || hasExpensesAdjustment ? (
+                              {hasInvDiscount || hasReturns ? (
                                 <div className="text-left">
                                   <span className="text-emerald-600 dark:text-emerald-400 font-black">{formatPrice(effectiveFinalAmount)}</span>
                                   <span className="text-[10.5px] text-slate-400 line-through font-normal mr-1.5">{formatPrice(grossOriginalAmount)}</span>
@@ -726,32 +723,6 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                               </span>
                               <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
                                 (-{formatPrice(invDiscountAmount)})
-                              </span>
-                            </div>
-                          ) : (inv.expenses && inv.expenses.length > 0) ? (
-                            <div className="flex items-center justify-end gap-1 mt-0.5 dir-rtl flex-wrap">
-                              {inv.expenses.map((exp, eIdx) => (
-                                <span key={eIdx} className={`px-1.5 py-0.5 rounded-md font-bold text-[9.5px] border inline-flex items-center gap-1 ${
-                                  exp.action === 'deduct'
-                                    ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                                    : 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                                }`}>
-                                  <Truck className="w-2.5 h-2.5 shrink-0" />
-                                  <span>{exp.title || 'کرایه بار'}: {exp.action === 'deduct' ? `-${formatPrice(exp.amount)}` : `+${formatPrice(exp.amount)}`}</span>
-                                </span>
-                              ))}
-                            </div>
-                          ) : expDeductions > 0 ? (
-                            <div className="flex items-center justify-end gap-1.5 mt-0.5 dir-rtl">
-                              <span className="px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-black text-[9.5px] border border-rose-300 dark:border-rose-700 inline-flex items-center gap-1">
-                                <Truck className="w-2.5 h-2.5 shrink-0" />
-                                <span>کسر کرایه: -{formatPrice(expDeductions)}</span>
-                              </span>
-                            </div>
-                          ) : expAdditions > 0 ? (
-                            <div className="flex items-center justify-end gap-1.5 mt-0.5 dir-rtl">
-                              <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-black text-[9.5px] border border-emerald-300 dark:border-emerald-700">
-                                افزودن به فاکتور (+{formatPrice(expAdditions)})
                               </span>
                             </div>
                           ) : hasReturns ? (

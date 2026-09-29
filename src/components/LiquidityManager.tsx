@@ -429,8 +429,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
   }, [invoices]);
 
   // Net Liquid Balances (Cumulative Real-Time Safe & Bank strictly from actual cash/bank flows)
-  const netCashBalance = totalReceivedCash + totalManualDepositsCash + bankToCashTransfers + refundedReturnsToSupplierCash - totalManualExpensesCash - cashToBankTransfers - customerPayoutsCash - refundedReturnsFromCustomerCash - invoiceExpensesCash;
-  const netBankBalance = totalReceivedCardBank + totalManualDepositsBank + cashToBankTransfers + refundedReturnsToSupplierBank - totalManualExpensesBank - bankToCashTransfers - customerPayoutsBank - refundedReturnsFromCustomerBank - invoiceExpensesBank;
+  const netCashBalance = totalReceivedCash + totalManualDepositsCash + bankToCashTransfers + refundedReturnsToSupplierCash - totalManualExpensesCash - cashToBankTransfers - customerPayoutsCash - refundedReturnsFromCustomerCash;
+  const netBankBalance = totalReceivedCardBank + totalManualDepositsBank + cashToBankTransfers + refundedReturnsToSupplierBank - totalManualExpensesBank - bankToCashTransfers - customerPayoutsBank - refundedReturnsFromCustomerBank;
   const netChecksBalance = totalReceivedChecks;
   const totalLiquidity = netCashBalance + netBankBalance;
 

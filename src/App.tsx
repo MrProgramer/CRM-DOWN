@@ -1110,41 +1110,46 @@ export default function App() {
       const invNumMap = new Map<string, Invoice>();
       invoices.forEach(i => invNumMap.set(i.invoiceNumber, i));
 
-      const healed = prev.map(t => {
+      const healed = prev.filter(t => {
         let matchingInvoice: Invoice | undefined;
+        let isExpItem = false;
+        if (t.id.includes('-exp-')) {
+          isExpItem = true;
+        }
+
         if (t.referenceCode?.startsWith('INV-')) {
           const rawId = t.referenceCode.replace('INV-', '');
           matchingInvoice = invMap.get(rawId) || invNumMap.get(rawId);
         } else if (t.id.startsWith('treasury-inv-')) {
-          const rawId = t.id.replace('treasury-inv-', '');
+          const rawId = t.id.replace('treasury-inv-', '').split('-exp-')[0];
           matchingInvoice = invMap.get(rawId) || invNumMap.get(rawId);
         }
 
         if (matchingInvoice) {
-          if (matchingInvoice.type === 'purchase') {
-            if (t.type !== 'expense' || t.impactOnLiquidity !== 'deduct' || t.category !== 'خرید کالا (ورود به انبار)') {
+          const isCredit = matchingInvoice.paymentStatus === 'credit' || 
+                           matchingInvoice.paymentMethod?.includes('نسیه') || 
+                           matchingInvoice.paymentMethod?.includes('غیر');
+
+          if (!isExpItem && matchingInvoice.type === 'purchase') {
+            // Remove main purchase expense from treasury (purchase invoices belong to inventory & supplier accounts)
+            changed = true;
+            return false;
+          }
+
+          if (isExpItem) {
+            // Check if expense has direct cash/bank sourceAccount
+            const expList = matchingInvoice.expenses || [];
+            const hasDirectCashOrBank = expList.some(e => 
+              (e.sourceAccount === 'cash' || e.sourceAccount === 'bank') && 
+              (Number(e.amount) || 0) > 0
+            );
+            if (!hasDirectCashOrBank) {
               changed = true;
-              return {
-                ...t,
-                type: 'expense' as const,
-                impactOnLiquidity: 'deduct' as const,
-                category: 'خرید کالا (ورود به انبار)',
-                description: `فاکتور خرید #${toPersianDigits(matchingInvoice.invoiceNumber)} - تامین‌کننده ${matchingInvoice.customerName || 'تامین‌کننده'}`,
-              };
-            }
-          } else if (matchingInvoice.type === 'sale') {
-            if (t.type !== 'deposit' || t.impactOnLiquidity !== 'inject') {
-              changed = true;
-              return {
-                ...t,
-                type: 'deposit' as const,
-                impactOnLiquidity: 'inject' as const,
-                category: 'فروش نقدی کالا',
-              };
+              return false;
             }
           }
         }
-        return t;
+        return true;
       });
 
       if (changed) {
@@ -1504,30 +1509,20 @@ export default function App() {
     });
 
     if (!savedInvoice.isDraft) {
-      const paidAmt = savedInvoice.paymentStatus === 'credit'
+      const isCreditInvoice = savedInvoice.paymentStatus === 'credit' || 
+                              savedInvoice.paymentMethod?.includes('نسیه') || 
+                              savedInvoice.paymentMethod?.includes('غیر');
+
+      const paidAmt = isCreditInvoice
         ? 0
-        : (savedInvoice.paidAmount !== undefined ? savedInvoice.paidAmount : savedInvoice.finalAmount);
+        : (savedInvoice.paymentStatus === 'cash'
+            ? (savedInvoice.paidAmount !== undefined && savedInvoice.paidAmount > 0 ? savedInvoice.paidAmount : savedInvoice.finalAmount)
+            : (savedInvoice.paidAmount || 0));
 
       if (paidAmt > 0) {
         const sourceAccount = savedInvoice.paymentAccount || 'bank';
 
-        if (savedInvoice.type === 'purchase') {
-          // Cash/card payment for goods purchase/restock: ALWAYS deducts from liquidity (expense)
-          const purchaseExpense: TreasuryTransaction = {
-            id: `treasury-inv-${savedInvoice.id}`,
-            type: 'expense',
-            category: 'خرید کالا (ورود به انبار)',
-            amount: paidAmt,
-            source: sourceAccount,
-            date: savedInvoice.date || getCurrentPersianDate(),
-            time: savedInvoice.time || getCurrentPersianTime(),
-            description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName || 'تامین‌کننده'}`,
-            referenceCode: invoiceRefCode,
-            impactOnLiquidity: 'deduct',
-            createdAt: Date.now(),
-          };
-          nextTreasury = [purchaseExpense, ...nextTreasury];
-        } else {
+        if (savedInvoice.type === 'sale') {
           // Direct cash/card receipt from sales: adds to liquidity (deposit)
           const saleInflow: TreasuryTransaction = {
             id: `treasury-inv-${savedInvoice.id}`,
@@ -1546,11 +1541,12 @@ export default function App() {
         }
       }
 
-      // Record any freight or operational expenses paid from cash / bank as direct treasury expenses
+      // Record any freight or operational expenses ONLY if explicitly paid from cash / bank
       if (savedInvoice.expenses && savedInvoice.expenses.length > 0) {
         savedInvoice.expenses.forEach((exp, idx) => {
           const expAmount = Number(exp.amount) || 0;
-          const expSource = exp.sourceAccount || (exp.action === 'deduct' ? (savedInvoice.paymentAccount || 'cash') : 'none');
+          const expSource = exp.sourceAccount;
+          // STRICT CHECK: Only deduct liquidity if sourceAccount is explicitly 'cash' or 'bank'
           if (expAmount > 0 && (expSource === 'cash' || expSource === 'bank')) {
             const expTreasury: TreasuryTransaction = {
               id: `treasury-inv-exp-${savedInvoice.id}-${exp.id || idx}`,
