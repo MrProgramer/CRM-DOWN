@@ -375,7 +375,6 @@ export function calculateInwardInvoiceSellThrough(
   const percentRemaining = 100 - percentSold;
   const isFullySold = remainingPieces === 0 && totalPieces > 0;
   const totalRealizedProfit = soldPieces > 0 ? itemsSellThrough.reduce((sum, it) => sum + it.realizedProfit, 0) : 0;
-  const totalPotentialProfit = itemsSellThrough.reduce((sum, it) => sum + it.potentialProfit, 0);
 
   const totalPurchasedCartons = itemsSellThrough.reduce((sum, it) => sum + (it.totalCartons || 0), 0);
   const totalPurchasedExtraPieces = itemsSellThrough.reduce((sum, it) => sum + (it.totalExtraPieces || 0), 0);
@@ -384,7 +383,18 @@ export function calculateInwardInvoiceSellThrough(
   const totalRemainingCartons = itemsSellThrough.reduce((sum, it) => sum + (it.remainingCartons || 0), 0);
   const totalRemainingExtraPieces = itemsSellThrough.reduce((sum, it) => sum + (it.remainingExtraPieces || 0), 0);
 
-  const totalInvoiceCost = itemsSellThrough.reduce((sum, it) => sum + (it.totalPieces * it.unitPurchasePrice), 0);
+  const grossCost = itemsSellThrough.reduce((sum, it) => sum + (it.totalPieces * it.unitPurchasePrice), 0);
+  const discountAmount = purchaseInvoice.hasDiscount ? (purchaseInvoice.discount || 0) : 0;
+  
+  // Freight, handling, waste, and all expenses associated with this shipment directly reduce profit
+  const freightAndExpensesIncurred = (purchaseInvoice.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const invoiceTax = purchaseInvoice.tax || 0;
+
+  // True acquisition cost of the shipment = (Gross Cost - Supplier Discount + Tax) + Incurred Freight & Expenses
+  const totalInvoiceCost = Math.max(0, grossCost - discountAmount + invoiceTax) + freightAndExpensesIncurred;
+  const totalEstimatedSales = itemsSellThrough.reduce((sum, it) => sum + (it.totalPieces * it.unitSellingPrice), 0);
+  const totalPotentialProfit = totalEstimatedSales - totalInvoiceCost;
+
   const totalSoldCost = itemsSellThrough.reduce((sum, it) => sum + (it.soldPurchaseAmount || 0), 0);
   const totalRemainingCost = itemsSellThrough.reduce((sum, it) => sum + (it.remainingPurchaseAmount || 0), 0);
   const totalSoldRevenue = totalSoldCost + totalRealizedProfit;

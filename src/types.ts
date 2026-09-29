@@ -97,13 +97,40 @@ export interface Invoice {
   items: InvoiceItem[];
   subtotal: number; // جمع خالص فاکتور
   discount: number; // تخفیف
+  hasDiscount?: boolean; // فعال/غیرفعال بودن تخفیف روی فاکتور
+  discountPercent?: number; // درصد تخفیف اعمال شده (مثلا ۸٪)
   tax: number; // مالیات
   finalAmount: number; // مبلغ نهایی این فاکتور
   totalAmount?: number;
   offsetReturnIds?: string[]; // شناسه‌های مرجوعی‌های کسر و تهاتر شده از این فاکتور (دریافت جنس به‌جای مرجوعی)
   offsetReturnsTotal?: number; // کل مبلغ کسر شده بابت تهاتر با مرجوعی‌ها (تومان)
+  expenses?: InvoiceExpense[]; // هزینه‌ها، کرایه بار، ضایعات و ضررهای متصل به فاکتور
+  expensesTotalDeduction?: number; // جمع مبالغ کسر شده از فاکتور (تومان)
+  expensesTotalAddition?: number; // جمع مبالغ افزوده شده به فاکتور (تومان)
   notes?: string;
   createdAt: number;
+}
+
+export type InvoiceExpenseType = 
+  | 'freight'      // کرایه بار و حمل و نقل
+  | 'loss_waste'   // کالای فاسد، ضایعات و تاریخ مصرف گذشته (دورریز)
+  | 'handling'     // کارگری، تخلیه بار و انبارداری
+  | 'damage'       // خسارت، شکستگی و کسری بار
+  | 'other';       // سایر هزینه‌ها و ضررهای فاکتور
+
+export type InvoiceExpenseAction = 
+  | 'deduct'       // کسر از مبلغ نهایی فاکتور
+  | 'add'          // اضافه به مبلغ نهایی فاکتور
+  | 'record_only'; // فقط قید در سند و گزارش نقدینگی (بدون تغییر مبلغ فاکتور)
+
+export interface InvoiceExpense {
+  id: string;
+  title: string; // عنوان / شرح هزینه یا ضرر
+  amount: number; // مبلغ به تومان
+  type: InvoiceExpenseType; // نوع
+  action: InvoiceExpenseAction; // کسر، اضافه، یا قید بدون تغییر
+  sourceAccount?: 'cash' | 'bank' | 'none'; // محل پرداخت: صندوق نقدی، بانک/کارتخوان، یا بدون خروج وجه مستقیم
+  notes?: string; // توضیحات تکمیلی
 }
 
 export interface Customer {

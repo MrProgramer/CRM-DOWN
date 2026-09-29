@@ -34,14 +34,15 @@ export function getBackupSnapshots(): BackupSnapshot[] {
  */
 export function saveBackupSnapshots(
   snapshots: BackupSnapshot[],
-  retentionCount: number = 5
+  retentionCount: number = 20
 ): { snapshots: BackupSnapshot[]; prunedCount: number } {
   try {
     // Sort descending (newest first)
     const sorted = [...snapshots].sort((a, b) => b.createdAt - a.createdAt);
 
-    // Prune excess backups if count exceeds retention limit
-    const kept = sorted.slice(0, Math.max(1, retentionCount));
+    // Prune excess backups if count exceeds retention limit (minimum 10 kept)
+    const effectiveLimit = Math.max(10, retentionCount || 20);
+    const kept = sorted.slice(0, effectiveLimit);
     const prunedCount = Math.max(0, sorted.length - kept.length);
 
     localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(kept));
@@ -50,6 +51,38 @@ export function saveBackupSnapshots(
     console.error('Failed to save backup snapshots:', err);
     return { snapshots, prunedCount: 0 };
   }
+}
+
+/**
+ * Creates an instant emergency safety snapshot before any destructive delete action
+ */
+export function createSafetyPreDeleteSnapshot(
+  products: Product[],
+  invoices: Invoice[],
+  customers: Customer[],
+  payments: CustomerPayment[],
+  settings: StoreSettings,
+  targetDescription: string,
+  returns?: ProductReturn[],
+  treasuryTransactions?: TreasuryTransaction[],
+  activityLogs?: ActivityLog[]
+): BackupSnapshot {
+  const snapshot = createSnapshotObject(
+    products,
+    invoices,
+    customers,
+    payments,
+    settings,
+    'auto',
+    `نسخه محافظتی خودکار قبل از ${targetDescription}`,
+    activityLogs,
+    returns,
+    treasuryTransactions
+  );
+
+  const existing = getBackupSnapshots();
+  saveBackupSnapshots([snapshot, ...existing], settings.backupRetentionCount || 20);
+  return snapshot;
 }
 
 /**

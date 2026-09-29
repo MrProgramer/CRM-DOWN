@@ -313,7 +313,9 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
     : itemsCurrentSubtotal;
 
   const grossAmount = Math.max(0, grossSubtotal - (invoice.discount || 0) + (invoice.tax || 0));
-  const netPayableAmount = Math.max(0, grossAmount - totalInvoiceReturnsAmount);
+  const netPayableAmount = invoice.finalAmount !== undefined && invoice.finalAmount > 0
+    ? invoice.finalAmount
+    : Math.max(0, grossAmount - totalInvoiceReturnsAmount - (invoice.expensesTotalDeduction || 0) + (invoice.expensesTotalAddition || 0));
 
   const handleDirectPrint = () => {
     setIsExportModalOpen(false);
@@ -529,6 +531,9 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
     }
   };
 
+  const hasInvDiscount = Boolean((invoice.hasDiscount || (invoice.discount && invoice.discount > 0)));
+  const invDiscountPercent = invoice.discountPercent || (grossSubtotal > 0 && invoice.discount > 0 ? Math.round((invoice.discount / grossSubtotal) * 100 * 10) / 10 : 0);
+
   const processedItems = useMemo<ProcessedItem[]>(() => {
     return (invoice.items || []).map((item, index) => {
       const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
@@ -555,6 +560,14 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
       const displayUnitPrice = getItemEffectiveUnitPrice(item, index);
       const displayLineTotal = (item.totalPieces * displayUnitPrice);
 
+      const discountedUnitPrice = hasInvDiscount && invDiscountPercent > 0
+        ? Math.round(displayUnitPrice * (1 - (invDiscountPercent / 100)))
+        : displayUnitPrice;
+
+      const discountedLineTotal = hasInvDiscount && invDiscountPercent > 0
+        ? Math.round(displayLineTotal * (1 - (invDiscountPercent / 100)))
+        : displayLineTotal;
+
       return {
         item,
         index,
@@ -572,9 +585,13 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         itemNetPrice,
         displayUnitPrice,
         displayLineTotal,
+        hasDiscount: hasInvDiscount,
+        discountPercent: invDiscountPercent,
+        discountedUnitPrice,
+        discountedLineTotal,
       };
     });
-  }, [invoice.items, products, matchedReturns, isPresentationModeActive, presentationModeType, markupPercent, fixedMarkupPerUnit, customItemUnitPrices]);
+  }, [invoice.items, products, matchedReturns, isPresentationModeActive, presentationModeType, markupPercent, fixedMarkupPerUnit, customItemUnitPrices, hasInvDiscount, invDiscountPercent]);
 
   const creditCalculationFormula = useMemo(() => {
     if (!isCreditOrPartial && prevValNumber === 0) return '';

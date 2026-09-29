@@ -32,7 +32,7 @@ import {
   formatStockBreakdown,
   formatProductPackagingSpec
 } from './utils/formatters';
-import { checkAndRunAutoBackup } from './utils/backupManager';
+import { checkAndRunAutoBackup, createSafetyPreDeleteSnapshot } from './utils/backupManager';
 import { syncInvoiceWithReturns, syncAllInvoicesWithReturns } from './utils/invoiceSync';
 
 const STORAGE_KEYS = {
@@ -303,7 +303,20 @@ export default function App() {
     if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          // Auto-sanitize: ensure any purchase / inward restock invoice transaction is NEVER 'deposit' or 'inject'
+          return parsed.map((t: TreasuryTransaction) => {
+            const isPurchaseCategory = t.category?.includes('خرید کالا') || t.description?.includes('فاکتور خرید') || t.description?.includes('ورود به انبار');
+            if (isPurchaseCategory && (t.type === 'deposit' || t.impactOnLiquidity === 'inject')) {
+              return {
+                ...t,
+                type: 'expense' as const,
+                impactOnLiquidity: 'deduct' as const,
+              };
+            }
+            return t;
+          });
+        }
       } catch (e) {
         console.error('Failed to parse treasuryTransactions state', e);
       }
@@ -1029,6 +1042,23 @@ export default function App() {
     const target = customers.find(c => c.id === customerId);
     const targetName = target?.name?.trim();
 
+    // 0. Create automatic safety pre-delete snapshot before removing customer
+    try {
+      createSafetyPreDeleteSnapshot(
+        products,
+        invoices,
+        customers,
+        payments,
+        settings,
+        `حذف پرونده طرف‌حساب «${targetName || customerId}»`,
+        productReturns,
+        treasuryTransactions,
+        activityLogs
+      );
+    } catch (e) {
+      console.warn('Could not create safety snapshot before customer deletion', e);
+    }
+
     // 1. Remove customer from state & storage
     const updatedCustomers = customers.filter(c => c.id !== customerId);
     setCustomers(updatedCustomers);
@@ -1063,12 +1093,71 @@ export default function App() {
 
     addActivityLog(
       'حذف کامل پرونده مشتری و کلیه رکوردهای وابسته',
-      `پرونده مشتری «${targetName || customerId}» به همراه کلیه واریزی‌ها، فاکتورها و اسناد مرجوعی وابسته به صورت یکپارچه و دائمی حذف گردید.`,
+      `پرونده مشتری «${targetName || customerId}» به همراه کلیه واریزی‌ها، فاکتورها و اسناد مرجوعی وابسته به صورت یکپارچه و دائمی حذف گردید. (یک نسخه پشتیبان اضطراری به صورت خودکار ثبت شد).`,
       'customer',
       'customers'
     );
-    showAlert(`پرونده مشتری «${targetName || customerId}» به همراه کلیه اسناد وابسته حذف گردید.`, 'info', 'حذف پرونده مشتری');
+    showAlert(`پرونده مشتری «${targetName || customerId}» به همراه کلیه اسناد وابسته حذف گردید. (نسخه پشتیبان اضطراری ایجاد شد).`, 'info', 'حذف پرونده مشتری');
   };
+
+  // Reconcile and heal Treasury Transactions against Invoices
+  // Guarantees purchase/inward invoices are ALWAYS recorded as expenses and deduct from liquidity, never deposits
+  useEffect(() => {
+    setTreasuryTransactions(prev => {
+      let changed = false;
+      const invMap = new Map<string, Invoice>();
+      invoices.forEach(i => invMap.set(i.id, i));
+      const invNumMap = new Map<string, Invoice>();
+      invoices.forEach(i => invNumMap.set(i.invoiceNumber, i));
+
+      const healed = prev.map(t => {
+        let matchingInvoice: Invoice | undefined;
+        if (t.referenceCode?.startsWith('INV-')) {
+          const rawId = t.referenceCode.replace('INV-', '');
+          matchingInvoice = invMap.get(rawId) || invNumMap.get(rawId);
+        } else if (t.id.startsWith('treasury-inv-')) {
+          const rawId = t.id.replace('treasury-inv-', '');
+          matchingInvoice = invMap.get(rawId) || invNumMap.get(rawId);
+        }
+
+        if (matchingInvoice) {
+          if (matchingInvoice.type === 'purchase') {
+            if (t.type !== 'expense' || t.impactOnLiquidity !== 'deduct' || t.category !== 'خرید کالا (ورود به انبار)') {
+              changed = true;
+              return {
+                ...t,
+                type: 'expense' as const,
+                impactOnLiquidity: 'deduct' as const,
+                category: 'خرید کالا (ورود به انبار)',
+                description: `فاکتور خرید #${toPersianDigits(matchingInvoice.invoiceNumber)} - تامین‌کننده ${matchingInvoice.customerName || 'تامین‌کننده'}`,
+              };
+            }
+          } else if (matchingInvoice.type === 'sale') {
+            if (t.type !== 'deposit' || t.impactOnLiquidity !== 'inject') {
+              changed = true;
+              return {
+                ...t,
+                type: 'deposit' as const,
+                impactOnLiquidity: 'inject' as const,
+                category: 'فروش نقدی کالا',
+              };
+            }
+          }
+        }
+        return t;
+      });
+
+      if (changed) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.TREASURY, JSON.stringify(healed));
+        } catch (e) {
+          console.error('Failed to persist healed treasury transactions', e);
+        }
+        return healed;
+      }
+      return prev;
+    });
+  }, [invoices]);
 
   // Relational Integrity Sanitizer (Ensures no dangling/orphaned payments or records remain from previously deleted customers)
   useEffect(() => {
@@ -1398,8 +1487,21 @@ export default function App() {
     }
 
     // Atomic Treasury Transaction synchronization for real-time accurate Liquidity
-    const invoiceRefCode = `INV-${savedInvoice.id}`;
-    let nextTreasury = treasuryTransactions.filter(t => t.referenceCode !== invoiceRefCode);
+    const invId = savedInvoice.id;
+    const invNum = savedInvoice.invoiceNumber;
+    const invoiceRefCode = `INV-${invId}`;
+
+    // Cleanly purge ANY previous treasury transactions tied to this invoice across all identifiers
+    let nextTreasury = treasuryTransactions.filter(t => {
+      if (t.referenceCode === invoiceRefCode) return false;
+      if (invNum && t.referenceCode === `INV-${invNum}`) return false;
+      if (t.id === `treasury-inv-${invId}`) return false;
+      if (t.id.startsWith(`treasury-inv-exp-${invId}`)) return false;
+      if (invNum && t.id === `treasury-inv-${invNum}`) return false;
+      if (invNum && t.id.startsWith(`treasury-inv-exp-${invNum}`)) return false;
+      if (t.id.endsWith(invId) || t.id.includes(`inv-${invId}`)) return false;
+      return true;
+    });
 
     if (!savedInvoice.isDraft) {
       const paidAmt = savedInvoice.paymentStatus === 'credit'
@@ -1410,7 +1512,7 @@ export default function App() {
         const sourceAccount = savedInvoice.paymentAccount || 'bank';
 
         if (savedInvoice.type === 'purchase') {
-          // Cash/card payment for goods purchase/restock: deducts from liquidity
+          // Cash/card payment for goods purchase/restock: ALWAYS deducts from liquidity (expense)
           const purchaseExpense: TreasuryTransaction = {
             id: `treasury-inv-${savedInvoice.id}`,
             type: 'expense',
@@ -1419,14 +1521,14 @@ export default function App() {
             source: sourceAccount,
             date: savedInvoice.date || getCurrentPersianDate(),
             time: savedInvoice.time || getCurrentPersianTime(),
-            description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName}`,
+            description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName || 'تامین‌کننده'}`,
             referenceCode: invoiceRefCode,
             impactOnLiquidity: 'deduct',
             createdAt: Date.now(),
           };
           nextTreasury = [purchaseExpense, ...nextTreasury];
         } else {
-          // Direct cash/card receipt from sales: adds to liquidity
+          // Direct cash/card receipt from sales: adds to liquidity (deposit)
           const saleInflow: TreasuryTransaction = {
             id: `treasury-inv-${savedInvoice.id}`,
             type: 'deposit',
@@ -1435,7 +1537,7 @@ export default function App() {
             source: sourceAccount,
             date: savedInvoice.date || getCurrentPersianDate(),
             time: savedInvoice.time || getCurrentPersianTime(),
-            description: `دریافتی نقدی فاکتور فروش #${toPersianDigits(savedInvoice.invoiceNumber)} - خریدار ${savedInvoice.customerName}`,
+            description: `دریافتی نقدی فاکتور فروش #${toPersianDigits(savedInvoice.invoiceNumber)} - خریدار ${savedInvoice.customerName || 'مشتری متفرقه'}`,
             referenceCode: invoiceRefCode,
             impactOnLiquidity: 'inject',
             createdAt: Date.now(),
@@ -1443,8 +1545,37 @@ export default function App() {
           nextTreasury = [saleInflow, ...nextTreasury];
         }
       }
+
+      // Record any freight or operational expenses paid from cash / bank as direct treasury expenses
+      if (savedInvoice.expenses && savedInvoice.expenses.length > 0) {
+        savedInvoice.expenses.forEach((exp, idx) => {
+          const expAmount = Number(exp.amount) || 0;
+          const expSource = exp.sourceAccount || (exp.action === 'deduct' ? (savedInvoice.paymentAccount || 'cash') : 'none');
+          if (expAmount > 0 && (expSource === 'cash' || expSource === 'bank')) {
+            const expTreasury: TreasuryTransaction = {
+              id: `treasury-inv-exp-${savedInvoice.id}-${exp.id || idx}`,
+              type: 'expense',
+              category: exp.title || 'کرایه بار و هزینه فاکتور',
+              amount: expAmount,
+              source: expSource,
+              date: savedInvoice.date || getCurrentPersianDate(),
+              time: savedInvoice.time || getCurrentPersianTime(),
+              description: `هزینه/کرایه (${exp.title || 'کرایه بار'}) فاکتور #${toPersianDigits(savedInvoice.invoiceNumber)} - ${savedInvoice.customerName || ''}`,
+              referenceCode: invoiceRefCode,
+              impactOnLiquidity: 'deduct',
+              createdAt: Date.now() + idx + 1,
+            };
+            nextTreasury = [expTreasury, ...nextTreasury];
+          }
+        });
+      }
     }
     setTreasuryTransactions(nextTreasury);
+    try {
+      localStorage.setItem(STORAGE_KEYS.TREASURY, JSON.stringify(nextTreasury));
+    } catch (e) {
+      console.error('Failed to persist treasury transactions on invoice save', e);
+    }
 
     // 🔄 Sync and Settle Offset Product Returns (تهاتر مرجوعی‌ها با فاکتور)
     if (!savedInvoice.isDraft) {
@@ -1548,6 +1679,23 @@ export default function App() {
   const executeDeleteInvoice = (invoiceId: string) => {
     const targetInvoice = invoices.find(i => i.id === invoiceId);
     if (!targetInvoice) return;
+
+    // Create automatic safety pre-delete snapshot before removing invoice
+    try {
+      createSafetyPreDeleteSnapshot(
+        products,
+        invoices,
+        customers,
+        payments,
+        settings,
+        `حذف فاکتور #${toPersianDigits(targetInvoice.invoiceNumber)} (${targetInvoice.type === 'purchase' ? 'خرید/ورود' : 'فروش'})`,
+        productReturns,
+        treasuryTransactions,
+        activityLogs
+      );
+    } catch (e) {
+      console.warn('Could not create safety snapshot before invoice deletion', e);
+    }
 
     // Restore stock ONLY if the invoice was NOT a draft
     if (!targetInvoice.isDraft) {
@@ -2475,6 +2623,7 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               <InvoiceEditor
+                key={editingInvoice?.id ? `edit-${editingInvoice.id}-${editingInvoice.type}` : `new-${editingInvoice?.type || 'sale'}`}
                 initialInvoice={editingInvoice}
                 products={products}
                 customers={customers}

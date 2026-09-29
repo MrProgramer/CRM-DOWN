@@ -3,7 +3,8 @@ import { Invoice, StoreSettings } from '../types';
 import { ThemeStyles } from './ThemeConfig';
 import { 
   formatPrice, 
-  toPersianDigits 
+  toPersianDigits,
+  numberToPersianWords
 } from '../utils/formatters';
 import { InvoiceSellThroughSummary } from '../utils/inwardSellThrough';
 import { 
@@ -43,6 +44,10 @@ export interface ProcessedItem {
   itemNetPrice: number;
   displayUnitPrice: number;
   displayLineTotal: number;
+  hasDiscount?: boolean;
+  discountPercent?: number;
+  discountedUnitPrice?: number;
+  discountedLineTotal?: number;
 }
 
 export interface InvoiceTemplateProps {
@@ -140,6 +145,31 @@ export const renderCumulativeBalanceSection = (props: InvoiceTemplateProps) => {
           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">تسویه نقدی</span>
         </div>
       )}
+    </div>
+  );
+};
+
+export const renderExpensesSummary = (invoice: Invoice) => {
+  if (!invoice.expenses || invoice.expenses.length === 0) return null;
+  return (
+    <div className="space-y-1.5 pt-1.5 border-t border-dashed border-slate-300 dark:border-slate-700">
+      {invoice.expenses.map((exp, idx) => (
+        <div key={`exp-tmpl-${exp.id || idx}`} className="space-y-0.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-700 dark:text-slate-300 font-bold">
+              {exp.action === 'deduct' ? 'کسر ' : exp.action === 'add' ? 'افزودن ' : ''}{exp.title}:
+            </span>
+            <span className={`dir-ltr font-black ${exp.action === 'deduct' ? 'text-rose-600' : exp.action === 'add' ? 'text-emerald-700' : 'text-slate-600'}`}>
+              {exp.action === 'deduct' ? `-${formatPrice(exp.amount)}` : exp.action === 'add' ? `+${formatPrice(exp.amount)}` : formatPrice(exp.amount)}
+            </span>
+          </div>
+          {exp.amount > 0 && (
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-right pr-2">
+              ({numberToPersianWords(exp.amount)} تومان)
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
@@ -403,7 +433,11 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
               itemReturnedTotalAmount,
               itemNetPrice,
               displayUnitPrice,
-              displayLineTotal
+              displayLineTotal,
+              hasDiscount,
+              discountPercent,
+              discountedUnitPrice,
+              discountedLineTotal
             }) => (
               <tr key={`mono-item-${item.id || index}`} className="text-slate-900">
                 <td className="py-2.5 px-2 text-center text-slate-500">
@@ -439,10 +473,24 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-center text-sm whitespace-nowrap">
-                  {toPersianDigits(displayUnitPrice.toLocaleString())}
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-slate-600 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
                 </td>
                 <td className="py-2.5 px-3 text-center font-bold text-sm whitespace-nowrap text-slate-950">
-                  {toPersianDigits(displayLineTotal.toLocaleString())}
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -479,6 +527,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                 <span className="dir-ltr">-{formatPrice(totalInvoiceReturnsAmount)}</span>
               </div>
             )}
+            {renderExpensesSummary(invoice)}
           </div>
 
           {/* Net Payable: Clean Matching Border */}
@@ -625,7 +674,11 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
               itemReturnedTotalAmount,
               itemNetPrice,
               displayUnitPrice,
-              displayLineTotal
+              displayLineTotal,
+              hasDiscount,
+              discountPercent,
+              discountedUnitPrice,
+              discountedLineTotal
             }) => (
               <tr key={`swiss-item-${item.id || index}`}>
                 <td className="py-3 px-3 text-center text-slate-400">
@@ -651,11 +704,27 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
                   </span>
                   <div className="text-[10px] text-slate-400 mt-0.5">{cartonLabel}</div>
                 </td>
-                <td className="py-3 px-3 text-center">
-                  {toPersianDigits(displayUnitPrice.toLocaleString())}
+                <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
                 </td>
-                <td className="py-3 px-4 text-center font-bold">
-                  {toPersianDigits(displayLineTotal.toLocaleString())}
+                <td className="py-3 px-4 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span className="text-slate-900 dark:text-white font-black">
+                        {toPersianDigits((discountedLineTotal || 0).toLocaleString())}
+                      </span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -672,6 +741,7 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
           </div>
 
           {/* Net Payable: Matching Table Border */}
+          {renderExpensesSummary(invoice)}
           <div className={`p-3.5 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-sm text-slate-900 dark:text-white">
@@ -782,7 +852,7 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`fintech-item-${item.id || index}`}>
                 <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-3 px-4">
@@ -793,9 +863,27 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                   <span className="font-bold">{toPersianDigits(item.totalPieces.toLocaleString())}</span>
                   <div className="text-[10px] text-slate-400">{cartonLabel}</div>
                 </td>
-                <td className="py-3 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-3 px-4 text-center font-bold text-slate-900 dark:text-white">
-                  {toPersianDigits(displayLineTotal.toLocaleString())}
+                <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span className="font-black text-slate-900 dark:text-white">
+                        {toPersianDigits((discountedLineTotal || 0).toLocaleString())}
+                      </span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -810,6 +898,7 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             <span>جمع کل ناخالص اقلام:</span>
             <span className="font-bold text-slate-900 dark:text-white">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
 
           {/* Net Box Matching Table Border */}
           <div className={`p-4 rounded-xl border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
@@ -904,7 +993,7 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-300 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`exec-item-${item.id || index}`}>
                 <td className="py-2.5 px-2 text-center text-slate-500">{toPersianDigits(index + 1)}</td>
                 <td className="py-2.5 px-3 font-bold">
@@ -912,8 +1001,26 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
                   <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
                 </td>
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
-                <td className="py-2.5 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-2.5 px-3 text-center font-bold">{toPersianDigits(displayLineTotal.toLocaleString())}</td>
+                <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-700 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-2.5 px-3 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -927,6 +1034,7 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
             <span>جمع کل ناخالص:</span>
             <span className="font-bold">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
           <div className="p-3 bg-white dark:bg-slate-950 rounded-lg border border-slate-300 dark:border-slate-800 mt-2">
             <div className="flex items-center justify-between text-sm font-black text-slate-900 dark:text-white">
               <span>مبلغ خالص قابل دریافت:</span>
@@ -1018,7 +1126,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal }, idx) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }, idx) => (
               <tr 
                 key={`artisan-item-${item.id || index}`}
                 style={{ backgroundColor: idx % 2 === 1 ? `${theme.hex}08` : 'transparent' }}
@@ -1026,8 +1134,26 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                 <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-3 px-4 font-bold">{item.productName}</td>
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
-                <td className="py-3 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-3 px-4 text-center font-bold">{toPersianDigits(displayLineTotal.toLocaleString())}</td>
+                <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1041,6 +1167,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             <span>جمع کل ناخالص:</span>
             <span className="font-bold text-slate-900 dark:text-white">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
 
           <div className={`p-3.5 rounded-xl border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex items-center justify-between font-bold text-sm">
@@ -1115,13 +1242,31 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`compact-item-${item.id || index}`}>
                 <td className="py-2 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-2 px-3 font-bold">{item.productName}</td>
                 <td className="py-2 px-2 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
-                <td className="py-2 px-2 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-2 px-3 text-center font-bold">{toPersianDigits(displayLineTotal.toLocaleString())}</td>
+                <td className="py-2 px-2 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold">
+                      -{toPersianDigits(discountPercent)}٪: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-2 px-3 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[9px] text-slate-400 line-through block font-normal">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1135,6 +1280,7 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             <span>جمع کل ناخالص:</span>
             <span className="font-bold text-slate-900 dark:text-white">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
 
           <div className={`p-3 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex items-center justify-between font-bold">
@@ -1239,7 +1385,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800/80' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`comm-item-${item.id || index}`}>
                 <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-3 px-4">
@@ -1250,9 +1396,27 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
                   <span className="font-bold">{toPersianDigits(item.totalPieces.toLocaleString())}</span>
                   <div className="text-[10px] text-slate-400">{cartonLabel}</div>
                 </td>
-                <td className="py-3 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-3 px-4 text-center font-bold text-slate-900 dark:text-white">
-                  {toPersianDigits(displayLineTotal.toLocaleString())}
+                <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span className="font-black text-slate-900 dark:text-white">
+                        {toPersianDigits((discountedLineTotal || 0).toLocaleString())}
+                      </span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -1267,6 +1431,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
             <span className="text-slate-600 dark:text-slate-300">جمع کل ناخالص:</span>
             <span className="font-bold text-sm">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
 
           <div className={`p-3.5 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex items-center justify-between font-black text-sm">
@@ -1364,7 +1529,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`neo-item-${item.id || index}`}>
                 <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-3 px-4 font-bold">
@@ -1372,8 +1537,26 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
                   <span className="block text-[10.5px] text-slate-400 font-normal">{packagingSpec}</span>
                 </td>
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
-                <td className="py-3 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-3 px-4 text-center font-bold">{toPersianDigits(displayLineTotal.toLocaleString())}</td>
+                <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1476,7 +1659,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec }) => (
+            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
               <tr key={`hyper-item-${item.id || index}`}>
                 <td className="py-2.5 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
                 <td className="py-2.5 px-3 font-bold">
@@ -1484,8 +1667,26 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
                   <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
                 </td>
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
-                <td className="py-2.5 px-3 text-center">{toPersianDigits(displayUnitPrice.toLocaleString())}</td>
-                <td className="py-2.5 px-3 text-center font-bold">{toPersianDigits(displayLineTotal.toLocaleString())}</td>
+                <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                  <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
+                    </div>
+                  )}
+                </td>
+                <td className="py-2.5 px-3 text-center font-bold whitespace-nowrap">
+                  {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
+                    <div>
+                      <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
+                      <span className="text-[10px] text-slate-400 line-through mr-1 font-normal block">
+                        {toPersianDigits(displayLineTotal.toLocaleString())}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{toPersianDigits(displayLineTotal.toLocaleString())}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1499,6 +1700,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
             <span>جمع کل ناخالص:</span>
             <span className="font-bold text-slate-900 dark:text-white">{formatPrice(grossAmount)}</span>
           </div>
+          {renderExpensesSummary(invoice)}
 
           <div className={`p-3.5 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex items-center justify-between font-black text-sm">

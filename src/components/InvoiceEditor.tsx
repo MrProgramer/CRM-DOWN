@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Invoice, InvoiceItem, Product, StoreSettings, InvoiceType, PaymentStatus, Customer, CustomerPayment, ProductReturn } from '../types';
+import { 
+  Invoice, 
+  InvoiceItem, 
+  Product, 
+  StoreSettings, 
+  InvoiceType, 
+  PaymentStatus, 
+  Customer, 
+  CustomerPayment, 
+  ProductReturn,
+  InvoiceExpense,
+  InvoiceExpenseType,
+  InvoiceExpenseAction
+} from '../types';
 import { 
   formatPrice, 
   formatAmountScale,
@@ -54,10 +67,15 @@ import {
   AlertTriangle,
   TrendingUp,
   Banknote,
+  DollarSign,
   Check,
   CheckCheck,
   RotateCcw,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Truck,
+  PackageX,
+  Receipt,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartPriceInput } from './SmartPriceInput';
@@ -199,9 +217,29 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       };
     });
   });
+  const [hasDiscount, setHasDiscount] = useState<boolean>(() => {
+    if (initialInvoice?.hasDiscount !== undefined) return initialInvoice.hasDiscount;
+    return Boolean(initialInvoice?.discount && initialInvoice.discount > 0);
+  });
+  const [discountPercent, setDiscountPercent] = useState<number>(() => {
+    if (initialInvoice?.discountPercent !== undefined && initialInvoice.discountPercent > 0) return initialInvoice.discountPercent;
+    if (initialInvoice?.discount && initialInvoice?.subtotal && initialInvoice.subtotal > 0) {
+      return Math.round((initialInvoice.discount / initialInvoice.subtotal) * 100 * 10) / 10;
+    }
+    return 8; // Default 8% when activated
+  });
+  const [discountMode, setDiscountMode] = useState<'percent' | 'amount'>('percent');
   const [discount, setDiscount] = useState<number>(initialInvoice?.discount || 0);
   const [tax, setTax] = useState<number>(initialInvoice?.tax || 0);
   const [notes, setNotes] = useState(initialInvoice?.notes || settings.minOrderNotice || '');
+
+  // Invoice Expenses, Freight, Losses and Deductions
+  const [invoiceExpenses, setInvoiceExpenses] = useState<InvoiceExpense[]>(() => {
+    return initialInvoice?.expenses ? JSON.parse(JSON.stringify(initialInvoice.expenses)) : [];
+  });
+  const [isExpensesSectionOpen, setIsExpensesSectionOpen] = useState<boolean>(() => {
+    return Boolean(initialInvoice?.expenses && initialInvoice.expenses.length > 0);
+  });
 
   // Fast customer selector dropdown toggle
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
@@ -227,6 +265,76 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   useEffect(() => {
     localStorage.setItem('bazargani_invoice_picker_hide_zero_stock', JSON.stringify(hideZeroStock));
   }, [hideZeroStock]);
+
+  // Synchronize invoice form state whenever initialInvoice changes
+  useEffect(() => {
+    if (initialInvoice) {
+      const type = initialInvoice.type || 'sale';
+      setInvoiceType(type);
+      setInvoiceNumber(initialInvoice.invoiceNumber || String(Math.floor(1000 + Math.random() * 9000)));
+      setDate(initialInvoice.date || getCurrentPersianDate());
+      setTime(initialInvoice.time || getCurrentPersianTime());
+      setCustomerName(initialInvoice.customerName || '');
+      setCustomerPhone(initialInvoice.customerPhone || '');
+      setCustomerCity(initialInvoice.customerCity || '');
+      setCustomerAddress(initialInvoice.customerAddress || '');
+      setSalesType(initialInvoice.salesType || (type === 'purchase' ? 'خرید کالا (ورود به انبار)' : 'نقدی عادی (تا ۱۰۰ میلیون تومان)'));
+      
+      const pStatus: PaymentStatus = initialInvoice.paymentStatus || (
+        initialInvoice.paymentMethod?.includes('نسیه') || initialInvoice.paymentMethod?.includes('غیر') ? 'credit' :
+        initialInvoice.paymentMethod?.includes('نقد') ? 'cash' :
+        type === 'purchase' ? 'credit' : 'cash'
+      );
+      setPaymentStatus(pStatus);
+      
+      setPaidAmount(initialInvoice.paidAmount !== undefined ? initialInvoice.paidAmount : (pStatus === 'cash' ? (initialInvoice.finalAmount || 0) : 0));
+      setPaymentMethodDetails(initialInvoice.paymentMethodDetails || '');
+      setPaymentAccount(initialInvoice.paymentAccount || (initialInvoice.paymentMethodDetails?.includes('نقد') ? 'cash' : 'bank'));
+      setPaymentMethod(initialInvoice.paymentMethod || (pStatus === 'cash' ? 'نقدی (تسویه شده کامل)' : 'غیر نقدی (نسیه / حساب مشتری)'));
+      setPreviousBalance(initialInvoice.previousBalance || 'بی‌حساب (۰)');
+      
+      if (initialInvoice.items) {
+        setItems(initialInvoice.items.map(it => {
+          const matchingProd = products.find(p => p.id === it.productId || p.name?.trim() === it.productName?.trim());
+          const pPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
+            ? it.unitPurchasePrice
+            : (matchingProd?.purchasePrice || 0);
+          const sPrice = (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0)
+            ? it.unitSellingPrice
+            : (matchingProd?.sellingPrice || (pPrice > 0 ? Math.round(pPrice * 1.25) : (it.unitPrice || 0)));
+          
+          const totPieces = it.totalPieces > 0 ? it.totalPieces : ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
+          const totPrice = type === 'purchase'
+            ? (it.totalPrice > 0 ? it.totalPrice : totPieces * pPrice)
+            : (sPrice > 0 && totPieces > 0 ? totPieces * sPrice : (it.totalPrice || 0));
+          const totPurchaseCost = totPieces * pPrice;
+          const profit = Math.max(0, (sPrice - pPrice) * totPieces);
+
+          return {
+            ...it,
+            cartonsCount: it.cartonsCount !== undefined ? it.cartonsCount : (matchingProd && matchingProd.piecesPerCarton > 0 ? Math.floor(totPieces / matchingProd.piecesPerCarton) : 0),
+            extraPieces: it.extraPieces !== undefined ? it.extraPieces : (matchingProd && matchingProd.piecesPerCarton > 0 ? totPieces % matchingProd.piecesPerCarton : 0),
+            piecesPerCarton: it.piecesPerCarton || matchingProd?.piecesPerCarton || 1,
+            totalPieces: totPieces,
+            unitPurchasePrice: pPrice,
+            unitSellingPrice: sPrice,
+            totalPrice: totPrice,
+            totalPurchaseCost: totPurchaseCost,
+            profitAmount: it.profitAmount !== undefined && it.profitAmount > 0 ? it.profitAmount : profit,
+            profitPercentage: it.profitPercentage !== undefined && it.profitPercentage > 0 ? it.profitPercentage : (totPrice > 0 ? (profit / totPrice) * 100 : 0),
+          };
+        }));
+      }
+
+      setHasDiscount(initialInvoice.hasDiscount !== undefined ? initialInvoice.hasDiscount : Boolean(initialInvoice.discount && initialInvoice.discount > 0));
+      setDiscountPercent(initialInvoice.discountPercent !== undefined && initialInvoice.discountPercent > 0 ? initialInvoice.discountPercent : 8);
+      setDiscount(initialInvoice.discount || 0);
+      setTax(initialInvoice.tax || 0);
+      setNotes(initialInvoice.notes || settings.minOrderNotice || '');
+      setInvoiceExpenses(initialInvoice.expenses ? JSON.parse(JSON.stringify(initialInvoice.expenses)) : []);
+      setIsExpensesSectionOpen(Boolean(initialInvoice.expenses && initialInvoice.expenses.length > 0));
+    }
+  }, [initialInvoice?.id]);
 
   // Multi-item quick add customizer in picker
   const [activePickingProduct, setActivePickingProduct] = useState<Product | null>(null);
@@ -895,10 +1003,97 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   // Calculations
   const subtotal = items.reduce((acc, item) => acc + item.totalPrice, 0);
   const totalPurchaseCost = items.reduce((acc, item) => acc + item.totalPurchaseCost, 0);
-  // Final amount after offsetting unsettled returns (دریافت جنس به‌جای مرجوعی)
-  const finalAmount = Math.max(0, subtotal - totalOffsetReturnsAmount - discount + tax);
-  const totalProfit = finalAmount - totalPurchaseCost;
-  const overallMargin = finalAmount > 0 ? (totalProfit / finalAmount) * 100 : 0;
+
+  // Synchronize discount with discountPercent if discountMode === 'percent' and hasDiscount is true
+  useEffect(() => {
+    if (hasDiscount) {
+      if (discountMode === 'percent') {
+        const calculatedDiscount = Math.round((subtotal * Math.max(0, discountPercent)) / 100);
+        setDiscount(calculatedDiscount);
+      }
+    } else {
+      setDiscount(0);
+    }
+  }, [hasDiscount, discountPercent, discountMode, subtotal]);
+
+  const effectiveDiscountPercent = useMemo(() => {
+    if (!hasDiscount) return 0;
+    if (discountMode === 'percent' && discountPercent > 0) return discountPercent;
+    if (subtotal > 0 && discount > 0) return Math.round((discount / subtotal) * 100 * 10) / 10;
+    return 0;
+  }, [hasDiscount, discountMode, discountPercent, subtotal, discount]);
+
+  const activeDiscountAmount = hasDiscount ? discount : 0;
+
+  // Invoice Expenses, Freight & Losses aggregations
+  const expensesTotalDeduction = useMemo(() => {
+    return invoiceExpenses
+      .filter(e => e.action === 'deduct')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  const expensesTotalAddition = useMemo(() => {
+    return invoiceExpenses
+      .filter(e => e.action === 'add')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  const expensesTotalRecordedOnly = useMemo(() => {
+    return invoiceExpenses
+      .filter(e => e.action === 'record_only')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  const expensesPaidFromLiquidity = useMemo(() => {
+    return invoiceExpenses
+      .filter(e => e.sourceAccount === 'cash' || e.sourceAccount === 'bank')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  // Final amount after offsetting returns, active discount, taxes, and expenses deductions/additions
+  const finalAmount = Math.max(0, subtotal - totalOffsetReturnsAmount - activeDiscountAmount + tax - expensesTotalDeduction + expensesTotalAddition);
+
+  const estimatedSalesRevenue = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const prod = products.find(p => p.id === item.productId || p.name === item.productName);
+      const sPrice = (item.unitSellingPrice !== undefined && item.unitSellingPrice > 0)
+        ? item.unitSellingPrice
+        : ((prod?.sellingPrice && prod.sellingPrice > 0) ? prod.sellingPrice : 0);
+      return sum + (item.totalPieces * sPrice);
+    }, 0);
+  }, [items, products]);
+
+  const directPaidExpenses = useMemo(() => {
+    return invoiceExpenses
+      .filter(e => e.action === 'record_only' && (e.sourceAccount === 'cash' || e.sourceAccount === 'bank'))
+      .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  // Actual total net profit from sales (or estimated profit for inward purchases)
+  const totalProfit = useMemo(() => {
+    if (invoiceType === 'sale') {
+      // Net revenue from selling = subtotal - activeDiscountAmount - expensesTotalDeduction + expensesTotalAddition
+      // Profit = Net Revenue - Total Purchase Cost (COGS) - Direct operational expenses paid
+      const netSaleRevenue = Math.max(0, subtotal - activeDiscountAmount - expensesTotalDeduction + expensesTotalAddition);
+      return netSaleRevenue - totalPurchaseCost - directPaidExpenses;
+    } else {
+      // For purchase invoice:
+      // Net Inward Cost = subtotal - activeDiscountAmount + expensesTotalAddition + tax + directPaidExpenses
+      // Estimated Net Profit = estimatedSalesRevenue - Net Inward Cost
+      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + expensesTotalAddition + tax) + directPaidExpenses;
+      return estimatedSalesRevenue - actualNetInwardCost;
+    }
+  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalAddition, totalPurchaseCost, directPaidExpenses, tax, estimatedSalesRevenue]);
+
+  const overallMargin = useMemo(() => {
+    if (invoiceType === 'sale') {
+      const netSaleRevenue = Math.max(0, subtotal - activeDiscountAmount - expensesTotalDeduction + expensesTotalAddition);
+      return netSaleRevenue > 0 ? (totalProfit / netSaleRevenue) * 100 : 0;
+    } else {
+      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + expensesTotalAddition + tax) + directPaidExpenses;
+      return actualNetInwardCost > 0 ? (totalProfit / actualNetInwardCost) * 100 : 0;
+    }
+  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalDeduction, expensesTotalAddition, totalProfit, tax, directPaidExpenses]);
   const totalCartons = items.reduce((acc, item) => acc + item.cartonsCount, 0);
   const totalPiecesSum = items.reduce((acc, item) => acc + item.totalPieces, 0);
   const totalExtraPiecesSum = items.reduce((acc, item) => {
@@ -1087,13 +1282,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       ? finalAmount 
       : (paymentStatus === 'credit' ? 0 : Math.min(finalAmount, Math.max(0, paidAmount)));
     const finalRemaining = Math.max(0, finalAmount - finalPaid);
+    const effectiveInvoiceType: InvoiceType = initialInvoice?.type || invoiceType || 'sale';
 
     const newInvoice: Invoice = {
       id: initialInvoice?.id || `inv-${Date.now()}`,
       invoiceNumber: invoiceNumber.trim() || '1001',
       date,
       time,
-      type: invoiceType,
+      type: effectiveInvoiceType,
       paymentStatus,
       paidAmount: finalPaid,
       remainingAmount: finalRemaining,
@@ -1120,12 +1316,17 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         originalTotalPieces: it.totalPieces,
         originalTotalPrice: it.totalPrice,
       })),
+      hasDiscount,
+      discountPercent: hasDiscount ? effectiveDiscountPercent : 0,
       subtotal,
-      discount,
+      discount: activeDiscountAmount,
       tax,
       finalAmount,
       offsetReturnIds: selectedOffsetReturnIds.length > 0 ? selectedOffsetReturnIds : undefined,
       offsetReturnsTotal: totalOffsetReturnsAmount > 0 ? totalOffsetReturnsAmount : undefined,
+      expenses: invoiceExpenses.length > 0 ? invoiceExpenses : undefined,
+      expensesTotalDeduction: expensesTotalDeduction > 0 ? expensesTotalDeduction : undefined,
+      expensesTotalAddition: expensesTotalAddition > 0 ? expensesTotalAddition : undefined,
       notes,
       createdAt: initialInvoice?.createdAt || Date.now(),
     };
@@ -2637,6 +2838,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                   کارتن: {formatPrice(unitPur * ppc)}
                                 </span>
                               )}
+                              {hasDiscount && effectiveDiscountPercent > 0 && (
+                                <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold block text-center font-mono bg-amber-100/70 dark:bg-amber-950/70 px-1.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-800 mt-1">
+                                  با {toPersianDigits(effectiveDiscountPercent)}٪ تخفیف: {formatPrice(Math.round(unitPur * (1 - effectiveDiscountPercent / 100)))}
+                                </span>
+                              )}
                             </div>
                           </td>
 
@@ -2702,6 +2908,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                               {ppc > 1 && (
                                 <span className="text-[10px] text-blue-600 dark:text-blue-400 block text-center font-mono font-medium">
                                   کارتن: {formatPrice(unitSell * ppc)}
+                                </span>
+                              )}
+                              {hasDiscount && effectiveDiscountPercent > 0 && (
+                                <span className="text-[10px] text-sky-700 dark:text-sky-300 font-bold block text-center font-mono bg-sky-100/70 dark:bg-sky-950/70 px-1.5 py-0.5 rounded-md border border-sky-300 dark:border-sky-800 mt-1">
+                                  با {toPersianDigits(effectiveDiscountPercent)}٪ تخفیف: {formatPrice(Math.round(unitSell * (1 - effectiveDiscountPercent / 100)))}
                                 </span>
                               )}
                             </div>
@@ -2778,8 +2989,21 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
                       {/* Total Item Price (مبلغ کل) */}
                       <td className="py-3.5 px-4 text-center font-black text-slate-900 dark:text-white text-sm">
-                        {toPersianDigits(item.totalPrice.toLocaleString())}
-                        <span className="text-[10px] font-normal text-slate-400 block mt-0.5">تومان</span>
+                        {hasDiscount && effectiveDiscountPercent > 0 ? (
+                          <div>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                              {toPersianDigits(Math.round(item.totalPrice * (1 - effectiveDiscountPercent / 100)).toLocaleString())}
+                            </span>
+                            <span className="text-[10px] text-slate-400 line-through block font-normal mt-0.5">
+                              {toPersianDigits(item.totalPrice.toLocaleString())} تومان
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            {toPersianDigits(item.totalPrice.toLocaleString())}
+                            <span className="text-[10px] font-normal text-slate-400 block mt-0.5">تومان</span>
+                          </>
+                        )}
                       </td>
 
                       {/* Actions: Edit & Delete */}
@@ -3006,27 +3230,436 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">تخفیف (تومان)</label>
-                <input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                  className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-semibold`}
-                  placeholder="0"
-                />
+            {/* Toggleable Discount Section (Disabled by default) */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasDiscount}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setHasDiscount(enabled);
+                      if (enabled && discountPercent <= 0) {
+                        setDiscountPercent(8);
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer accent-teal-600"
+                  />
+                  <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Percent className={`w-3.5 h-3.5 ${theme.primaryText}`} />
+                    <span>اعمال تخفیف روی این فاکتور</span>
+                    <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                      (پیش‌فرض: غیرفعال)
+                    </span>
+                  </span>
+                </label>
+                {hasDiscount ? (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-black text-[10.5px] border border-amber-300 dark:border-amber-700">
+                    {toPersianDigits(effectiveDiscountPercent)}٪ تخفیف فعال
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400">بدون تخفیف</span>
+                )}
               </div>
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">مالیات / ارزش افزوده (تومان)</label>
-                <input
-                  type="number"
-                  value={tax}
-                  onChange={(e) => setTax(Math.max(0, parseInt(e.target.value) || 0))}
-                  className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-semibold`}
-                  placeholder="0"
-                />
+
+              {hasDiscount && (
+                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/80 space-y-2.5">
+                  {/* Preset percent quick buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">درصدهای سریع:</span>
+                    {[5, 8, 10, 12, 15, 20].map((pct) => (
+                      <button
+                        key={`disc-preset-${pct}`}
+                        type="button"
+                        onClick={() => {
+                          setDiscountPercent(pct);
+                          setDiscountMode('percent');
+                          setDiscount(Math.round((subtotal * pct) / 100));
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                          effectiveDiscountPercent === pct && discountMode === 'percent'
+                            ? `${theme.primary} text-white shadow-2xs scale-105`
+                            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {toPersianDigits(pct)}٪
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px]">
+                        درصد تخفیف (٪)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          value={discountPercent}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                            setDiscountPercent(val);
+                            setDiscountMode('percent');
+                            setDiscount(Math.round((subtotal * val) / 100));
+                          }}
+                          className={`w-full pr-3 pl-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-black text-xs text-center`}
+                          placeholder="8"
+                        />
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs pointer-events-none">
+                          ٪
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px]">
+                        مبلغ تخفیف (تومان)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={discount}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                          setDiscount(val);
+                          setDiscountMode('amount');
+                          if (subtotal > 0) {
+                            setDiscountPercent(Math.round((val / subtotal) * 100 * 10) / 10);
+                          }
+                        }}
+                        className={`w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-black text-xs text-center`}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 text-[11px] leading-relaxed flex items-center justify-between">
+                    <span>مبلغ تخفیف کسر شده از فاکتور:</span>
+                    <span className="font-black text-xs font-mono">
+                      -{formatPrice(activeDiscountAmount)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional Section: Invoice Expenses, Freight & Losses (کرایه بار، ضایعات، هزینه‌ها و ضررهای فاکتور) */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isExpensesSectionOpen}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setIsExpensesSectionOpen(enabled);
+                      if (enabled && invoiceExpenses.length === 0) {
+                        setInvoiceExpenses([
+                          {
+                            id: `exp-${Date.now()}`,
+                            title: 'کرایه بار و حمل',
+                            amount: 0,
+                            type: 'freight',
+                            action: 'deduct',
+                            sourceAccount: 'none',
+                          }
+                        ]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer accent-teal-600"
+                  />
+                  <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Truck className={`w-3.5 h-3.5 ${theme.primaryText}`} />
+                    <span>کرایه بار، ضایعات و ضررهای فاکتور</span>
+                    <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                      (اختیاری)
+                    </span>
+                  </span>
+                </label>
+                {invoiceExpenses.length > 0 ? (
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-black text-[10.5px] border border-blue-300 dark:border-blue-700">
+                    {toPersianDigits(invoiceExpenses.length)} مورد ثبت شده
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400">بدون هزینه جانبی</span>
+                )}
               </div>
+
+              {isExpensesSectionOpen && (
+                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/80 space-y-3">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    می‌توانید کرایه بار، ضایعات، کالای تاریخ مصرف گذشته و هزینه‌های فاکتور را ثبت کنید و نحوه کسر یا اضافه شدن آن به فاکتور و نقدینگی را مشخص فرمایید:
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {invoiceExpenses.map((exp, expIdx) => (
+                      <div 
+                        key={exp.id || `exp-${expIdx}`}
+                        className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-black flex items-center justify-center shrink-0">
+                              {toPersianDigits(expIdx + 1)}
+                            </span>
+                            <input
+                              type="text"
+                              value={exp.title}
+                              onChange={(e) => {
+                                const newTitle = e.target.value;
+                                setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, title: newTitle } : item));
+                              }}
+                              placeholder="عنوان هزینه (مثلاً: کرایه بار، ضایعات تاریخ گذشته، انبارداری)"
+                              className="w-full text-xs font-bold bg-transparent border-b border-slate-200 dark:border-slate-800 focus:outline-none focus:border-teal-500 pb-0.5 text-slate-900 dark:text-white"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInvoiceExpenses(prev => prev.filter((_, i) => i !== expIdx));
+                            }}
+                            className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="حذف این مورد"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Quick Title Presets */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-[10px] text-slate-400">عناوین سریع:</span>
+                          {[
+                            { label: 'کرایه باربری', type: 'freight', defaultAction: 'deduct' },
+                            { label: 'ضایعات و تاریخ منقضی', type: 'loss_waste', defaultAction: 'deduct' },
+                            { label: 'کارگری و تخلیه بار', type: 'handling', defaultAction: 'deduct' },
+                            { label: 'کسری و خسارت کالا', type: 'damage', defaultAction: 'deduct' },
+                            { label: 'سایر هزینه‌ها', type: 'other', defaultAction: 'record_only' },
+                          ].map((preset) => (
+                            <button
+                              key={`exp-preset-${preset.label}-${expIdx}`}
+                              type="button"
+                              onClick={() => {
+                                setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { 
+                                  ...item, 
+                                  title: preset.label, 
+                                  type: preset.type as InvoiceExpenseType,
+                                  action: preset.defaultAction as InvoiceExpenseAction
+                                } : item));
+                              }}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Amount & Action & Source Account - Spacious and Highly Legible */}
+                        <div className="space-y-3 pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+                          {/* Dedicated Prominent Amount Input Card */}
+                          <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <DollarSign className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                <span>مبلغ هزینه / کرایه بار (تومان):</span>
+                              </label>
+                              {exp.amount > 0 && (
+                                <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 font-black text-xs font-mono">
+                                  {formatPrice(exp.amount)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="relative">
+                              <SmartPriceInput
+                                value={exp.amount || 0}
+                                onChange={(val) => {
+                                  setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, amount: Math.max(0, val) } : item));
+                                }}
+                                placeholder=""
+                                className="w-full text-base sm:text-lg font-black text-center text-teal-950 dark:text-teal-100 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-teal-500 rounded-xl py-2 px-3 shadow-inner"
+                              />
+                            </div>
+
+                            {/* Quick Amount Step Buttons */}
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                              <span className="text-[10px] text-slate-400 font-bold">افزودن سریع:</span>
+                              {[
+                                { label: '+۵۰ هزار', val: 50000 },
+                                { label: '+۱۰۰ هزار', val: 100000 },
+                                { label: '+۲۰۰ هزار', val: 200000 },
+                                { label: '+۵۰۰ هزار', val: 500000 },
+                                { label: '+۱ میلیون', val: 1000000 },
+                                { label: '+۲ میلیون', val: 2000000 },
+                                { label: '+۵ میلیون', val: 5000000 },
+                              ].map((step) => (
+                                <button
+                                  key={`step-btn-${step.label}-${expIdx}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, amount: (item.amount || 0) + step.val } : item));
+                                  }}
+                                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 font-black text-[10.5px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                >
+                                  {step.label}
+                                </button>
+                              ))}
+                              {exp.amount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, amount: 0 } : item));
+                                  }}
+                                  className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-[10.5px] border border-rose-200 dark:border-rose-900 mr-auto hover:bg-rose-100 transition-colors cursor-pointer"
+                                >
+                                  صفر کردن
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Prominent High-Contrast Persian Words Banner */}
+                            {exp.amount > 0 && (
+                              <div className="p-2.5 rounded-xl bg-gradient-to-r from-teal-50 via-emerald-50/60 to-white dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-900 border border-teal-200 dark:border-teal-800/80 text-xs flex items-center justify-between gap-2 flex-wrap">
+                                <span className="text-slate-500 dark:text-slate-400 font-bold shrink-0">به حروف:</span>
+                                <span className="font-black text-teal-800 dark:text-teal-200 text-xs sm:text-sm leading-snug">
+                                  {numberToPersianWords(exp.amount)} تومان
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action and Source Account Settings */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {/* Action on Invoice */}
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                نحوه اعمال بر فاکتور:
+                              </label>
+                              <select
+                                value={exp.action}
+                                onChange={(e) => {
+                                  const act = e.target.value as InvoiceExpenseAction;
+                                  setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, action: act } : item));
+                                }}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white focus:border-teal-500 focus:outline-none cursor-pointer"
+                              >
+                                <option value="deduct">کسر از فاکتور (-) [کرایه بار / ضایعات]</option>
+                                <option value="add">اضافه به فاکتور (+) [افزودن به حساب]</option>
+                                <option value="record_only">فقط قید در سند (بدون تغییر مبلغ فاکتور)</option>
+                              </select>
+                            </div>
+
+                            {/* Source Account for Liquidity */}
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                محل پرداخت / خروج نقدینگی:
+                              </label>
+                              <select
+                                value={exp.sourceAccount || 'none'}
+                                onChange={(e) => {
+                                  const acc = e.target.value as 'cash' | 'bank' | 'none';
+                                  setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, sourceAccount: acc } : item));
+                                }}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white focus:border-teal-500 focus:outline-none cursor-pointer"
+                              >
+                                <option value="none">بدون خروج وجه (ثبت دفتری / طرف‌حساب)</option>
+                                <option value="cash">پرداخت نقدی از دخل / صندوق</option>
+                                <option value="bank">پرداخت از حساب بانکی / کارتخوان</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInvoiceExpenses(prev => [
+                          ...prev,
+                          {
+                            id: `exp-${Date.now()}-${prev.length}`,
+                            title: 'کرایه بار و حمل',
+                            amount: 0,
+                            type: 'freight',
+                            action: 'deduct',
+                            sourceAccount: 'none',
+                          }
+                        ]);
+                      }}
+                      className="w-full py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500 text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>افزودن کرایه بار، ضایعات یا هزینه دیگر</span>
+                    </button>
+                  </div>
+
+                  {/* Summary of Expense impacts */}
+                  {(expensesTotalDeduction > 0 || expensesTotalAddition > 0 || expensesTotalRecordedOnly > 0) && (
+                    <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] space-y-1">
+                      {expensesTotalDeduction > 0 && (
+                        <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
+                          <span>مجموع کسر از فاکتور (کرایه بار / ضایعات):</span>
+                          <span className="dir-ltr font-black">-{formatPrice(expensesTotalDeduction)}</span>
+                        </div>
+                      )}
+                      {expensesTotalAddition > 0 && (
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                          <span>مجموع اضافه به فاکتور:</span>
+                          <span className="dir-ltr font-black">+{formatPrice(expensesTotalAddition)}</span>
+                        </div>
+                      )}
+                      {expensesTotalRecordedOnly > 0 && (
+                        <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                          <span>هزینه‌های قید شده (بدون تغییر در فاکتور):</span>
+                          <span className="dir-ltr font-bold">{formatPrice(expensesTotalRecordedOnly)}</span>
+                        </div>
+                      )}
+                      {expensesPaidFromLiquidity > 0 && (
+                        <div className="flex justify-between text-blue-600 dark:text-blue-400 pt-1 border-t border-slate-200 dark:border-slate-800 font-bold">
+                          <span>کسر از موجودی نقدینگی (صندوق/بانک):</span>
+                          <span className="dir-ltr font-black">-{formatPrice(expensesPaidFromLiquidity)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Deductions and Additions Lines in Final Calculation */}
+            {expensesTotalDeduction > 0 && (
+              <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 font-bold text-xs py-1 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60">
+                <span className="flex items-center gap-1">
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>کسر کرایه بار و ضایعات از فاکتور:</span>
+                </span>
+                <span className="dir-ltr font-black">-{formatPrice(expensesTotalDeduction)}</span>
+              </div>
+            )}
+
+            {expensesTotalAddition > 0 && (
+              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold text-xs py-1 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60">
+                <span className="flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>افزودن کرایه بار و خدمات به فاکتور:</span>
+                </span>
+                <span className="dir-ltr font-black">+{formatPrice(expensesTotalAddition)}</span>
+              </div>
+            )}
+
+            <div className="pt-1">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1">مالیات / ارزش افزوده (تومان)</label>
+              <input
+                type="number"
+                value={tax}
+                onChange={(e) => setTax(Math.max(0, parseInt(e.target.value) || 0))}
+                className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-semibold`}
+                placeholder="0"
+              />
             </div>
 
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -3067,19 +3700,75 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 return sum + (item.totalPieces * sPrice);
               }, 0);
 
-              const estimatedProfit = estimatedSalesTotal - subtotal;
-              const estimatedMargin = subtotal > 0 ? (estimatedProfit / subtotal) * 100 : 0;
+              // All freight, handling, waste, and expenses associated with this shipment directly deducted from profit
+              const totalExpensesAll = invoiceExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+              // True Net Inward Acquisition Cost of this shipment:
+              // Goods Cost - Supplier Discount + Taxes + All Incurred Expenses
+              const effectiveInwardCost = Math.max(0, subtotal - activeDiscountAmount + tax) + totalExpensesAll;
+              const estimatedProfit = estimatedSalesTotal - effectiveInwardCost;
+              const estimatedMargin = effectiveInwardCost > 0 ? (estimatedProfit / effectiveInwardCost) * 100 : 0;
               const isLoss = estimatedProfit < 0;
 
               return (
-                <div className={`p-3 rounded-2xl border ${!isLoss ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 text-blue-950 dark:text-blue-200' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-950 dark:text-rose-200'} text-xs space-y-1.5`}>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-blue-800 dark:text-blue-300">ارزش پیش‌بینی فروش کل این بار خرید:</span>
-                    <span className="font-bold font-mono">{formatPrice(estimatedSalesTotal)}</span>
+                <div className={`p-3.5 rounded-2xl border ${!isLoss ? 'bg-blue-50/90 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 text-blue-950 dark:text-blue-200' : 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-950 dark:text-rose-200'} text-xs space-y-2.5`}>
+                  <div className="flex justify-between items-center font-bold pb-2 border-b border-blue-200/70 dark:border-blue-800/70">
+                    <span className="text-blue-900 dark:text-blue-200 font-extrabold flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>ارزش پیش‌بینی فروش کل این بار خرید:</span>
+                    </span>
+                    <span className="font-black font-mono text-sm sm:text-base text-blue-950 dark:text-blue-100">{formatPrice(estimatedSalesTotal)}</span>
                   </div>
-                  <div className="flex justify-between font-black text-sm">
-                    <span>{!isLoss ? 'سود خالص احتمالی از فروش:' : 'زیان احتمالی فروش:'}</span>
-                    <span className={`font-mono ${!isLoss ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+
+                  {/* Itemized cost breakdown including discount, freight, deductions and additions */}
+                  <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 p-3 rounded-xl border border-blue-100 dark:border-blue-900/50">
+                    <div className="flex justify-between">
+                      <span>بهای ناخالص خرید اجناس:</span>
+                      <span className="font-bold font-mono">{formatPrice(subtotal)}</span>
+                    </div>
+
+                    {hasDiscount && activeDiscountAmount > 0 && (
+                      <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold">
+                        <span>تخفیف تامین‌کننده ({toPersianDigits(effectiveDiscountPercent)}٪):</span>
+                        <span className="font-mono dir-ltr font-black">-{formatPrice(activeDiscountAmount)}</span>
+                      </div>
+                    )}
+
+                    {totalExpensesAll > 0 && (
+                      <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
+                        <span className="flex items-center gap-1">
+                          <Truck className="w-3 h-3 text-rose-500" />
+                          <span>کرایه بار و هزینه‌ها (کسر از سود بار):</span>
+                        </span>
+                        <span className="font-mono dir-ltr font-black">+{formatPrice(totalExpensesAll)}</span>
+                      </div>
+                    )}
+
+                    {expensesTotalDeduction > 0 && (
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[10px]">
+                        <span>کسر شده از فاکتور تسویه فروشنده:</span>
+                        <span className="font-mono dir-ltr">-{formatPrice(expensesTotalDeduction)}</span>
+                      </div>
+                    )}
+
+                    {tax > 0 && (
+                      <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                        <span>مالیات و عوارض:</span>
+                        <span className="font-mono font-bold">+{formatPrice(tax)}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold text-xs">
+                      <span>بهای تمام‌شده کل این بار (خرید + کرایه):</span>
+                      <span className="font-mono">{formatPrice(effectiveInwardCost)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center font-black text-sm pt-0.5">
+                    <span className={!isLoss ? 'text-emerald-900 dark:text-emerald-200' : 'text-rose-900 dark:text-rose-200'}>
+                      {!isLoss ? 'سود خالص احتمالی از فروش:' : 'زیان احتمالی فروش:'}
+                    </span>
+                    <span className={`font-mono text-base ${!isLoss ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
                       {!isLoss ? `+${formatPrice(estimatedProfit)}` : `-${formatPrice(Math.abs(estimatedProfit))}`} ({toPersianDigits(estimatedMargin.toFixed(1))}٪)
                     </span>
                   </div>

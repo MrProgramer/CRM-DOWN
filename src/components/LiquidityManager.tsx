@@ -413,9 +413,24 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
       .reduce((sum, p) => sum + Math.abs(Number(p.amount || 0)), 0);
   }, [relationalPayments]);
 
+  // Invoice Expenses Paid from Cash or Bank
+  const invoiceExpensesCash = useMemo(() => {
+    return invoices.filter(inv => !inv.isDraft).reduce((sum, inv) => {
+      const exps = (inv.expenses || []).filter(e => e.sourceAccount === 'cash');
+      return sum + exps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    }, 0);
+  }, [invoices]);
+
+  const invoiceExpensesBank = useMemo(() => {
+    return invoices.filter(inv => !inv.isDraft).reduce((sum, inv) => {
+      const exps = (inv.expenses || []).filter(e => e.sourceAccount === 'bank');
+      return sum + exps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    }, 0);
+  }, [invoices]);
+
   // Net Liquid Balances (Cumulative Real-Time Safe & Bank strictly from actual cash/bank flows)
-  const netCashBalance = totalReceivedCash + totalManualDepositsCash + bankToCashTransfers + refundedReturnsToSupplierCash - totalManualExpensesCash - cashToBankTransfers - customerPayoutsCash - refundedReturnsFromCustomerCash;
-  const netBankBalance = totalReceivedCardBank + totalManualDepositsBank + cashToBankTransfers + refundedReturnsToSupplierBank - totalManualExpensesBank - bankToCashTransfers - customerPayoutsBank - refundedReturnsFromCustomerBank;
+  const netCashBalance = totalReceivedCash + totalManualDepositsCash + bankToCashTransfers + refundedReturnsToSupplierCash - totalManualExpensesCash - cashToBankTransfers - customerPayoutsCash - refundedReturnsFromCustomerCash - invoiceExpensesCash;
+  const netBankBalance = totalReceivedCardBank + totalManualDepositsBank + cashToBankTransfers + refundedReturnsToSupplierBank - totalManualExpensesBank - bankToCashTransfers - customerPayoutsBank - refundedReturnsFromCustomerBank - invoiceExpensesBank;
   const netChecksBalance = totalReceivedChecks;
   const totalLiquidity = netCashBalance + netBankBalance;
 
@@ -551,9 +566,18 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
       .reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0);
   }, [periodReturns]);
 
+  const periodInvoiceExpenses = useMemo(() => {
+    return invoices
+      .filter(inv => !inv.isDraft && isDateInPeriod(inv.date, timePeriod))
+      .reduce((sum, inv) => {
+        const exps = (inv.expenses || []).filter(e => e.sourceAccount === 'cash' || e.sourceAccount === 'bank');
+        return sum + exps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      }, 0);
+  }, [invoices, timePeriod]);
+
   // Total Inflows & Outflows in the selected period (strictly cash/bank movements)
   const periodTotalInflows = periodCustomerInflow + periodManualDeposits;
-  const periodTotalOutflows = periodManualExpenses;
+  const periodTotalOutflows = periodManualExpenses + periodInvoiceExpenses;
   const periodNetCashflow = periodTotalInflows - periodTotalOutflows;
 
   // Invoices in selected period
@@ -693,9 +717,37 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
       }
     });
 
+    // Add invoice expenses, freights and losses (کرایه بار و ضایعات فاکتور)
+    invoices.forEach(inv => {
+      if (inv.isDraft) return;
+      (inv.expenses || []).forEach((exp, eIdx) => {
+        if (!exp.amount || exp.amount <= 0) return;
+        const isCash = exp.sourceAccount === 'cash';
+        const isBank = exp.sourceAccount === 'bank';
+        const srcLabel = isCash ? 'صندوق نقدی' : isBank ? 'حساب بانکی' : 'ثبت دفتری فاکتور (بدون وجه نقد)';
+        const catLabel = exp.type === 'freight' ? 'کرایه باربری' : exp.type === 'loss_waste' ? 'ضایعات و کالای منقضی' : exp.type === 'handling' ? 'تخلیه و بارگیری' : exp.type === 'damage' ? 'خسارت بار' : 'هزینه فاکتور';
+
+        list.push({
+          id: `inv-exp-${inv.id}-${exp.id || eIdx}`,
+          rawId: exp.id,
+          itemType: 'treasury',
+          type: 'expense',
+          category: catLabel,
+          sourceName: srcLabel,
+          targetName: `فاکتور #${toPersianDigits(inv.invoiceNumber)} (${inv.customerName})`,
+          amount: exp.amount,
+          date: inv.date,
+          time: inv.time || '12:00',
+          description: `${exp.title} (فاکتور #${toPersianDigits(inv.invoiceNumber)} - ${exp.action === 'deduct' ? 'کسر از فاکتور' : exp.action === 'add' ? 'افزودن به فاکتور' : 'ثبت در نقدینگی'})`,
+          referenceCode: `INV-${inv.invoiceNumber}`,
+          timestamp: (inv.createdAt || Date.now()) + eIdx,
+        });
+      });
+    });
+
     list.sort((a, b) => b.timestamp - a.timestamp);
     return list;
-  }, [relationalPayments, treasuryTransactions, relationalReturns]);
+  }, [relationalPayments, treasuryTransactions, relationalReturns, invoices]);
 
   // Detailed Product Audit (گردش، ورود، خروج، مرجوعی، قیمت‌های بروز و ارزش موجودی)
   const itemizedProductAudit = useMemo(() => {
@@ -1391,6 +1443,23 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
     setIsTxFormOpen(true);
   };
 
+  const handleOpenTransfer = (src: 'cash' | 'bank' = 'cash', selectFullBalance: boolean = false) => {
+    setEditingTx(null);
+    setTxType('transfer');
+    setSource(src);
+    setDestination(src === 'cash' ? 'bank' : 'cash');
+    setImpactOnLiquidity('deduct');
+    const fullBal = src === 'cash' ? Math.max(0, netCashBalance) : Math.max(0, netBankBalance);
+    if (selectFullBalance) {
+      setAmount(fullBal);
+    } else {
+      setAmount(0);
+    }
+    setCategory('انتقال وجه');
+    setDescription(src === 'cash' ? 'واریز و انتقال موجودی صندوق نقدی به حساب بانکی / کارت‌خوان' : 'برداشت از حساب بانکی و انتقال به صندوق نقدی');
+    setIsTxFormOpen(true);
+  };
+
   const handleOpenEditTx = (txId: string) => {
     const cleanId = txId.startsWith('tx-') ? txId : `tx-${txId}`;
     const rawId = txId.replace('tx-', '');
@@ -1518,6 +1587,16 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
           <button
             type="button"
+            onClick={() => handleOpenTransfer('cash', true)}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700/80 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95"
+            title="انتقال سریع و واریز تمام موجودی صندوق نقدی به حساب بانکی / کارت‌خوان"
+          >
+            <ArrowRightLeft className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>انتقال حساب (واریز دخل به کارت‌خوان)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               setEditingTx(null);
               setTxType('expense');
@@ -1528,10 +1607,10 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               setDescription('');
               setIsTxFormOpen(true);
             }}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-800 dark:text-slate-200 hover:text-amber-700 dark:hover:text-amber-300 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
             title="ثبت سریع هزینه کرایه بار و مخارج عملیاتی با امکان کسر یا عدم کسر از صندوق"
           >
-            <Truck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <Truck className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
             <span>ثبت هزینه / کرایه بار</span>
           </button>
 
@@ -1541,7 +1620,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span>عملیات خزانه‌داری و انتقال</span>
+            <span>عملیات خزانه‌داری</span>
           </button>
         </div>
       </div>
@@ -1958,12 +2037,22 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-teal-600 dark:text-teal-400 font-bold group-hover:text-teal-500 transition-colors">
-                <span>{selectedBreakdownType === 'cash' ? '▲ بستن جدول ریز اقلام' : 'ریز اقلام و اسناد صندوق'}</span>
-                <span className="flex items-center gap-0.5 text-[10px]">
-                  <span>{selectedBreakdownType === 'cash' ? 'بستن' : 'مشاهده'}</span>
-                  <ChevronLeft className={`w-3 h-3 transition-transform ${selectedBreakdownType === 'cash' ? 'rotate-90' : 'group-hover:-translate-x-1'}`} />
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold">
+                <span className="text-teal-600 dark:text-teal-400 group-hover:text-teal-500 transition-colors">
+                  {selectedBreakdownType === 'cash' ? '▲ بستن جدول ریز اقلام' : 'ریز اقلام و اسناد صندوق'}
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenTransfer('cash', true);
+                  }}
+                  className="px-2 py-1 bg-amber-50 dark:bg-amber-950/70 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 rounded-lg border border-amber-300 dark:border-amber-700/80 text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                  title="واریز مستقیم کل موجودی صندوق نقدی به حساب بانکی / کارت‌خوان"
+                >
+                  <ArrowRightLeft className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span>انتقال به کارت‌خوان</span>
+                </button>
               </div>
             </div>
 
@@ -3875,111 +3964,375 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Amount & Category (2-Column Grid) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Amount Input */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                        مبلغ تراکنش (تومان): <span className="text-rose-500">*</span>
-                      </label>
-                      <SmartPriceInput
-                        value={amount}
-                        onChange={(val) => setAmount(val)}
-                        placeholder="مبلغ به تومان (مثلاً ۵,۰۰۰,۰۰۰ یا ۲.۵m)"
-                        themeColor={settings.themeColor}
-                        showWords={true}
-                        showScale={true}
-                        showShortcuts={true}
-                      />
-                    </div>
-
-                    {/* Category Selection (or Target info) */}
-                    {txType === 'expense' ? (
+                  {/* 2. Amount & Category / Transfer Flow */}
+                  {txType === 'transfer' ? (
+                    <div className="space-y-4">
+                      {/* A. Live Account Balances Overview */}
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">سرفصل / دسته‌بندی هزینه:</label>
-                          <button
-                            type="button"
-                            onClick={() => setIsCategoryModalOpen(true)}
-                            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                          >
-                            <Settings2 className="w-3 h-3" />
-                            <span>مدیریت</span>
-                          </button>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-[11px] font-black text-slate-700 dark:text-slate-300">
+                            موجودی زنده خزانه‌ها و حساب‌ها:
+                          </label>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                            بروزرسانی همگام با تراکنش‌ها
+                          </span>
                         </div>
-                        <select
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          required
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-bold outline-none cursor-pointer text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        >
-                          {expenseCategories.map((cat, catIdx) => (
-                            <option key={`exp-cat-${cat}-${catIdx}`} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                        {category !== 'کرایه بار و پیک / حمل‌ونقل کالا' && expenseCategories.includes('کرایه بار و پیک / حمل‌ونقل کالا') && (
-                          <button
-                            type="button"
-                            onClick={() => setCategory('کرایه بار و پیک / حمل‌ونقل کالا')}
-                            className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Truck className="w-3 h-3" />
-                            <span>انتخاب سریع: کرایه بار و پیک</span>
-                          </button>
-                        )}
-                      </div>
-                    ) : txType === 'transfer' ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">مبداء:</label>
-                          <button
-                            type="button"
-                            onClick={() => { 
-                              const newSrc = source === 'cash' ? 'bank' : 'cash';
-                              setSource(newSrc); 
-                              setDestination(newSrc === 'cash' ? 'bank' : 'cash'); 
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {/* Cash Balance Box */}
+                          <div 
+                            onClick={() => {
+                              setSource('cash');
+                              setDestination('bank');
+                              setDescription('واریز و انتقال موجودی صندوق نقدی به حساب بانکی / کارت‌خوان');
                             }}
-                            className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-black flex items-center justify-between cursor-pointer"
+                            className={`p-2.5 rounded-2xl border text-right cursor-pointer transition-all ${
+                              source === 'cash'
+                                ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-400 ring-2 ring-amber-400/20'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                            }`}
                           >
-                            <span>{source === 'cash' ? 'صندوق نقدی' : 'حساب بانکی'}</span>
-                            <RefreshCw className="w-3 h-3 text-slate-400" />
-                          </button>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">مقصد:</label>
-                          <div className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-xs font-black text-slate-600 dark:text-slate-300">
-                            {destination === 'cash' ? 'صندوق نقدی' : 'حساب بانکی'}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                                <Coins className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                <span>صندوق نقدی (دخل)</span>
+                              </div>
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                                source === 'cash' 
+                                  ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200' 
+                                  : 'bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                              }`}>
+                                {source === 'cash' ? 'مبداء (برداشت)' : 'مقصد (واریز)'}
+                              </span>
+                            </div>
+                            <div className="text-sm font-black text-teal-700 dark:text-teal-300 mt-1.5 dir-ltr text-right">
+                              {formatPrice(netCashBalance)}
+                            </div>
+                          </div>
+
+                          {/* Bank Balance Box */}
+                          <div 
+                            onClick={() => {
+                              setSource('bank');
+                              setDestination('cash');
+                              setDescription('برداشت از حساب بانکی و انتقال به صندوق نقدی');
+                            }}
+                            className={`p-2.5 rounded-2xl border text-right cursor-pointer transition-all ${
+                              source === 'bank'
+                                ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-400 ring-2 ring-blue-400/20'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                                <CreditCard className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>حساب بانکی / کارت‌خوان</span>
+                              </div>
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                                source === 'bank' 
+                                  ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200' 
+                                  : 'bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                              }`}>
+                                {source === 'bank' ? 'مبداء (برداشت)' : 'مقصد (واریز)'}
+                              </span>
+                            </div>
+                            <div className="text-sm font-black text-blue-700 dark:text-blue-300 mt-1.5 dir-ltr text-right">
+                              {formatPrice(netBankBalance)}
+                            </div>
+                          </div>
+
+                          {/* Checks Balance Box (Info) */}
+                          <div className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 text-right opacity-80">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                <FileText className="w-3.5 h-3.5 text-amber-500" />
+                                <span>چک‌های صیادی نزد صندوق</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">خزانه اسناد</span>
+                            </div>
+                            <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-1.5 dir-ltr text-right">
+                              {formatPrice(netChecksBalance)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    ) : (
+
+                      {/* B. Transfer Direction Switch */}
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">واریز به حساب:</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                          مسیر انتقال وجه بین حساب‌ها:
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <button
                             type="button"
-                            onClick={() => setSource('cash')}
-                            className={`py-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer ${
-                              source === 'cash' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-500' : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                            onClick={() => {
+                              setSource('cash');
+                              setDestination('bank');
+                              setDescription('واریز و انتقال موجودی صندوق نقدی به حساب بانکی / کارت‌خوان');
+                            }}
+                            className={`p-3 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                              source === 'cash' && destination === 'bank'
+                                ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 text-amber-900 dark:text-amber-100 ring-2 ring-amber-500/20 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                             }`}
                           >
-                            <Coins className="w-3.5 h-3.5" />
-                            <span>صندوق نقدی</span>
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-xl ${source === 'cash' ? 'bg-amber-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>
+                                <ArrowRightLeft className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="text-xs font-black">از صندوق نقدی به کارت‌خوان / بانک</div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">واریز دخل مغازه به حساب بانکی</div>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-teal-600 dark:text-teal-400 dir-ltr shrink-0">
+                              {formatPrice(netCashBalance)}
+                            </span>
                           </button>
+
                           <button
                             type="button"
-                            onClick={() => setSource('bank')}
-                            className={`py-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer ${
-                              source === 'bank' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-500' : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                            onClick={() => {
+                              setSource('bank');
+                              setDestination('cash');
+                              setDescription('برداشت از حساب بانکی و انتقال به صندوق نقدی');
+                            }}
+                            className={`p-3 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                              source === 'bank' && destination === 'cash'
+                                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                             }`}
                           >
-                            <CreditCard className="w-3.5 h-3.5" />
-                            <span>حساب بانکی</span>
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-xl ${source === 'bank' ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>
+                                <ArrowRightLeft className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="text-xs font-black">از حساب بانکی به صندوق نقدی</div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">برداشت نقدی و شارژ تنخواه دخل</div>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400 dir-ltr shrink-0">
+                              {formatPrice(netBankBalance)}
+                            </span>
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
+
+                      {/* C. Quick Full Amount & Percentage Presets */}
+                      <div className="bg-gradient-to-l from-amber-50/70 via-slate-50 to-teal-50/70 dark:from-amber-950/30 dark:via-slate-900/50 dark:to-teal-950/30 p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-800/50 space-y-2.5">
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 dark:text-white">
+                            <Sparkles className="w-4 h-4 text-amber-500" />
+                            <span>دکمه‌های انتخاب سریع مبلغ انتقال:</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            موجودی حساب مبدا ({source === 'cash' ? 'صندوق' : 'بانک'}): <strong className="text-slate-900 dark:text-white dir-ltr">{formatPrice(source === 'cash' ? netCashBalance : netBankBalance)}</strong>
+                          </span>
+                        </div>
+
+                        {/* ⚡ Prominent Big Full Cash / Source Balance Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const maxAmt = Math.max(0, source === 'cash' ? netCashBalance : netBankBalance);
+                            setAmount(maxAmt);
+                          }}
+                          className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.99] text-white rounded-xl text-xs font-black flex items-center justify-between shadow-xs transition-all cursor-pointer border border-amber-400/60"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-amber-200 fill-amber-200" />
+                            <span>{source === 'cash' ? '⚡ انتخاب و انتقال کل موجودی صندوق (۱۰۰٪ دخل)' : '⚡ انتخاب و انتقال کل موجودی حساب بانکی (۱۰۰٪)'}</span>
+                          </div>
+                          <span className="bg-amber-700/60 px-2 py-0.5 rounded-lg text-xs font-mono dir-ltr">
+                            {formatPrice(source === 'cash' ? netCashBalance : netBankBalance)}
+                          </span>
+                        </button>
+
+                        {/* Percentage Buttons Grid */}
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { label: 'کل موجودی (۱۰۰٪)', pct: 1.0 },
+                            { label: '۷۵٪ موجودی', pct: 0.75 },
+                            { label: '۵۰٪ (نصف دخل)', pct: 0.5 },
+                            { label: '۲۵٪ موجودی', pct: 0.25 },
+                          ].map((item, idx) => {
+                            const srcBal = Math.max(0, source === 'cash' ? netCashBalance : netBankBalance);
+                            const targetVal = Math.round(srcBal * item.pct);
+                            const isSelected = amount === targetVal && targetVal > 0;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setAmount(targetVal)}
+                                className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex flex-col items-center justify-center border ${
+                                  isSelected
+                                    ? 'bg-amber-600 text-white border-amber-700 shadow-2xs font-black'
+                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-300 hover:bg-amber-50/50'
+                                }`}
+                              >
+                                <span>{item.label}</span>
+                                <span className="text-[10px] opacity-80 dir-ltr mt-0.5">{targetVal > 0 ? formatPrice(targetVal) : '۰'}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* D. Amount Input */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                          مبلغ مورد نظر برای انتقال (تومان): <span className="text-rose-500">*</span>
+                        </label>
+                        <SmartPriceInput
+                          value={amount}
+                          onChange={(val) => setAmount(val)}
+                          placeholder="مبلغ انتقال به تومان (مثلاً ۵,۰۰۰,۰۰۰ یا کل مبلغ)"
+                          themeColor={settings.themeColor}
+                          showWords={true}
+                          showScale={true}
+                          showShortcuts={true}
+                        />
+                      </div>
+
+                      {/* E. Live Transfer Flow & Before/After Projection */}
+                      {amount > 0 && (
+                        <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 space-y-2 text-xs">
+                          <div className="flex items-center justify-between text-[11px] font-black text-slate-600 dark:text-slate-400">
+                            <span>پیش‌نمایش تراز حساب‌ها پس از انتقال:</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-bold">مبلغ انتقال: {formatPrice(amount)}</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            {/* Source Box */}
+                            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                                <span>مبداء: {source === 'cash' ? 'صندوق نقدی' : 'حساب بانکی'}</span>
+                                <span className="text-rose-600 dark:text-rose-400 font-black">-{formatPrice(amount)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800">
+                                <span className="text-slate-600 dark:text-slate-400">مانده جدید:</span>
+                                <span className={`font-black dir-ltr ${(source === 'cash' ? netCashBalance : netBankBalance) - amount < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                                  {formatPrice((source === 'cash' ? netCashBalance : netBankBalance) - amount)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Destination Box */}
+                            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                                <span>مقصد: {destination === 'cash' ? 'صندوق نقدی' : 'حساب بانکی / کارت‌خوان'}</span>
+                                <span className="text-emerald-600 dark:text-emerald-400 font-black">+{formatPrice(amount)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800">
+                                <span className="text-slate-600 dark:text-slate-400">مانده جدید:</span>
+                                <span className="font-black text-emerald-600 dark:text-emerald-400 dir-ltr">
+                                  {formatPrice((destination === 'cash' ? netCashBalance : netBankBalance) + amount)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Overdraft Warning if amount exceeds source balance */}
+                          {amount > (source === 'cash' ? netCashBalance : netBankBalance) && (
+                            <div className="bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 p-2.5 rounded-xl text-xs font-bold flex items-center justify-between border border-rose-200 dark:border-rose-800 mt-2">
+                              <div className="flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                                <span>مبلغ انتقال از موجودی فعلی حساب مبدا بیشتر است!</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAmount(Math.max(0, source === 'cash' ? netCashBalance : netBankBalance))}
+                                className="px-2 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-black cursor-pointer hover:bg-rose-700 transition-colors shrink-0"
+                              >
+                                تنظیم روی سقف موجودی
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Amount Input */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                          مبلغ تراکنش (تومان): <span className="text-rose-500">*</span>
+                        </label>
+                        <SmartPriceInput
+                          value={amount}
+                          onChange={(val) => setAmount(val)}
+                          placeholder="مبلغ به تومان (مثلاً ۵,۰۰۰,۰۰۰ یا ۲.۵m)"
+                          themeColor={settings.themeColor}
+                          showWords={true}
+                          showScale={true}
+                          showShortcuts={true}
+                        />
+                      </div>
+
+                      {/* Category Selection for expense or deposit */}
+                      {txType === 'expense' ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">سرفصل / دسته‌بندی هزینه:</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsCategoryModalOpen(true)}
+                              className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                            >
+                              <Settings2 className="w-3 h-3" />
+                              <span>مدیریت</span>
+                            </button>
+                          </div>
+                          <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            required
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-bold outline-none cursor-pointer text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                          >
+                            {expenseCategories.map((cat, catIdx) => (
+                              <option key={`exp-cat-${cat}-${catIdx}`} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          {category !== 'کرایه بار و پیک / حمل‌ونقل کالا' && expenseCategories.includes('کرایه بار و پیک / حمل‌ونقل کالا') && (
+                            <button
+                              type="button"
+                              onClick={() => setCategory('کرایه بار و پیک / حمل‌ونقل کالا')}
+                              className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Truck className="w-3 h-3" />
+                              <span>انتخاب سریع: کرایه بار و پیک</span>
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">واریز به حساب:</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSource('cash')}
+                              className={`py-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer ${
+                                source === 'cash' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-500' : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                              }`}
+                            >
+                              <Coins className="w-3.5 h-3.5" />
+                              <span>صندوق نقدی</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSource('bank')}
+                              className={`py-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer ${
+                                source === 'bank' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-500' : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                              }`}
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>حساب بانکی</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* 3. DYNAMIC Source & Impact Selector (Responsive 2x2 Grid) */}
                   {txType === 'expense' && (
