@@ -254,15 +254,19 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
     const rawGrossProfit = totalRevenue - totalCost;
 
-    // Inward Purchase Invoices discounts in this period
+    // Inward Purchase Invoices discounts, freight, and projected profit in this period
     let totalInwardPurchaseDiscounts = 0;
     let totalInwardPurchasesGross = 0;
     let totalInwardPurchasesNet = 0;
+    let totalInwardPurchasesProjectedProfit = 0;
+    let totalInwardPurchasesFreightAndExpenses = 0;
 
     purchaseInvoicesProfitability.forEach(pInv => {
       totalInwardPurchaseDiscounts += pInv.discountAmount || 0;
       totalInwardPurchasesGross += pInv.grossPurchaseCost || 0;
       totalInwardPurchasesNet += pInv.netPurchaseCost || 0;
+      totalInwardPurchasesProjectedProfit += pInv.projectedProfit || 0;
+      totalInwardPurchasesFreightAndExpenses += pInv.totalExpensesAmount || 0;
     });
 
     // Customer returns deduction logic
@@ -303,6 +307,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       totalInwardPurchaseDiscounts,
       totalInwardPurchasesGross,
       totalInwardPurchasesNet,
+      totalInwardPurchasesProjectedProfit,
+      totalInwardPurchasesFreightAndExpenses,
       totalCustomerReturnsRevenue,
       totalCustomerReturnsCost,
       totalCustomerReturnsProfit,
@@ -1112,22 +1118,22 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           </div>
         </div>
 
-        {/* Card 3: بهای تمام‌شده خرید کالاها */}
+        {/* Card 3: سود خالص فاکتورهای ورودی خرید */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">بهای تمام‌شده خرید (COGS)</span>
+            <span className="text-xs font-bold text-amber-800 dark:text-amber-300">سود خالص فاکتورهای ورودی (خرید)</span>
             <div className="p-2 rounded-2xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              <Package className="w-4 h-4" />
+              <Boxes className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right">
-            {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalCost)}
+          <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300 dir-ltr text-right">
+            {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.totalInwardPurchasesProjectedProfit)}`}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-            <span>سهم تأمین از فروش:</span>
-            <span className="text-amber-600 dark:text-amber-400 font-bold">
-              {isSecretMode ? '••٪' : `${toPersianDigits(((summaryMetrics.totalCost / (summaryMetrics.totalRevenue || 1)) * 100).toFixed(0))}٪`}
+            <span>بهای کل (اصلی + کرایه):</span>
+            <span className="text-slate-700 dark:text-slate-300 font-bold">
+              {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}
             </span>
           </div>
         </div>
@@ -1373,10 +1379,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     </div>
                   </th>
                   <th className="p-3.5">تأمین‌کننده / فروشنده</th>
-                  <th className="p-3.5 text-left">بهای خرید پرداختی</th>
-                  <th className="p-3.5 text-center">تخفیف خرید</th>
+                  <th className="p-3.5 text-left">بهای تمام‌شده کل (اصلی + کرایه)</th>
+                  <th className="p-3.5 text-center">تخفیف و کرایه بار</th>
                   <th className="p-3.5 text-left">ارزش تخمینی فروش</th>
-                  <th className="p-3.5 text-left">سود پیش‌بینی شده</th>
+                  <th className="p-3.5 text-left">سود خالص فاکتور ورودی</th>
                   <th className="p-3.5 text-center">ضریب مارک‌آپ (٪)</th>
                   <th className="p-3.5 text-center">عملیات</th>
                 </tr>

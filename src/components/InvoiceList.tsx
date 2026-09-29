@@ -111,6 +111,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const getInvoiceEffectiveAmount = (inv: Invoice): number => {
     const calculatedSub = getInvoiceEffectiveSubtotal(inv);
     const offsetReturns = inv.offsetReturnsTotal || 0;
+    const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    if (inv.type === 'purchase') {
+      return Math.max(0, calculatedSub - (inv.discount || 0) + (inv.tax || 0) - offsetReturns) + totalExpenses;
+    }
     const expDeductions = inv.expensesTotalDeduction || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const expAdditions = inv.expensesTotalAddition || (inv.expenses || []).filter(e => e.action === 'add').reduce((s, e) => s + (Number(e.amount) || 0), 0);
     return Math.max(0, calculatedSub - (inv.discount || 0) + (inv.tax || 0) - offsetReturns - expDeductions + expAdditions);
@@ -596,7 +600,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   const discountPct = inv.discountPercent || (rawGrossSubtotal > 0 && invDiscountAmount > 0 ? Math.round((invDiscountAmount / rawGrossSubtotal) * 100 * 10) / 10 : 0);
 
                   const grossOriginalAmount = Math.max(0, rawGrossSubtotal + (inv.tax || 0));
-                  const effectiveFinalAmount = Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
+                  const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                  const effectiveFinalAmount = inv.type === 'purchase'
+                    ? (Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount) + totalExpenses)
+                    : Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
                   const hasReturns = totalReturnsAmount > 0;
                   const inwardSellThrough = (isPurchaseMode && !inv.isDraft)
                     ? calculateInwardInvoiceSellThrough(inv, invoices, products)
@@ -728,6 +735,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                           ) : hasReturns ? (
                             <span className="text-[10px] text-rose-500 dark:text-rose-400 font-medium dir-rtl">
                               پس از کسر مرجوعی
+                            </span>
+                          ) : (inv.type === 'purchase' && totalExpenses > 0) ? (
+                            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold dir-rtl">
+                              بهای تمام‌شده کل (با {formatPrice(totalExpenses)} کرایه/هزینه)
                             </span>
                           ) : (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium dir-rtl">
