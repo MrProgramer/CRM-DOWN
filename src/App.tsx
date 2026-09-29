@@ -1529,21 +1529,30 @@ export default function App() {
         const sourceAccount = savedInvoice.paymentAccount || 'bank';
 
         if (savedInvoice.type === 'purchase') {
-          // Cash/card payment for goods purchase/restock: deducts from liquidity (expense)
-          const purchaseExpense: TreasuryTransaction = {
-            id: `treasury-inv-${savedInvoice.id}`,
-            type: 'expense',
-            category: 'خرید کالا (ورود به انبار)',
-            amount: paidAmt,
-            source: sourceAccount,
-            date: savedInvoice.date || getCurrentPersianDate(),
-            time: savedInvoice.time || getCurrentPersianTime(),
-            description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName || 'تامین‌کننده'}`,
-            referenceCode: invoiceRefCode,
-            impactOnLiquidity: 'deduct',
-            createdAt: Date.now(),
-          };
-          nextTreasury = [purchaseExpense, ...nextTreasury];
+          // Freight deducted from supplier bill was paid on supplier's behalf;
+          // ensure adding freight deduction to a cash purchase invoice does not artificially increase Cash Box balance
+          const freightDeductionsUnpaidDirectly = (savedInvoice.expenses || [])
+            .filter(e => e.action === 'deduct' && e.sourceAccount !== 'cash' && e.sourceAccount !== 'bank')
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+          const effectivePurchasePaidAmt = paidAmt + freightDeductionsUnpaidDirectly;
+
+          if (effectivePurchasePaidAmt > 0) {
+            const purchaseExpense: TreasuryTransaction = {
+              id: `treasury-inv-${savedInvoice.id}`,
+              type: 'expense',
+              category: 'خرید کالا (ورود به انبار)',
+              amount: effectivePurchasePaidAmt,
+              source: sourceAccount,
+              date: savedInvoice.date || getCurrentPersianDate(),
+              time: savedInvoice.time || getCurrentPersianTime(),
+              description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName || 'تامین‌کننده'}`,
+              referenceCode: invoiceRefCode,
+              impactOnLiquidity: 'deduct',
+              createdAt: Date.now(),
+            };
+            nextTreasury = [purchaseExpense, ...nextTreasury];
+          }
         } else {
           // Direct cash/card receipt from sales: adds to liquidity (deposit)
           const saleInflow: TreasuryTransaction = {
