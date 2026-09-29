@@ -1126,12 +1126,18 @@ export default function App() {
         }
 
         if (matchingInvoice) {
+          if (matchingInvoice.isDraft) {
+            // Remove any treasury transactions for draft invoices
+            changed = true;
+            return false;
+          }
+
           const isCredit = matchingInvoice.paymentStatus === 'credit' || 
                            matchingInvoice.paymentMethod?.includes('نسیه') || 
                            matchingInvoice.paymentMethod?.includes('غیر');
 
-          if (!isExpItem && matchingInvoice.type === 'purchase') {
-            // Remove main purchase expense from treasury (purchase invoices belong to inventory & supplier accounts)
+          if (!isExpItem && isCredit) {
+            // Remove main purchase/sale expense transaction for credit invoices
             changed = true;
             return false;
           }
@@ -1522,7 +1528,23 @@ export default function App() {
       if (paidAmt > 0) {
         const sourceAccount = savedInvoice.paymentAccount || 'bank';
 
-        if (savedInvoice.type === 'sale') {
+        if (savedInvoice.type === 'purchase') {
+          // Cash/card payment for goods purchase/restock: deducts from liquidity (expense)
+          const purchaseExpense: TreasuryTransaction = {
+            id: `treasury-inv-${savedInvoice.id}`,
+            type: 'expense',
+            category: 'خرید کالا (ورود به انبار)',
+            amount: paidAmt,
+            source: sourceAccount,
+            date: savedInvoice.date || getCurrentPersianDate(),
+            time: savedInvoice.time || getCurrentPersianTime(),
+            description: `فاکتور خرید #${toPersianDigits(savedInvoice.invoiceNumber)} - تامین‌کننده ${savedInvoice.customerName || 'تامین‌کننده'}`,
+            referenceCode: invoiceRefCode,
+            impactOnLiquidity: 'deduct',
+            createdAt: Date.now(),
+          };
+          nextTreasury = [purchaseExpense, ...nextTreasury];
+        } else {
           // Direct cash/card receipt from sales: adds to liquidity (deposit)
           const saleInflow: TreasuryTransaction = {
             id: `treasury-inv-${savedInvoice.id}`,
