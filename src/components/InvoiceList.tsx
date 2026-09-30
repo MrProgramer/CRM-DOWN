@@ -111,7 +111,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const getInvoiceEffectiveAmount = (inv: Invoice): number => {
     const calculatedSub = getInvoiceEffectiveSubtotal(inv);
     const offsetReturns = inv.offsetReturnsTotal || 0;
-    const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
     if (inv.type === 'purchase') {
       return Math.max(0, calculatedSub - (inv.discount || 0) + (inv.tax || 0) - offsetReturns) + totalExpenses;
     }
@@ -589,21 +589,19 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                       }, 0);
 
                   // Full original gross before returns
-                  const rawGrossSubtotal = totalReturnsAmount > 0
-                    ? (itemsOriginalSubtotal > itemsCurrentSubtotal
-                        ? itemsOriginalSubtotal
-                        : (itemsCurrentSubtotal + totalReturnsAmount))
-                  : itemsCurrentSubtotal;
+                  const resolvedGrossSubtotal = itemsOriginalSubtotal > 0 
+                    ? itemsOriginalSubtotal 
+                    : (itemsCurrentSubtotal > 0 ? itemsCurrentSubtotal : (inv.subtotal || inv.finalAmount || 0));
 
                   const hasInvDiscount = Boolean(inv.hasDiscount || (inv.discount && inv.discount > 0));
                   const invDiscountAmount = inv.discount || 0;
-                  const discountPct = inv.discountPercent || (rawGrossSubtotal > 0 && invDiscountAmount > 0 ? Math.round((invDiscountAmount / rawGrossSubtotal) * 100 * 10) / 10 : 0);
+                  const discountPct = inv.discountPercent || (resolvedGrossSubtotal > 0 && invDiscountAmount > 0 ? Math.round((invDiscountAmount / resolvedGrossSubtotal) * 100 * 10) / 10 : 0);
 
-                  const grossOriginalAmount = Math.max(0, rawGrossSubtotal + (inv.tax || 0));
-                  const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                  const grossOriginalAmount = Math.max(0, resolvedGrossSubtotal + (inv.tax || 0));
+                  const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
                   const effectiveFinalAmount = inv.type === 'purchase'
-                    ? (Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount) + totalExpenses)
-                    : Math.max(0, rawGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
+                    ? (Math.max(0, resolvedGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount) + totalExpenses)
+                    : Math.max(0, resolvedGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
                   const hasReturns = totalReturnsAmount > 0;
                   const inwardSellThrough = (isPurchaseMode && !inv.isDraft)
                     ? calculateInwardInvoiceSellThrough(inv, invoices, products)

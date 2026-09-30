@@ -1170,6 +1170,88 @@ export default function App() {
     });
   }, [invoices]);
 
+  // Auto-heal purchase invoices with freight/expenses:
+  // Guarantees freight and incurred expenses are ADDED to invoice acquisition cost (subtotal - discount + tax + freight) across all views
+  useEffect(() => {
+    let invoicesChanged = false;
+    const updatedInvoices = invoices.map(inv => {
+      if (inv.type === 'purchase') {
+        const hasExpenses = (inv.expenses && inv.expenses.length > 0) || (inv.expensesTotalDeduction && inv.expensesTotalDeduction > 0) || (inv.expensesTotalAddition && inv.expensesTotalAddition > 0);
+        if (hasExpenses) {
+          let expensesChanged = false;
+          let expList = inv.expenses ? [...inv.expenses] : [];
+          if (expList.length === 0 && (inv.expensesTotalDeduction || inv.expensesTotalAddition)) {
+            const expAmt = (inv.expensesTotalDeduction || 0) + (inv.expensesTotalAddition || 0);
+            expList = [{
+              id: `exp-${Date.now()}`,
+              title: 'کرایه باربری و حمل',
+              amount: expAmt,
+              type: 'freight',
+              action: 'add',
+              sourceAccount: 'supplier_balance'
+            }];
+            expensesChanged = true;
+          }
+
+          const fixedExpenses = expList.map(e => {
+            if (e.action === 'deduct') {
+              expensesChanged = true;
+              return { ...e, action: 'add' as const };
+            }
+            return e;
+          });
+
+          const totalExpenses = fixedExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+          const itemsSum = (inv.items || []).reduce((sum, it) => {
+            if (it.totalPrice && it.totalPrice > 0) return sum + it.totalPrice;
+            const uPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) 
+              ? it.unitPurchasePrice 
+              : (it.unitPrice || it.unitSellingPrice || 0);
+            return sum + (it.totalPieces * uPrice);
+          }, 0);
+
+          let baseSubtotal = itemsSum > 0 ? itemsSum : (inv.subtotal > 0 ? inv.subtotal : (inv.finalAmount || 0));
+          if (itemsSum === 0 && inv.expensesTotalDeduction && inv.subtotal === inv.finalAmount) {
+            baseSubtotal = inv.finalAmount + inv.expensesTotalDeduction;
+          }
+
+          const correctFinalAmount = Math.max(0, baseSubtotal - (inv.discount || 0) + (inv.tax || 0)) + totalExpenses;
+
+          if (
+            expensesChanged || 
+            inv.finalAmount !== correctFinalAmount || 
+            inv.subtotal !== baseSubtotal ||
+            inv.expensesTotalAddition !== totalExpenses || 
+            inv.expensesTotalDeduction !== undefined
+          ) {
+            invoicesChanged = true;
+            return {
+              ...inv,
+              subtotal: baseSubtotal,
+              expenses: fixedExpenses,
+              expensesTotalDeduction: undefined,
+              expensesTotalAddition: totalExpenses > 0 ? totalExpenses : undefined,
+              finalAmount: correctFinalAmount,
+              paidAmount: inv.paymentStatus === 'cash' ? correctFinalAmount : (inv.paymentStatus === 'credit' ? 0 : inv.paidAmount),
+              remainingAmount: inv.paymentStatus === 'cash' ? 0 : (inv.paymentStatus === 'credit' ? correctFinalAmount : Math.max(0, correctFinalAmount - (inv.paidAmount || 0)))
+            };
+          }
+        }
+      }
+      return inv;
+    });
+
+    if (invoicesChanged) {
+      setInvoices(updatedInvoices);
+      try {
+        localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(updatedInvoices));
+      } catch (e) {
+        console.error('Failed to persist auto-healed purchase invoices', e);
+      }
+    }
+  }, [invoices]);
+
   // Relational Integrity Sanitizer (Ensures no dangling/orphaned payments or records remain from previously deleted customers)
   useEffect(() => {
     if (customers && customers.length > 0) {
@@ -1529,13 +1611,13 @@ export default function App() {
         const sourceAccount = savedInvoice.paymentAccount || 'bank';
 
         if (savedInvoice.type === 'purchase') {
-          // Freight deducted from supplier bill was paid on supplier's behalf;
-          // ensure adding freight deduction to a cash purchase invoice does not artificially increase Cash Box balance
-          const freightDeductionsUnpaidDirectly = (savedInvoice.expenses || [])
-            .filter(e => e.action === 'deduct' && e.sourceAccount !== 'cash' && e.sourceAccount !== 'bank')
+          // Expenses paid directly from liquidity (cash/bank) are recorded separately via expTreasury below.
+          // Subtract direct liquidity expenses from main invoice payment to ensure exact matching and zero double-deduction:
+          const directExpensesFromLiquidity = (savedInvoice.expenses || [])
+            .filter(e => (e.sourceAccount === 'cash' || e.sourceAccount === 'bank') && (Number(e.amount) || 0) > 0)
             .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-          const effectivePurchasePaidAmt = paidAmt + freightDeductionsUnpaidDirectly;
+          const effectivePurchasePaidAmt = Math.max(0, paidAmt - directExpensesFromLiquidity);
 
           if (effectivePurchasePaidAmt > 0) {
             const purchaseExpense: TreasuryTransaction = {

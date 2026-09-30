@@ -176,7 +176,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const [tableSearchQuery, setTableSearchQuery] = useState('');
   const [tableFilterType, setTableFilterType] = useState<'all' | 'sale' | 'purchase' | 'credit' | 'cash'>('all');
   const [tableCurrentPage, setTableCurrentPage] = useState(1);
-  const [tableItemsPerPage, setTableItemsPerPage] = useState(10);
+  const [tableItemsPerPage, setTableItemsPerPage] = useState(6);
 
   const filteredTableInvoices = finalInvoices.filter(inv => {
     if (tableFilterType === 'sale' && inv.type !== 'sale') return false;
@@ -858,14 +858,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <table className="w-full text-right text-xs">
             <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold select-none">
               <tr>
-                <th className="p-3.5 w-12 text-center">#</th>
+                <th className="py-2.5 px-3 w-10 text-center">#</th>
 
                 <SortableTableHeader
                   field="invoiceNumber"
                   currentField={dashSortField}
                   currentDirection={dashSortDirection}
                   onSort={handleDashSort}
-                  className="w-28"
+                  className="py-2.5 px-3 w-24"
                 >
                   شماره سند
                 </SortableTableHeader>
@@ -875,9 +875,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   currentField={dashSortField}
                   currentDirection={dashSortDirection}
                   onSort={handleDashSort}
-                  className="w-28"
+                  className="py-2.5 px-3 w-28"
                 >
-                  تاریخ و ساعت
+                  تاریخ سند
                 </SortableTableHeader>
 
                 <SortableTableHeader
@@ -885,12 +885,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   currentField={dashSortField}
                   currentDirection={dashSortDirection}
                   onSort={handleDashSort}
+                  className="py-2.5 px-3"
                 >
-                  طرف‌حساب (مشتری / طرف معامله)
+                  طرف‌حساب
                 </SortableTableHeader>
 
-                <th className="p-3.5">نوع سند</th>
-                <th className="p-3.5">اقلام و شرح کالا</th>
+                <th className="py-2.5 px-3">نوع سند</th>
+                <th className="py-2.5 px-3">اقلام و شرح کالا</th>
 
                 <SortableTableHeader
                   field="amount"
@@ -898,20 +899,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   currentDirection={dashSortDirection}
                   onSort={handleDashSort}
                   align="left"
-                  className="w-36"
+                  className="py-2.5 px-3 w-32"
                 >
                   مبلغ کل فاکتور
                 </SortableTableHeader>
 
-                <th className="p-3.5 text-left w-32">سود ناخالص</th>
-                <th className="p-3.5 text-center w-28">وضعیت تسویه</th>
-                <th className="p-3.5 text-center w-24">مشاهده</th>
+                <th className="py-2.5 px-3 text-left w-28">سود فاکتور</th>
+                <th className="py-2.5 px-3 text-center w-24">وضعیت تسویه</th>
+                <th className="py-2.5 px-3 text-center w-20">مشاهده</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
               {paginatedTableInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-10 text-center text-slate-400 font-bold">
+                  <td colSpan={10} className="py-8 text-center text-slate-400 font-bold">
                     هیچ سندی مطابق با فیلترها و جستجوی شما یافت نشد.
                   </td>
                 </tr>
@@ -920,57 +921,71 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   const absIdx = (tableCurrentPage - 1) * tableItemsPerPage + idx + 1;
                   const isSale = inv.type === 'sale';
                   const isCredit = inv.paymentStatus === 'credit' || inv.paymentMethod?.includes('نسیه');
+                  const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
+                  
                   const invoiceCost = inv.items.reduce((s, it) => {
                     const prod = products.find(p => p.id === it.productId || p.name === it.productName);
-                    const uCost = (prod?.purchasePrice && prod.purchasePrice > 0)
-                      ? prod.purchasePrice
-                      : (it.unitPurchasePrice || 0);
+                    const uCost = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
+                      ? it.unitPurchasePrice
+                      : ((prod?.purchasePrice && prod.purchasePrice > 0) ? prod.purchasePrice : (it.unitPrice || 0));
                     return s + (it.totalPieces * uCost);
                   }, 0);
+
+                  const invoiceDisplayAmount = isSale 
+                    ? inv.finalAmount 
+                    : ((inv.finalAmount && inv.finalAmount > 0) ? inv.finalAmount : ((inv.subtotal || invoiceCost || 0) + totalExpenses));
+
                   const invoiceProfit = isSale ? inv.finalAmount - invoiceCost : 0;
-                  const itemsSummary = inv.items.map(it => `${it.productName} (${toPersianDigits(it.totalPieces)} عدد)`).slice(0, 2).join('، ');
+                  const itemsSummary = inv.items.map(it => `${it.productName} (${toPersianDigits(it.totalPieces)})`).slice(0, 2).join('، ');
                   const remainingItemsCount = inv.items.length > 2 ? inv.items.length - 2 : 0;
 
                   return (
                     <tr key={`dash-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="p-3.5 text-center text-slate-400 font-mono">{toPersianDigits(absIdx)}</td>
-                      <td className="p-3.5 font-bold font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">{toPersianDigits(absIdx)}</td>
+                      <td className="py-2.5 px-3 font-bold font-mono text-slate-900 dark:text-white whitespace-nowrap text-xs">
                         #{toPersianDigits(inv.invoiceNumber)}
                       </td>
-                      <td className="p-3.5 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap text-[11px]">
                         {toPersianDigits(inv.date)}
                       </td>
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900 dark:text-white">{inv.customerName}</div>
+                      <td className="py-2.5 px-3">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[180px]">{inv.customerName}</div>
                         {(inv.customerCity || inv.customerPhone) && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="text-[10px] text-slate-400 truncate max-w-[180px]">
                             {inv.customerCity} {inv.customerPhone ? `• ${toPersianDigits(inv.customerPhone)}` : ''}
                           </div>
                         )}
                       </td>
-                      <td className="p-3.5 whitespace-nowrap">
+                      <td className="py-2.5 px-3 whitespace-nowrap">
                         {isSale ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/40 font-bold text-[11px]">
-                            فروش کالا
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/40 font-bold text-[10px]">
+                            فروش
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/40 font-bold text-[11px]">
-                            ورود و خرید
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/40 font-bold text-[10px]">
+                            خرید / ورود
                           </span>
                         )}
                       </td>
-                      <td className="p-3.5 text-slate-600 dark:text-slate-400 max-w-xs">
-                        <div className="truncate font-medium">{itemsSummary || 'بدون قلم'}</div>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 max-w-xs">
+                        <div className="truncate font-medium text-xs">{itemsSummary || 'بدون قلم'}</div>
                         {remainingItemsCount > 0 && (
-                          <span className={`text-[10px] font-bold ${currentTheme.primaryText}`}>
+                          <span className={`text-[9.5px] font-bold ${currentTheme.primaryText}`}>
                             + {toPersianDigits(remainingItemsCount)} قلم دیگر
                           </span>
                         )}
                       </td>
-                      <td className="p-3.5 text-left dir-ltr font-black text-slate-900 dark:text-white whitespace-nowrap">
-                        {formatPrice(isSale ? inv.finalAmount : (invoiceCost || inv.finalAmount))}
+                      <td className="py-2.5 px-3 text-left dir-ltr whitespace-nowrap">
+                        <div className="font-black text-slate-900 dark:text-white text-xs">
+                          {formatPrice(invoiceDisplayAmount)}
+                        </div>
+                        {!isSale && totalExpenses > 0 && (
+                          <div className="text-[9.5px] text-teal-600 dark:text-teal-400 font-bold dir-rtl text-right">
+                            (+{formatPrice(totalExpenses)} کرایه)
+                          </div>
+                        )}
                       </td>
-                      <td className="p-3.5 text-left dir-ltr whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-left dir-ltr whitespace-nowrap text-xs">
                         {isSale && !isSecretMode ? (
                           <span className={`font-bold ${invoiceProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
                             {invoiceProfit >= 0 ? '+' : ''}{formatPrice(invoiceProfit)}
@@ -979,24 +994,24 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                           <span className="text-slate-400 font-mono">-</span>
                         )}
                       </td>
-                      <td className="p-3.5 text-center whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         {isCredit ? (
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-black text-[10px]">
-                            حساب نسیه
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-bold text-[10px]">
+                            نسیه
                           </span>
                         ) : (
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-black text-[10px]">
-                            تسویه نقدی
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold text-[10px]">
+                            نقدی
                           </span>
                         )}
                       </td>
-                      <td className="p-3.5 text-center whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <button
                           onClick={() => onViewInvoice(inv)}
-                          className={`inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 ${currentTheme.accentHoverBg} text-slate-600 dark:text-slate-300 ${currentTheme.activeText} transition-colors cursor-pointer border border-slate-200 dark:border-slate-700`}
+                          className={`inline-flex items-center justify-center p-1 rounded-lg bg-slate-100 dark:bg-slate-800 ${currentTheme.accentHoverBg} text-slate-600 dark:text-slate-300 ${currentTheme.activeText} transition-colors cursor-pointer border border-slate-200 dark:border-slate-700`}
                           title="مشاهده فاکتور"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -1015,7 +1030,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           itemsPerPage={tableItemsPerPage}
           onPageChange={setTableCurrentPage}
           onItemsPerPageChange={setTableItemsPerPage}
-          itemsPerPageOptions={[10, 20, 50, 100]}
+          itemsPerPageOptions={[6, 10, 20, 50]}
           itemName="سند"
           themeColor={settings.themeColor}
         />

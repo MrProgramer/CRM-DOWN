@@ -35,6 +35,7 @@ import {
   Truck
 } from 'lucide-react';
 import { Pagination } from './Pagination';
+import { SortableTableHeader } from './SortableTableHeader';
 
 interface ProfitLossPageProps {
   invoices: Invoice[];
@@ -83,6 +84,58 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
   const [detailItemFilter, setDetailItemFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [dateSortOrder, setDateSortOrder] = useState<'desc' | 'asc'>('desc');
 
+  // Sorting state for Sales Invoices tab
+  const [salesSortField, setSalesSortField] = useState<'invoiceNumber' | 'date' | 'customer' | 'amount' | 'cost' | 'profit' | 'margin'>('date');
+  const [salesSortDirection, setSalesSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Sorting state for Purchase Invoices tab
+  const [purchaseSortField, setPurchaseSortField] = useState<'invoiceNumber' | 'date' | 'customer' | 'cost' | 'expenses' | 'projectedSales' | 'profit' | 'markup'>('date');
+  const [purchaseSortDirection, setPurchaseSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Sorting state for Products tab
+  const [productSortField, setProductSortField] = useState<'index' | 'name' | 'category' | 'piecesSold' | 'cost' | 'revenue' | 'profit' | 'margin'>('profit');
+  const [productSortDirection, setProductSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Sorting state for Customers tab
+  const [customerSortField, setCustomerSortField] = useState<'name' | 'city' | 'invoicesCount' | 'revenue' | 'cost' | 'profit' | 'margin'>('profit');
+  const [customerSortDirection, setCustomerSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleSalesSort = (field: 'invoiceNumber' | 'date' | 'customer' | 'amount' | 'cost' | 'profit' | 'margin') => {
+    if (salesSortField === field) {
+      setSalesSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSalesSortField(field);
+      setSalesSortDirection('desc');
+    }
+  };
+
+  const handlePurchaseSort = (field: 'invoiceNumber' | 'date' | 'customer' | 'cost' | 'expenses' | 'projectedSales' | 'profit' | 'markup') => {
+    if (purchaseSortField === field) {
+      setPurchaseSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPurchaseSortField(field);
+      setPurchaseSortDirection('desc');
+    }
+  };
+
+  const handleProductSort = (field: 'index' | 'name' | 'category' | 'piecesSold' | 'cost' | 'revenue' | 'profit' | 'margin') => {
+    if (productSortField === field) {
+      setProductSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setProductSortField(field);
+      setProductSortDirection('desc');
+    }
+  };
+
+  const handleCustomerSort = (field: 'name' | 'city' | 'invoicesCount' | 'revenue' | 'cost' | 'profit' | 'margin') => {
+    if (customerSortField === field) {
+      setCustomerSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCustomerSortField(field);
+      setCustomerSortDirection('desc');
+    }
+  };
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -114,14 +167,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
   // Reset pagination on tab, period, search or sort change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, period, searchQuery, dateSortOrder]);
+  }, [activeTab, period, searchQuery, dateSortOrder, salesSortField, salesSortDirection, purchaseSortField, purchaseSortDirection, productSortField, productSortDirection]);
 
   // Finalized sales invoices
   const salesInvoices = useMemo(() => {
     return invoices.filter(inv => inv.type === 'sale' && !inv.isDraft);
   }, [invoices]);
 
-  // Filtered sales invoices by period & search query and sorted by date
+  // Filtered sales invoices by period & search query and sorted by any column
   const filteredSalesInvoices = useMemo(() => {
     const list = salesInvoices.filter(inv => {
       if (!isDateInPeriod(inv.date, period)) return false;
@@ -138,11 +191,36 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     });
 
     return list.sort((a, b) => {
-      const cmp = b.date.localeCompare(a.date);
-      if (cmp !== 0) return dateSortOrder === 'desc' ? cmp : -cmp;
-      return dateSortOrder === 'desc' ? b.invoiceNumber.localeCompare(a.invoiceNumber) : a.invoiceNumber.localeCompare(b.invoiceNumber);
+      let cmp = 0;
+      if (salesSortField === 'invoiceNumber') {
+        cmp = a.invoiceNumber.localeCompare(b.invoiceNumber);
+      } else if (salesSortField === 'customer') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '');
+      } else if (salesSortField === 'amount') {
+        cmp = (a.finalAmount || 0) - (b.finalAmount || 0);
+      } else if (salesSortField === 'cost') {
+        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        cmp = aCost - bCost;
+      } else if (salesSortField === 'profit') {
+        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const aExp = (a.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const bExp = (b.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        cmp = ((a.finalAmount || 0) - aCost - aExp) - ((b.finalAmount || 0) - bCost - bExp);
+      } else if (salesSortField === 'margin') {
+        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const aMargin = a.finalAmount > 0 ? ((a.finalAmount - aCost) / a.finalAmount) : 0;
+        const bMargin = b.finalAmount > 0 ? ((b.finalAmount - bCost) / b.finalAmount) : 0;
+        cmp = aMargin - bMargin;
+      } else {
+        cmp = (a.date || '').localeCompare(b.date || '');
+        if (cmp === 0) cmp = a.invoiceNumber.localeCompare(b.invoiceNumber);
+      }
+      return salesSortDirection === 'desc' ? -cmp : cmp;
     });
-  }, [salesInvoices, period, searchQuery, dateSortOrder]);
+  }, [salesInvoices, period, searchQuery, salesSortField, salesSortDirection]);
 
   // Purchase invoices (inward goods) with discount and expenses calculation
   const purchaseInvoicesProfitability = useMemo(() => {
@@ -168,22 +246,27 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         const totalPieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
         totalItemsPieces += totalPieces;
 
+        // Primary source of item cost is the invoice record itself
         let unitCost = 0;
-        if (matchingProduct && matchingProduct.purchasePrice > 0) {
-          unitCost = matchingProduct.purchasePrice;
-        } else if (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) {
+        if (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) {
           unitCost = it.unitPurchasePrice;
         } else if (it.totalPurchaseCost && it.totalPurchaseCost > 0 && totalPieces > 0) {
           unitCost = Math.round(it.totalPurchaseCost / totalPieces);
+        } else if (it.unitPrice && it.unitPrice > 0) {
+          unitCost = it.unitPrice;
+        } else if (it.totalPrice > 0 && totalPieces > 0) {
+          unitCost = Math.round(it.totalPrice / totalPieces);
+        } else if (matchingProduct && matchingProduct.purchasePrice > 0) {
+          unitCost = matchingProduct.purchasePrice;
         } else {
           unitCost = it.unitSellingPrice || 0;
         }
 
         let unitSell = 0;
-        if (matchingProduct && matchingProduct.sellingPrice > 0) {
-          unitSell = matchingProduct.sellingPrice;
-        } else if (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0) {
+        if (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0) {
           unitSell = it.unitSellingPrice;
+        } else if (matchingProduct && matchingProduct.sellingPrice > 0) {
+          unitSell = matchingProduct.sellingPrice;
         } else if (unitCost > 0) {
           unitSell = Math.round(unitCost * 1.25);
         } else {
@@ -194,7 +277,17 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         calcProjectedSales += totalPieces * unitSell;
       });
 
-      const grossPurchaseCost = calcPurchaseCostGross > 0 ? calcPurchaseCostGross : (inv.subtotal || inv.finalAmount || inv.totalAmount || 0);
+      const itemsSumGross = (inv.items || []).reduce((s, it) => {
+        if (it.totalPrice && it.totalPrice > 0) return s + it.totalPrice;
+        if (it.unitPurchasePrice && it.unitPurchasePrice > 0) return s + (it.totalPieces * it.unitPurchasePrice);
+        if (it.unitPrice && it.unitPrice > 0) return s + (it.totalPieces * it.unitPrice);
+        return s;
+      }, 0);
+
+      const baseGoodsSubtotal = itemsSumGross > 0 
+        ? itemsSumGross 
+        : (inv.subtotal > 0 ? inv.subtotal : (calcPurchaseCostGross > 0 ? calcPurchaseCostGross : (inv.finalAmount || 0)));
+      const grossPurchaseCost = baseGoodsSubtotal;
       
       const hasDiscount = Boolean(inv.hasDiscount || (inv.discount && inv.discount > 0));
       const discountAmount = hasDiscount ? (inv.discount || 0) : 0;
@@ -202,14 +295,19 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         ? (inv.discountPercent || (grossPurchaseCost > 0 ? Math.round((discountAmount / grossPurchaseCost) * 100) : 0))
         : 0;
       
-      // Real Acquisition cost: Gross Goods Cost - Supplier Discount + Tax + All Incurred Expenses (freight, handling, waste)
-      const totalExpensesAmount = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      // Real Acquisition cost: Gross Goods Cost - Supplier Discount + Tax + Freight & Expenses
+      // Freight is directly ADDED to the main invoice cost!
+      const totalExpensesAmount = Math.max(
+        (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+        (inv.expensesTotalAddition || 0) + (inv.expensesTotalDeduction || 0)
+      );
       const invoiceTax = inv.tax || 0;
 
-      // Every 1 Toman of freight or expense directly increases total cost and reduces net profit
+      // Net purchase cost: Main Goods + Tax - Discount + Freight/Expenses
       const netPurchaseCost = Math.max(0, grossPurchaseCost - discountAmount + invoiceTax) + totalExpensesAmount;
 
-      const totalProjectedSalesValue = calcProjectedSales;
+      const totalProjectedSalesValue = calcProjectedSales > 0 ? calcProjectedSales : Math.round(netPurchaseCost * 1.25);
+      // Net Profit of inward goods is reduced by freight!
       const projectedProfit = totalProjectedSalesValue - netPurchaseCost;
       const projectedMargin = totalProjectedSalesValue > 0 ? (projectedProfit / totalProjectedSalesValue) * 100 : 0;
       const markupPercentage = netPurchaseCost > 0 ? (projectedProfit / netPurchaseCost) * 100 : 0;
@@ -229,11 +327,28 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         markupPercentage
       };
     }).sort((a, b) => {
-      const cmp = b.date.localeCompare(a.date);
-      if (cmp !== 0) return dateSortOrder === 'desc' ? cmp : -cmp;
-      return dateSortOrder === 'desc' ? b.invoiceNumber.localeCompare(a.invoiceNumber) : a.invoiceNumber.localeCompare(b.invoiceNumber);
+      let cmp = 0;
+      if (purchaseSortField === 'invoiceNumber') {
+        cmp = a.invoiceNumber.localeCompare(b.invoiceNumber);
+      } else if (purchaseSortField === 'customer') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '');
+      } else if (purchaseSortField === 'cost') {
+        cmp = a.netPurchaseCost - b.netPurchaseCost;
+      } else if (purchaseSortField === 'expenses') {
+        cmp = a.totalExpensesAmount - b.totalExpensesAmount;
+      } else if (purchaseSortField === 'projectedSales') {
+        cmp = a.totalProjectedSalesValue - b.totalProjectedSalesValue;
+      } else if (purchaseSortField === 'profit') {
+        cmp = a.projectedProfit - b.projectedProfit;
+      } else if (purchaseSortField === 'markup') {
+        cmp = a.markupPercentage - b.markupPercentage;
+      } else {
+        cmp = (a.date || '').localeCompare(b.date || '');
+        if (cmp === 0) cmp = a.invoiceNumber.localeCompare(b.invoiceNumber);
+      }
+      return purchaseSortDirection === 'desc' ? -cmp : cmp;
     });
-  }, [invoices, products, period, searchQuery, dateSortOrder]);
+  }, [invoices, products, period, searchQuery, purchaseSortField, purchaseSortDirection]);
 
   // Aggregate Key Profit & Loss Metrics Across The Store
   const summaryMetrics = useMemo(() => {
@@ -378,8 +493,26 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       margin: item.totalRevenue > 0 ? (item.profit / item.totalRevenue) * 100 : 0
     }));
 
-    return list.sort((a, b) => b.profit - a.profit);
-  }, [filteredSalesInvoices, products]);
+    return list.sort((a, b) => {
+      let cmp = 0;
+      if (productSortField === 'name') {
+        cmp = (a.name || '').localeCompare(b.name || '');
+      } else if (productSortField === 'category') {
+        cmp = (a.category || '').localeCompare(b.category || '');
+      } else if (productSortField === 'piecesSold') {
+        cmp = a.totalPiecesSold - b.totalPiecesSold;
+      } else if (productSortField === 'cost') {
+        cmp = a.totalCost - b.totalCost;
+      } else if (productSortField === 'revenue') {
+        cmp = a.totalRevenue - b.totalRevenue;
+      } else if (productSortField === 'margin') {
+        cmp = a.margin - b.margin;
+      } else {
+        cmp = a.profit - b.profit;
+      }
+      return productSortDirection === 'desc' ? -cmp : cmp;
+    });
+  }, [filteredSalesInvoices, products, productSortField, productSortDirection]);
 
   // Customer profitability breakdown
   const customerProfitability = useMemo(() => {
@@ -422,8 +555,26 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       margin: item.totalRevenue > 0 ? (item.profit / item.totalRevenue) * 100 : 0
     }));
 
-    return list.sort((a, b) => b.profit - a.profit);
-  }, [filteredSalesInvoices]);
+    return list.sort((a, b) => {
+      let cmp = 0;
+      if (customerSortField === 'name') {
+        cmp = (a.customerName || '').localeCompare(b.customerName || '');
+      } else if (customerSortField === 'city') {
+        cmp = (a.customerCity || '').localeCompare(b.customerCity || '');
+      } else if (customerSortField === 'invoicesCount') {
+        cmp = a.invoicesCount - b.invoicesCount;
+      } else if (customerSortField === 'cost') {
+        cmp = a.totalCost - b.totalCost;
+      } else if (customerSortField === 'revenue') {
+        cmp = a.totalRevenue - b.totalRevenue;
+      } else if (customerSortField === 'margin') {
+        cmp = a.margin - b.margin;
+      } else {
+        cmp = a.profit - b.profit;
+      }
+      return customerSortDirection === 'desc' ? -cmp : cmp;
+    });
+  }, [filteredSalesInvoices, customerSortField, customerSortDirection]);
 
   const currentDatasetLength = useMemo(() => {
     if (activeTab === 'invoices') return filteredSalesInvoices.length;
@@ -476,12 +627,16 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       let unitSellGross = 0;
 
       if (isPurchase) {
-        if (matchingProduct && matchingProduct.purchasePrice > 0) {
-          unitCostGross = matchingProduct.purchasePrice;
-        } else if (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) {
+        if (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) {
           unitCostGross = it.unitPurchasePrice;
         } else if (it.totalPurchaseCost && it.totalPurchaseCost > 0 && totalPieces > 0) {
           unitCostGross = Math.round(it.totalPurchaseCost / totalPieces);
+        } else if (it.unitPrice && it.unitPrice > 0) {
+          unitCostGross = it.unitPrice;
+        } else if (it.totalPrice > 0 && totalPieces > 0) {
+          unitCostGross = Math.round(it.totalPrice / totalPieces);
+        } else if (matchingProduct && matchingProduct.purchasePrice > 0) {
+          unitCostGross = matchingProduct.purchasePrice;
         } else {
           unitCostGross = it.unitSellingPrice || 0;
         }
@@ -582,8 +737,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     const totalCartonsSum = analyzedItems.reduce((sum, it) => sum + (it.cartonsCount || 0), 0);
     
     const totalCostGross = analyzedItems.reduce((sum, it) => sum + it.rowCostGross, 0);
+    const totalExpensesAmount = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
     const totalCostNet = isPurchase
-      ? (hasDiscount ? Math.max(0, totalCostGross - invoiceDiscountAmount) : totalCostGross)
+      ? (Math.max(0, totalCostGross - invoiceDiscountAmount) + totalExpensesAmount)
       : totalCostGross;
 
     const totalRevGross = analyzedItems.reduce((sum, it) => sum + it.rowRevenueGross, 0);
@@ -911,6 +1067,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   </td>
                   <td className="p-3.5 text-left dir-ltr font-bold text-slate-900 dark:text-white">
                     <div>{isSecretMode ? '••••••' : formatPrice(totalCost)}</div>
+                    {isPurchase && totalExpensesAmount > 0 && (
+                      <div className="text-[10px] text-teal-600 dark:text-teal-400 font-bold dir-rtl text-right">
+                        کرایه بار اضافه شده: +{formatPrice(totalExpensesAmount)}
+                      </div>
+                    )}
                     {hasDiscount && isPurchase && (
                       <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal dir-rtl text-right">
                         تخفیف خرید: -{formatPrice(invoiceDiscountAmount)}
@@ -1220,26 +1381,80 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             <table className="w-full text-right text-xs border-collapse">
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
                 <tr>
-                  <th className="p-3.5">شماره سند</th>
-                  <th 
-                    className="p-3.5 cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-                    onClick={() => setDateSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                    title="تغییر مرتب‌سازی تاریخ"
+                  <SortableTableHeader
+                    field="invoiceNumber"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    className="p-3.5"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span>تاریخ صدور</span>
-                      {dateSortOrder === 'desc' ? (
-                        <ArrowDownWideNarrow className={`w-3.5 h-3.5 ${theme.primaryText}`} />
-                      ) : (
-                        <ArrowUpNarrowWide className={`w-3.5 h-3.5 ${theme.primaryText}`} />
-                      )}
-                    </div>
-                  </th>
-                  <th className="p-3.5">خریدار / مشتری</th>
-                  <th className="p-3.5 text-left">مبلغ کل فاکتور</th>
-                  <th className="p-3.5 text-left">بهای خرید (هزینه)</th>
-                  <th className="p-3.5 text-left">سود ناخالص فاکتور</th>
-                  <th className="p-3.5 text-center">حاشیه سود</th>
+                    شماره سند
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="date"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    className="p-3.5"
+                  >
+                    تاریخ صدور
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="customer"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    className="p-3.5"
+                  >
+                    خریدار / مشتری
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="amount"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    مبلغ کل فاکتور
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="cost"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    بهای خرید (هزینه)
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="profit"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    سود ناخالص فاکتور
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="margin"
+                    currentField={salesSortField}
+                    currentDirection={salesSortDirection}
+                    onSort={handleSalesSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    حاشیه سود
+                  </SortableTableHeader>
+
                   <th className="p-3.5 text-center">عملیات</th>
                 </tr>
               </thead>
@@ -1357,33 +1572,97 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           </div>
         )}
 
-        {/* TAB 2: PURCHASE INVOICES PROFITABILITY (INWARD GOODS WITH CLEAN DISCOUNT PLACEMENT) */}
+        {/* TAB 2: PURCHASE INVOICES PROFITABILITY (INWARD GOODS WITH CLEAN DISCOUNT & FREIGHT PLACEMENT) */}
         {activeTab === 'purchases' && (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
                 <tr>
-                  <th className="p-3.5">شماره سند خرید</th>
-                  <th 
-                    className="p-3.5 cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-                    onClick={() => setDateSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                    title="تغییر مرتب‌سازی تاریخ"
+                  <SortableTableHeader
+                    field="invoiceNumber"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    className="p-3.5"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span>تاریخ ورود</span>
-                      {dateSortOrder === 'desc' ? (
-                        <ArrowDownWideNarrow className={`w-3.5 h-3.5 ${theme.primaryText}`} />
-                      ) : (
-                        <ArrowUpNarrowWide className={`w-3.5 h-3.5 ${theme.primaryText}`} />
-                      )}
-                    </div>
-                  </th>
-                  <th className="p-3.5">تأمین‌کننده / فروشنده</th>
-                  <th className="p-3.5 text-left">بهای تمام‌شده کل (اصلی + کرایه)</th>
-                  <th className="p-3.5 text-center">تخفیف و کرایه بار</th>
-                  <th className="p-3.5 text-left">ارزش تخمینی فروش</th>
-                  <th className="p-3.5 text-left">سود خالص فاکتور ورودی</th>
-                  <th className="p-3.5 text-center">ضریب مارک‌آپ (٪)</th>
+                    شماره سند خرید
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="date"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    className="p-3.5"
+                  >
+                    تاریخ ورود
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="customer"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    className="p-3.5"
+                  >
+                    تأمین‌کننده / فروشنده
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="cost"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    بهای تمام‌شده کل (اصلی + کرایه)
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="expenses"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    تخفیف و کرایه بار
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="projectedSales"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    ارزش تخمینی فروش
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="profit"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    سود خالص فاکتور ورودی
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="markup"
+                    currentField={purchaseSortField}
+                    currentDirection={purchaseSortDirection}
+                    onSort={handlePurchaseSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    ضریب مارک‌آپ (٪)
+                  </SortableTableHeader>
+
                   <th className="p-3.5 text-center">عملیات</th>
                 </tr>
               </thead>
@@ -1413,6 +1692,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         <div className="font-black text-slate-900 dark:text-white">
                           {isSecretMode ? '••••••' : formatPrice(inv.netPurchaseCost)}
                         </div>
+                        {inv.totalExpensesAmount > 0 && (
+                          <div className="text-[10px] text-teal-600 dark:text-teal-400 font-bold dir-rtl text-right mt-0.5">
+                            (فاکتور اصلی: {formatPrice(inv.grossPurchaseCost - inv.discountAmount)} + کرایه: {formatPrice(inv.totalExpensesAmount)})
+                          </div>
+                        )}
                         {inv.hasDiscount && inv.discountAmount > 0 && (
                           <div className="text-[10px] text-slate-400 line-through">
                             {isSecretMode ? '••••••' : formatPrice(inv.grossPurchaseCost)}
@@ -1421,6 +1705,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       </td>
                       {/* Clean and beautifully positioned discount & freight expenses placement */}
                       <td className="p-3.5 text-center space-y-1">
+                        {inv.totalExpensesAmount > 0 && (
+                          <div className="flex items-center justify-center">
+                            <span className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 font-bold text-[11px] border border-teal-200 dark:border-teal-800 dir-rtl inline-flex items-center gap-1">
+                              <Truck className="w-3 h-3 text-teal-600 dark:text-teal-400 shrink-0" />
+                              <span>کرایه بار (+ به هزینه): {formatPrice(inv.totalExpensesAmount)}</span>
+                            </span>
+                          </div>
+                        )}
                         {inv.hasDiscount && inv.discountAmount > 0 && (
                           <div className="flex items-center justify-center">
                             <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800 dir-rtl inline-flex items-center gap-1">
@@ -1429,16 +1721,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                             </span>
                           </div>
                         )}
-                        {inv.totalExpensesAmount > 0 && (
-                          <div className="flex items-center justify-center">
-                            <span className="px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800 dir-rtl inline-flex items-center gap-1">
-                              <Truck className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
-                              <span>کسر کرایه از سود: -{formatPrice(inv.totalExpensesAmount)}</span>
-                            </span>
-                          </div>
-                        )}
                         {!inv.hasDiscount && (!inv.totalExpensesAmount || inv.totalExpensesAmount === 0) && (
-                          <span className="text-slate-400 text-xs">عادی</span>
+                          <span className="text-slate-400 text-xs">بدون هزینه جانبی</span>
                         )}
                       </td>
                       <td className="p-3.5 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr">
@@ -1446,6 +1730,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       </td>
                       <td className="p-3.5 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr">
                         <div>{isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}</div>
+                        {inv.totalExpensesAmount > 0 && (
+                          <div className="text-[10px] text-slate-500 font-normal dir-rtl text-right mt-0.5">
+                            (کسر {formatPrice(inv.totalExpensesAmount)} کرایه از سود اقلام)
+                          </div>
+                        )}
                       </td>
                       <td className="p-3.5 text-center">
                         <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800">
@@ -1521,14 +1810,81 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             <table className="w-full text-right text-xs border-collapse">
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
                 <tr>
-                  <th className="p-3.5">رتبه</th>
-                  <th className="p-3.5">نام محصول / کالا</th>
-                  <th className="p-3.5">دسته‌بندی</th>
-                  <th className="p-3.5 text-center">تعداد فروش رفته</th>
-                  <th className="p-3.5 text-left">کل بهای خرید (هزینه)</th>
-                  <th className="p-3.5 text-left">کل مبلغ فروش</th>
-                  <th className="p-3.5 text-left">سود ناخالص محصول</th>
-                  <th className="p-3.5 text-center">حاشیه سود ٪</th>
+                  <th className="p-3.5 w-12 text-center">رتبه</th>
+                  <SortableTableHeader
+                    field="name"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    className="p-3.5"
+                  >
+                    نام محصول / کالا
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="category"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    className="p-3.5"
+                  >
+                    دسته‌بندی
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="piecesSold"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    تعداد فروش رفته
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="cost"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    کل بهای خرید (هزینه)
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="revenue"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    کل مبلغ فروش
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="profit"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    سود ناخالص محصول
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="margin"
+                    currentField={productSortField}
+                    currentDirection={productSortDirection}
+                    onSort={handleProductSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    حاشیه سود ٪
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1611,14 +1967,81 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             <table className="w-full text-right text-xs border-collapse">
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
                 <tr>
-                  <th className="p-3.5">رتبه</th>
-                  <th className="p-3.5">نام طرف‌حساب / خریدار</th>
-                  <th className="p-3.5">شهر / منطقه</th>
-                  <th className="p-3.5 text-center">تعداد فاکتورها</th>
-                  <th className="p-3.5 text-left">مجموع خرید خریدار</th>
-                  <th className="p-3.5 text-left">بهای تمام‌شده برای ما</th>
-                  <th className="p-3.5 text-left">سود خالص دریافتی</th>
-                  <th className="p-3.5 text-center">حاشیه سود ٪</th>
+                  <th className="p-3.5 w-12 text-center">رتبه</th>
+                  <SortableTableHeader
+                    field="name"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    className="p-3.5"
+                  >
+                    نام طرف‌حساب / خریدار
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="city"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    className="p-3.5"
+                  >
+                    شهر / منطقه
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="invoicesCount"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    تعداد فاکتورها
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="revenue"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    مجموع خرید خریدار
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="cost"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    بهای تمام‌شده برای ما
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="profit"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    align="left"
+                    className="p-3.5 text-left"
+                  >
+                    سود خالص دریافتی
+                  </SortableTableHeader>
+
+                  <SortableTableHeader
+                    field="margin"
+                    currentField={customerSortField}
+                    currentDirection={customerSortDirection}
+                    onSort={handleCustomerSort}
+                    align="center"
+                    className="p-3.5 text-center"
+                  >
+                    حاشیه سود ٪
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">

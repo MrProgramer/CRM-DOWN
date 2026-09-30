@@ -946,8 +946,8 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
-                  align="center"
-                  className="min-w-[160px]"
+                  align="left"
+                  className="min-w-[150px] text-left"
                 >
                   {!isSecretMode || showPurchasePricePeek ? 'قیمت (فروش / خرید)' : 'قیمت فروش'}
                 </SortableTableHeader>
@@ -1024,36 +1024,50 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       </div>
                     </td>
 
-                    {/* Prices: Sale & Purchase in single column when in Manager mode or Peeking */}
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                    {/* Prices: Professional SaaS Typography without clashing pill boxes */}
+                    <td className="py-3 px-3.5 text-left dir-ltr whitespace-nowrap">
                       {!isSecretMode || showPurchasePricePeek ? (
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          {/* 1. Selling Price (Top / اول فروش) */}
-                          <div className="w-full max-w-[155px] flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-black text-slate-900 dark:text-white">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">فروش:</span>
-                            <span className={`font-mono dir-ltr font-black ${theme.primaryText}`}>{formatPrice(prod.sellingPrice)}</span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {/* 1. Selling Price - Primary High Emphasis */}
+                          <div className="flex items-center justify-end gap-1.5 font-mono">
+                            <span className="text-[10px] font-sans font-medium text-slate-400 dark:text-slate-500">
+                              فروش:
+                            </span>
+                            <span className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] tracking-tight">
+                              {formatPrice(prod.sellingPrice)}
+                            </span>
                           </div>
 
-                          {/* 2. Purchase Price (Bottom / زیرش خرید) */}
-                          <div className="w-full max-w-[155px] flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-md bg-amber-50/90 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-900/50 text-[11px] font-bold text-amber-900 dark:text-amber-300">
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">خرید:</span>
-                            <span className="font-mono dir-ltr font-black">{formatPrice(prod.purchasePrice)}</span>
+                          {/* 2. Purchase Price - Neutral Secondary */}
+                          <div className="flex items-center justify-end gap-1.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] font-sans font-normal text-slate-400">
+                              خرید:
+                            </span>
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                              {formatPrice(prod.purchasePrice)}
+                            </span>
                           </div>
 
-                          {/* 3. Profit margin & scale */}
+                          {/* 3. Profit & Margin Indicator */}
                           {prod.sellingPrice > 0 && (
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 flex items-center justify-center gap-1">
-                              <span>سود:</span>
-                              <span className="font-mono dir-ltr">{toPersianDigits(margin.toFixed(1))}٪</span>
-                              <span className="text-slate-500 dark:text-slate-400 font-normal">({formatPrice(unitProfit)})</span>
+                            <div className="flex items-center justify-end gap-1 text-[10px] font-mono pt-0.5 mt-0.5 border-t border-slate-100 dark:border-slate-800/80 w-full max-w-[140px]">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                +{formatPrice(unitProfit)}
+                              </span>
+                              <span className="text-slate-300 dark:text-slate-600">·</span>
+                              <span className="text-emerald-700 dark:text-emerald-300 font-black">
+                                {toPersianDigits(margin.toFixed(0))}٪
+                              </span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center">
-                          <div className={`font-black ${theme.primaryText} text-sm dir-ltr`}>{formatPrice(prod.sellingPrice)}</div>
+                        <div className="flex flex-col items-end">
+                          <div className={`font-black ${theme.primaryText} text-xs sm:text-sm font-mono dir-ltr tracking-tight`}>
+                            {formatPrice(prod.sellingPrice)}
+                          </div>
                           {prod.sellingPrice >= 1000 && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5" title={`به حروف: ${numberToPersianWords(prod.sellingPrice)}`}>
+                            <div className="text-[10px] text-slate-400 font-medium mt-0.5" title={`به حروف: ${numberToPersianWords(prod.sellingPrice)}`}>
                               ({formatAmountScale(prod.sellingPrice)})
                             </div>
                           )}

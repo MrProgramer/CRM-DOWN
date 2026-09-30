@@ -1051,7 +1051,13 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   }, [invoiceExpenses]);
 
   // Final amount after offsetting returns, active discount, taxes, and expenses deductions/additions
-  const finalAmount = Math.max(0, subtotal - totalOffsetReturnsAmount - activeDiscountAmount + tax - expensesTotalDeduction + expensesTotalAddition);
+  const totalAllExpenses = useMemo(() => {
+    return invoiceExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [invoiceExpenses]);
+
+  const finalAmount = invoiceType === 'purchase'
+    ? (Math.max(0, subtotal - totalOffsetReturnsAmount - activeDiscountAmount + tax) + totalAllExpenses)
+    : Math.max(0, subtotal - totalOffsetReturnsAmount - activeDiscountAmount + tax - expensesTotalDeduction + expensesTotalAddition);
 
   const estimatedSalesRevenue = useMemo(() => {
     return items.reduce((sum, item) => {
@@ -1078,22 +1084,22 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       return netSaleRevenue - totalPurchaseCost - directPaidExpenses;
     } else {
       // For purchase invoice:
-      // Net Inward Cost = subtotal - activeDiscountAmount + expensesTotalAddition + tax + directPaidExpenses
-      // Estimated Net Profit = estimatedSalesRevenue - Net Inward Cost
-      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + expensesTotalAddition + tax) + directPaidExpenses;
+      // Net Inward Cost = subtotal - activeDiscountAmount + tax + totalAllExpenses
+      // Freight is added to acquisition cost and reduces net profit of inventory!
+      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + tax) + totalAllExpenses;
       return estimatedSalesRevenue - actualNetInwardCost;
     }
-  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalAddition, totalPurchaseCost, directPaidExpenses, tax, estimatedSalesRevenue]);
+  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalDeduction, expensesTotalAddition, totalPurchaseCost, directPaidExpenses, tax, estimatedSalesRevenue, totalAllExpenses]);
 
   const overallMargin = useMemo(() => {
     if (invoiceType === 'sale') {
       const netSaleRevenue = Math.max(0, subtotal - activeDiscountAmount - expensesTotalDeduction + expensesTotalAddition);
       return netSaleRevenue > 0 ? (totalProfit / netSaleRevenue) * 100 : 0;
     } else {
-      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + expensesTotalAddition + tax) + directPaidExpenses;
+      const actualNetInwardCost = Math.max(0, subtotal - activeDiscountAmount + tax) + totalAllExpenses;
       return actualNetInwardCost > 0 ? (totalProfit / actualNetInwardCost) * 100 : 0;
     }
-  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalDeduction, expensesTotalAddition, totalProfit, tax, directPaidExpenses]);
+  }, [invoiceType, subtotal, activeDiscountAmount, expensesTotalDeduction, expensesTotalAddition, totalProfit, tax, totalAllExpenses]);
   const totalCartons = items.reduce((acc, item) => acc + item.cartonsCount, 0);
   const totalPiecesSum = items.reduce((acc, item) => acc + item.totalPieces, 0);
   const totalExtraPiecesSum = items.reduce((acc, item) => {
@@ -1324,9 +1330,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       finalAmount,
       offsetReturnIds: selectedOffsetReturnIds.length > 0 ? selectedOffsetReturnIds : undefined,
       offsetReturnsTotal: totalOffsetReturnsAmount > 0 ? totalOffsetReturnsAmount : undefined,
-      expenses: invoiceExpenses.length > 0 ? invoiceExpenses : undefined,
-      expensesTotalDeduction: expensesTotalDeduction > 0 ? expensesTotalDeduction : undefined,
-      expensesTotalAddition: expensesTotalAddition > 0 ? expensesTotalAddition : undefined,
+      expenses: invoiceExpenses.length > 0 
+        ? (effectiveInvoiceType === 'purchase' ? invoiceExpenses.map(e => ({ ...e, action: 'add' as const })) : invoiceExpenses)
+        : undefined,
+      expensesTotalDeduction: effectiveInvoiceType === 'purchase' ? undefined : (expensesTotalDeduction > 0 ? expensesTotalDeduction : undefined),
+      expensesTotalAddition: effectiveInvoiceType === 'purchase' ? (totalAllExpenses > 0 ? totalAllExpenses : undefined) : (expensesTotalAddition > 0 ? expensesTotalAddition : undefined),
       notes,
       createdAt: initialInvoice?.createdAt || Date.now(),
     };
@@ -3364,7 +3372,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             title: 'کرایه بار و حمل',
                             amount: 0,
                             type: 'freight',
-                            action: 'deduct',
+                            action: invoiceType === 'purchase' ? 'add' : 'deduct',
                             sourceAccount: 'none',
                           }
                         ]);
@@ -3433,11 +3441,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         <div className="flex items-center gap-1 flex-wrap">
                           <span className="text-[10px] text-slate-400">عناوین سریع:</span>
                           {[
-                            { label: 'کرایه باربری', type: 'freight', defaultAction: 'deduct' },
+                            { label: 'کرایه باربری', type: 'freight', defaultAction: invoiceType === 'purchase' ? 'add' : 'deduct' },
+                            { label: 'کارگری و تخلیه بار', type: 'handling', defaultAction: invoiceType === 'purchase' ? 'add' : 'deduct' },
                             { label: 'ضایعات و تاریخ منقضی', type: 'loss_waste', defaultAction: 'deduct' },
-                            { label: 'کارگری و تخلیه بار', type: 'handling', defaultAction: 'deduct' },
                             { label: 'کسری و خسارت کالا', type: 'damage', defaultAction: 'deduct' },
-                            { label: 'سایر هزینه‌ها', type: 'other', defaultAction: 'record_only' },
+                            { label: 'سایر هزینه‌ها', type: 'other', defaultAction: invoiceType === 'purchase' ? 'add' : 'record_only' },
                           ].map((preset) => (
                             <button
                               key={`exp-preset-${preset.label}-${expIdx}`}
@@ -3546,8 +3554,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                 }}
                                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white focus:border-teal-500 focus:outline-none cursor-pointer"
                               >
-                                <option value="deduct">کسر از فاکتور (-) [کرایه بار / ضایعات]</option>
-                                <option value="add">اضافه به فاکتور (+) [افزودن به حساب]</option>
+                                <option value="add">اضافه به بهای تمام‌شده فاکتور (+) [کرایه بار / تخلیه]</option>
+                                <option value="deduct">کسر از فاکتور (-) [تخفیف ویژه / ضایعات]</option>
                                 <option value="record_only">فقط قید در سند (بدون تغییر مبلغ فاکتور)</option>
                               </select>
                             </div>
@@ -3585,7 +3593,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             title: 'کرایه بار و حمل',
                             amount: 0,
                             type: 'freight',
-                            action: 'deduct',
+                            action: invoiceType === 'purchase' ? 'add' : 'deduct',
                             sourceAccount: 'none',
                           }
                         ]);
