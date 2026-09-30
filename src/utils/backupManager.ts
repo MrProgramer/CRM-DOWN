@@ -1,7 +1,11 @@
-import { Product, Invoice, Customer, CustomerPayment, ActivityLog, StoreSettings, BackupSnapshot, ProductReturn, TreasuryTransaction } from '../types';
+import { Product, Invoice, Customer, CustomerPayment, ActivityLog, StoreSettings, BackupSnapshot, BackupSnapshotType, ProductReturn, TreasuryTransaction } from '../types';
 import { getCurrentPersianDate, getCurrentPersianTime, toPersianDigits } from './formatters';
 
 const BACKUP_STORAGE_KEY = 'bazargani_smart_backup_snapshots_v1';
+
+export const MAX_CHANGE_SNAPSHOTS = 5;      // ۵ اسلات اختصاصی برای پشتیبان‌گیری پس از هر تغییر
+export const MAX_SCHEDULED_SNAPSHOTS = 10;  // ۱۰ اسلات برای پشتیبان‌گیری‌های دوره‌ای و دستی
+export const TOTAL_BACKUP_LIMIT = 15;       // مجموع ظرفیت مخزن پشتیبان هوشمند (۱۵ نسخه)
 
 /**
  * Format bytes to readable KB / MB
@@ -30,22 +34,57 @@ export function getBackupSnapshots(): BackupSnapshot[] {
 }
 
 /**
- * Save snapshots array to LocalStorage with automatic retention pruning (clean up old files)
+ * Save snapshots array to LocalStorage with smart 15-slot dual-pool partitioning:
+ * - Exactly up to 5 slots reserved for live change snapshots (type === 'change')
+ * - Exactly up to 10 slots reserved for periodic auto & manual snapshots (type === 'auto' || type === 'manual')
+ * - Total max 15 snapshots.
  */
 export function saveBackupSnapshots(
   snapshots: BackupSnapshot[],
-  retentionCount: number = 20
+  retentionCount: number = TOTAL_BACKUP_LIMIT
 ): { snapshots: BackupSnapshot[]; prunedCount: number } {
   try {
     // Sort descending (newest first)
     const sorted = [...snapshots].sort((a, b) => b.createdAt - a.createdAt);
 
-    // Prune excess backups if count exceeds retention limit (minimum 10 kept)
-    const effectiveLimit = Math.max(10, retentionCount || 20);
-    const kept = sorted.slice(0, effectiveLimit);
+    const changePool: BackupSnapshot[] = [];
+    const scheduledPool: BackupSnapshot[] = [];
+
+    // Deduplicate identical IDs if any
+    const seenIds = new Set<string>();
+
+    for (const snap of sorted) {
+      if (!snap || !snap.id || seenIds.has(snap.id)) continue;
+      seenIds.add(snap.id);
+
+      if (snap.type === 'change') {
+        if (changePool.length < MAX_CHANGE_SNAPSHOTS) {
+          changePool.push(snap);
+        }
+      } else {
+        if (scheduledPool.length < MAX_SCHEDULED_SNAPSHOTS) {
+          scheduledPool.push(snap);
+        }
+      }
+    }
+
+    // Combine both pools and sort newest first
+    const kept = [...changePool, ...scheduledPool].sort((a, b) => b.createdAt - a.createdAt);
     const prunedCount = Math.max(0, sorted.length - kept.length);
 
-    localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(kept));
+    try {
+      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(kept));
+    } catch (quotaErr) {
+      console.warn('LocalStorage quota limit reached, trimming oldest snapshots:', quotaErr);
+      // Emergency trim: keep up to 3 change snapshots and 5 manual/scheduled
+      const emergencyKept = [
+        ...changePool.slice(0, 3),
+        ...scheduledPool.slice(0, 5)
+      ].sort((a, b) => b.createdAt - a.createdAt);
+      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(emergencyKept));
+      return { snapshots: emergencyKept, prunedCount: prunedCount + (kept.length - emergencyKept.length) };
+    }
+
     return { snapshots: kept, prunedCount };
   } catch (err) {
     console.error('Failed to save backup snapshots:', err);
@@ -54,7 +93,7 @@ export function saveBackupSnapshots(
 }
 
 /**
- * Creates an instant emergency safety snapshot before any destructive delete action
+ * Creates an instant emergency safety snapshot before any destructive delete/reset action
  */
 export function createSafetyPreDeleteSnapshot(
   products: Product[],
@@ -73,15 +112,54 @@ export function createSafetyPreDeleteSnapshot(
     customers,
     payments,
     settings,
-    'auto',
+    'change',
     `نسخه محافظتی خودکار قبل از ${targetDescription}`,
     activityLogs,
     returns,
     treasuryTransactions
   );
+  snapshot.changeAction = `محافظت امنیتی قبل از ${targetDescription}`;
 
   const existing = getBackupSnapshots();
-  saveBackupSnapshots([snapshot, ...existing], settings.backupRetentionCount || 20);
+  saveBackupSnapshots([snapshot, ...existing], TOTAL_BACKUP_LIMIT);
+  return snapshot;
+}
+
+/**
+ * Creates an automatic snapshot immediately after any data modification (change, add, edit, draft, etc.)
+ * Strictly saved into the dedicated 5-slot change pool.
+ */
+export function createOnChangeSnapshot(
+  products: Product[],
+  invoices: Invoice[],
+  customers: Customer[],
+  payments: CustomerPayment[],
+  settings: StoreSettings,
+  changeDescription: string,
+  returns?: ProductReturn[],
+  treasuryTransactions?: TreasuryTransaction[],
+  activityLogs?: ActivityLog[],
+  customCategories?: string[],
+  customExpenseCategories?: string[]
+): BackupSnapshot {
+  const snapshot = createSnapshotObject(
+    products,
+    invoices,
+    customers,
+    payments,
+    settings,
+    'change',
+    changeDescription,
+    activityLogs,
+    returns,
+    treasuryTransactions,
+    customCategories,
+    customExpenseCategories
+  );
+  snapshot.changeAction = changeDescription;
+
+  const existing = getBackupSnapshots();
+  saveBackupSnapshots([snapshot, ...existing], TOTAL_BACKUP_LIMIT);
   return snapshot;
 }
 
@@ -94,7 +172,7 @@ export function createSnapshotObject(
   customers: Customer[],
   payments: CustomerPayment[],
   settings: StoreSettings,
-  type: 'auto' | 'manual' = 'auto',
+  type: BackupSnapshotType = 'auto',
   note?: string,
   activityLogs?: ActivityLog[],
   returns?: ProductReturn[],
@@ -183,12 +261,20 @@ export function createSnapshotObject(
   const jsonString = JSON.stringify(dataPayload);
   const sizeBytes = new Blob([jsonString]).size;
 
+  let defaultNote = 'پشتیبان‌گیری زمان‌بندی شده خودکار';
+  if (type === 'change') {
+    defaultNote = 'پشتیبان هوشمند پس از تغییرات سیستم';
+  } else if (type === 'manual') {
+    defaultNote = 'پشتیبان‌گیری دستی مدیریت';
+  }
+
   return {
     id: `backup-${timestamp}-${Math.random().toString(36).substring(2, 7)}`,
     createdAt: timestamp,
     dateFormatted,
     timeFormatted,
     type,
+    changeAction: note || defaultNote,
     productsCount: currentProducts.length,
     invoicesCount: currentInvoices.length,
     draftsCount: draftInvoices.length,
@@ -199,13 +285,13 @@ export function createSnapshotObject(
     activityLogsCount: (activityLogs || []).length,
     categoriesCount: invCats.length + expCats.length,
     sizeBytes,
-    note: note || (type === 'auto' ? 'پشتیبان‌گیری زمان‌بندی شده خودکار' : 'پشتیبان‌گیری دستی مدیریت'),
+    note: note || defaultNote,
     data: dataPayload,
   };
 }
 
 /**
- * Perform a manual instant backup
+ * Perform a manual instant backup (allocated into the 10-slot scheduled/manual pool)
  */
 export function performManualBackup(
   products: Product[],
@@ -236,8 +322,7 @@ export function performManualBackup(
   );
 
   const existing = getBackupSnapshots();
-  const retentionCount = settings.backupRetentionCount || 5;
-  const result = saveBackupSnapshots([snapshot, ...existing], retentionCount);
+  const result = saveBackupSnapshots([snapshot, ...existing], TOTAL_BACKUP_LIMIT);
 
   return {
     snapshot,
@@ -247,7 +332,7 @@ export function performManualBackup(
 }
 
 /**
- * Check if auto backup is due and execute it seamlessly if needed
+ * Check if auto backup is due and execute it seamlessly if needed (allocated into the 10-slot scheduled/manual pool)
  */
 export function checkAndRunAutoBackup(
   products: Product[],
@@ -287,13 +372,13 @@ export function checkAndRunAutoBackup(
       treasuryTransactions
     );
 
-    const retentionCount = settings.backupRetentionCount || 5;
-    const saveResult = saveBackupSnapshots([newSnapshot, ...existingSnapshots], retentionCount);
+    const saveResult = saveBackupSnapshots([newSnapshot, ...existingSnapshots], TOTAL_BACKUP_LIMIT);
 
     const updatedSettings: StoreSettings = {
       ...settings,
       lastAutoBackupTimestamp: now,
       lastBackupDateFormatted: `${newSnapshot.dateFormatted} - ساعت ${newSnapshot.timeFormatted}`,
+      backupRetentionCount: TOTAL_BACKUP_LIMIT,
     };
 
     if (onUpdateSettings) {
@@ -338,39 +423,58 @@ export function downloadSnapshotAsFile(snapshot: BackupSnapshot): void {
   a.href = url;
   const safeDate = (snapshot.dateFormatted || getCurrentPersianDate()).replace(/\//g, '-');
   const safeTime = (snapshot.timeFormatted || getCurrentPersianTime()).replace(':', '');
-  a.download = `bazargani-backup-${safeDate}-${safeTime}-${snapshot.type || 'export'}.json`;
+  const typeTag = snapshot.type === 'change' ? 'change' : (snapshot.type === 'auto' ? 'scheduled' : 'manual');
+  a.download = `bazargani-backup-${safeDate}-${safeTime}-${typeTag}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
 /**
- * Get total storage statistics for backup management
+ * Get total storage statistics for backup management with 15-slot dual-pool breakdown
  */
 export function getBackupStorageStats(): {
   totalCount: number;
+  totalLimit: number;
   totalSizeBytes: number;
   formattedSize: string;
+  changeCount: number;
+  maxChangeSlots: number;
   autoCount: number;
   manualCount: number;
+  scheduledAndManualCount: number;
+  maxScheduledSlots: number;
   lastBackupDateFormatted?: string;
+  lastBackupTimeFormatted?: string;
   oldestBackupDateFormatted?: string;
+  lastBackupType?: BackupSnapshotType;
+  lastBackupNote?: string;
 } {
   const snapshots = getBackupSnapshots();
   const totalCount = snapshots.length;
   const totalSizeBytes = snapshots.reduce((acc, s) => acc + (s.sizeBytes || 0), 0);
+  const changeCount = snapshots.filter((s) => s.type === 'change').length;
   const autoCount = snapshots.filter((s) => s.type === 'auto').length;
   const manualCount = snapshots.filter((s) => s.type === 'manual').length;
+  const scheduledAndManualCount = autoCount + manualCount;
 
   const newest = snapshots[0];
   const oldest = snapshots[snapshots.length - 1];
 
   return {
     totalCount,
+    totalLimit: TOTAL_BACKUP_LIMIT,
     totalSizeBytes,
     formattedSize: formatBytes(totalSizeBytes),
+    changeCount,
+    maxChangeSlots: MAX_CHANGE_SNAPSHOTS,
     autoCount,
     manualCount,
+    scheduledAndManualCount,
+    maxScheduledSlots: MAX_SCHEDULED_SNAPSHOTS,
     lastBackupDateFormatted: newest ? `${newest.dateFormatted} - ساعت ${newest.timeFormatted}` : undefined,
+    lastBackupTimeFormatted: newest?.timeFormatted,
     oldestBackupDateFormatted: oldest ? `${oldest.dateFormatted} - ساعت ${oldest.timeFormatted}` : undefined,
+    lastBackupType: newest?.type,
+    lastBackupNote: newest?.note,
   };
 }

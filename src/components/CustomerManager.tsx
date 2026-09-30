@@ -2746,9 +2746,9 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                 {/* Printable / Capturable Shot Card Container */}
                 <div 
                   id="customer-statement-shot-card"
-                  className={`p-5 sm:p-6 rounded-3xl border space-y-4 w-full max-w-md mx-auto relative overflow-hidden font-sans transition-all duration-200 ${
+                  className={`p-6 sm:p-7 rounded-3xl border space-y-4 w-full max-w-md mx-auto relative overflow-hidden transition-all duration-200 ${
                     shotThemeMode === 'day'
-                      ? 'bg-white text-slate-900 border-slate-200 shadow-xl shadow-slate-100'
+                      ? 'bg-white text-slate-900 border-slate-200/90 shadow-xl shadow-slate-100/80'
                       : 'bg-slate-950 text-slate-100 border-slate-800 shadow-2xl shadow-black/80'
                   }`}
                   style={{ direction: 'rtl' }}
@@ -2816,7 +2816,15 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     
                     {/* 1. Live Balance Card */}
                     <div className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-right space-y-1.5 ${
-                      shotThemeMode === 'day'
+                      targetShotLiveBal > 0
+                        ? shotThemeMode === 'day' 
+                          ? 'bg-rose-50/60 border-rose-200/80 text-rose-950' 
+                          : 'bg-rose-950/40 border-rose-900/60 text-rose-100'
+                        : targetShotLiveBal < 0
+                        ? shotThemeMode === 'day' 
+                          ? 'bg-emerald-50/60 border-emerald-200/80 text-emerald-950' 
+                          : 'bg-emerald-950/40 border-emerald-900/60 text-emerald-100'
+                        : shotThemeMode === 'day'
                         ? 'bg-slate-50/90 border-slate-200/90 text-slate-900'
                         : 'bg-slate-900/80 border-slate-800 text-slate-100'
                     }`}>
@@ -2832,7 +2840,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       </div>
 
                       <div className="space-y-0.5">
-                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight font-mono">
                           {targetShotLiveBal > 0 
                             ? formatPrice(targetShotLiveBal) 
                             : targetShotLiveBal < 0 
@@ -2846,12 +2854,12 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
                           targetShotLiveBal > 0
                             ? shotThemeMode === 'day' 
-                              ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                              : 'bg-rose-950/50 border-rose-900/70 text-rose-300'
+                              ? 'bg-rose-100 border-rose-300 text-rose-800' 
+                              : 'bg-rose-900/80 border-rose-800 text-rose-200'
                             : targetShotLiveBal < 0
                             ? shotThemeMode === 'day' 
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                              : 'bg-emerald-950/50 border-emerald-900/70 text-emerald-300'
+                              ? 'bg-emerald-100 border-emerald-300 text-emerald-800' 
+                              : 'bg-emerald-900/80 border-emerald-800 text-emerald-200'
                             : shotThemeMode === 'day'
                             ? 'bg-slate-100 border-slate-200 text-slate-600'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -2877,12 +2885,12 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                         <div className={`p-1 rounded-md shrink-0 ${
                           shotThemeMode === 'day' ? 'bg-slate-200/70 text-slate-700' : 'bg-slate-800 text-slate-300'
                         }`}>
-                          <ArrowDownLeft className="w-3 h-3" />
+                          <ArrowDownLeft className="w-3 h-3 text-emerald-500" />
                         </div>
                       </div>
 
                       <div className="space-y-0.5">
-                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
                           {formatPrice(targetShotTotalPaid)}
                         </span>
                       </div>
@@ -2891,8 +2899,8 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
                           shotThemeMode === 'day'
-                            ? 'bg-slate-100 border-slate-200 text-slate-700'
-                            : 'bg-slate-800 border-slate-700 text-slate-300'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
                         }`}>
                           {toPersianDigits(targetShotPayments.length)} واریزی
                         </span>
@@ -2915,12 +2923,12 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                         <div className={`p-1 rounded-md shrink-0 ${
                           shotThemeMode === 'day' ? 'bg-slate-200/70 text-slate-700' : 'bg-slate-800 text-slate-300'
                         }`}>
-                          <Receipt className="w-3 h-3" />
+                          <Receipt className="w-3 h-3 text-blue-500" />
                         </div>
                       </div>
 
                       <div className="space-y-0.5">
-                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight">
+                        <span className="text-xs sm:text-sm font-black block dir-ltr text-right tracking-tight font-mono">
                           {formatPrice(targetShotTotalInvoicesAmount)}
                         </span>
                       </div>
@@ -2929,8 +2937,8 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border inline-block ${
                           shotThemeMode === 'day'
-                            ? 'bg-slate-100 border-slate-200 text-slate-700'
-                            : 'bg-slate-800 border-slate-700 text-slate-300'
+                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                            : 'bg-blue-950/60 border-blue-800 text-blue-300'
                         }`}>
                           {toPersianDigits(activeShotInvoices.length)} فاکتور
                         </span>

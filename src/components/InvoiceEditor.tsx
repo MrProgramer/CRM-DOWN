@@ -75,7 +75,9 @@ import {
   Truck,
   PackageX,
   Receipt,
-  Tag
+  Tag,
+  Scale,
+  ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartPriceInput } from './SmartPriceInput';
@@ -1351,7 +1353,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   });
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-20 space-y-6">
+    <div className="w-full max-w-6xl mx-auto pb-36 space-y-6">
       {/* Header bar */}
       <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-5 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
@@ -1764,10 +1766,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         </div>
 
         {/* Customer / Supplier Details Card */}
-        <div className="md:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-3.5 text-xs transition-colors">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Package className={`w-4 h-4 ${theme.activeIcon}`} />
+        <div className="md:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-4 text-xs transition-colors">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="font-black text-slate-800 dark:text-slate-200 flex items-center gap-2 text-sm">
+              <div className={`p-1.5 rounded-xl ${theme.badgeBg} ${theme.badgeText}`}>
+                <Package className="w-4 h-4" />
+              </div>
               <span>{invoiceType === 'purchase' ? 'مشخصات تامین‌کننده / فروشنده کالا' : 'مشخصات خریدار / طرف‌حساب'}</span>
               {unsettledPartyReturns.length > 0 && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800 flex items-center gap-1 animate-pulse">
@@ -1783,31 +1787,42 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} ${theme.accentHoverBg} font-bold text-[11px] border ${theme.borderColor} transition-colors cursor-pointer`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${theme.badgeBg} ${theme.badgeText} hover:opacity-90 font-bold text-xs border ${theme.borderColor} transition-all cursor-pointer shadow-2xs`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  <span>{invoiceType === 'purchase' ? 'انتخاب از لیست' : 'انتخاب مشتری'} ({toPersianDigits(customers.length)})</span>
-                  <ChevronDown className="w-3 h-3" />
+                  <span>{invoiceType === 'purchase' ? 'انتخاب تامین‌کننده از لیست' : 'انتخاب مشتری از لیست'} ({toPersianDigits(customers.length)})</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isCustomerDropdownOpen && (
-                  <div className="absolute left-0 mt-1 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-20 max-h-56 overflow-y-auto">
-                    <div className="px-3 py-1.5 text-[10px] text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
-                      طرف‌حساب‌های ثبت‌شده:
+                  <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-30 max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    <div className="px-3.5 py-1.5 text-[11px] text-slate-400 font-bold flex items-center justify-between">
+                      <span>طرف‌حساب‌های ثبت‌شده:</span>
+                      <span className="text-[10px] font-mono">{toPersianDigits(customers.length)} نفر</span>
                     </div>
                     {customers.map((c, cIdx) => (
                       <button
                         key={`inv-edit-cust-${c.id || cIdx}-${cIdx}`}
                         type="button"
                         onClick={() => handleSelectCustomer(c)}
-                        className={`w-full px-3 py-2 text-right ${theme.accentHoverBg} flex items-center justify-between text-xs transition-colors cursor-pointer`}
+                        className={`w-full px-3.5 py-2.5 text-right hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                          customerName === c.name ? 'bg-slate-100/80 dark:bg-slate-800/90 font-black' : ''
+                        }`}
                       >
-                        <div>
-                          <div className="font-bold text-slate-900 dark:text-white">{c.name}</div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400">{c.phone || c.city || 'بدون تلفن'}</div>
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>{c.name}</span>
+                            {c.company && (
+                              <span className="text-[10px] font-normal text-slate-400">({c.company})</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                            <span>{c.phone || 'بدون تلفن'}</span>
+                            {c.city && <span>• {c.city}</span>}
+                          </div>
                         </div>
                         {customerName === c.name && (
-                          <CheckCircle2 className={`w-3.5 h-3.5 ${theme.activeIcon}`} />
+                          <CheckCircle2 className={`w-4 h-4 ${theme.activeIcon} shrink-0`} />
                         )}
                       </button>
                     ))}
@@ -1819,47 +1834,69 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1">
-                {invoiceType === 'purchase' ? 'نام تامین‌کننده / فروشنده' : 'نام خریدار'} <span className="text-red-500">*</span>
+              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                {invoiceType === 'purchase' ? 'نام تامین‌کننده / فروشنده' : 'نام خریدار / مشتری'} <span className="text-rose-500">*</span>
               </label>
-              <input
-                id="input-customer-name"
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} font-bold text-slate-900 dark:text-white`}
-                placeholder={invoiceType === 'purchase' ? 'نام شرکت تامین‌کننده یا پخش' : 'مثلاً: علی رضایی'}
-              />
+              <div className="relative">
+                <input
+                  id="input-customer-name"
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} font-bold text-slate-900 dark:text-white text-xs`}
+                  placeholder={invoiceType === 'purchase' ? 'نام شرکت تامین‌کننده یا پخش' : 'مثلاً: علی رضایی'}
+                />
+                {customerName && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomerName('');
+                      setCustomerPhone('');
+                      setCustomerCity('');
+                      setPreviousBalance('بی‌حساب (۰)');
+                    }}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[10px] cursor-pointer"
+                    title="پاک کردن نام"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1">شماره تماس</label>
+              <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">شماره تماس همراه</label>
               <input
                 id="input-customer-phone"
                 type="text"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white dir-ltr`}
-                placeholder="09184052345"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white dir-ltr text-xs font-mono`}
+                placeholder="09180000000"
               />
             </div>
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1">شهر / آدرس</label>
+              <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">شهر / نشانی</label>
               <input
                 id="input-customer-city"
                 type="text"
                 value={customerCity}
                 onChange={(e) => setCustomerCity(e.target.value)}
-                className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white`}
-                placeholder="مثلاً: کرمانشاه"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white text-xs`}
+                placeholder="مثلاً: تهران / کرمانشاه"
               />
             </div>
           </div>
           <div className="space-y-3 pt-2">
             <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs">
-                نحوه تسویه و پرداخت فاکتور <span className="text-rose-500">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-slate-700 dark:text-slate-300 font-black text-xs">
+                  نحوه تسویه و پرداخت فاکتور <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {paymentStatus === 'cash' ? 'تسویه کامل انجام شده' : paymentStatus === 'partial' ? 'بیعانه + مانده دفتری' : 'ثبت کامل در حساب نسیه'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   id="btn-payment-cash"
@@ -1868,13 +1905,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     setPaidAmount(finalAmount);
                     setPaymentMethod('نقدی (تسویه شده کامل)');
                   }}
-                  className={`py-2.5 px-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-3 px-2 rounded-xl text-xs transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-0.5 ${
                     paymentStatus === 'cash'
                       ? `${theme.primary} text-white shadow-md font-black`
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-900 font-bold'
                   }`}
                 >
-                  <span>💵 نقدی کامل</span>
+                  <span className="font-black text-xs sm:text-sm">تسویه نقدی کامل</span>
+                  <span className={`text-[10px] ${paymentStatus === 'cash' ? 'text-white/90' : 'text-slate-400'}`}>پرداخت ۱۰۰٪ مبلغ فاکتور</span>
                 </button>
 
                 <button
@@ -1887,13 +1925,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     }
                     setPaymentMethod('پرداخت بخشی (نقد + مانده نسیه)');
                   }}
-                  className={`py-2.5 px-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-3 px-2 rounded-xl text-xs transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-0.5 ${
                     paymentStatus === 'partial'
                       ? `${theme.primary} text-white shadow-md font-black`
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-900 font-bold'
                   }`}
                 >
-                  <span>⚖️ پرداخت بخشی (بیعانه)</span>
+                  <span className="font-black text-xs sm:text-sm">پرداخت بخشی (بیعانه)</span>
+                  <span className={`text-[10px] ${paymentStatus === 'partial' ? 'text-white/90' : 'text-slate-400'}`}>نقد + مانده حساب دفتری</span>
                 </button>
 
                 <button
@@ -1904,13 +1943,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     setPaidAmount(0);
                     setPaymentMethod('غیر نقدی (نسیه کامل / دفتری)');
                   }}
-                  className={`py-2.5 px-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-3 px-2 rounded-xl text-xs transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-0.5 ${
                     paymentStatus === 'credit'
                       ? `${theme.primary} text-white shadow-md font-black`
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-900 font-bold'
                   }`}
                 >
-                  <span>📝 نسیه کامل</span>
+                  <span className="font-black text-xs sm:text-sm">نسیه کامل دفتری</span>
+                  <span className={`text-[10px] ${paymentStatus === 'credit' ? 'text-white/90' : 'text-slate-400'}`}>ثبت ۱۰۰٪ در بدهی مشتری</span>
                 </button>
               </div>
 
@@ -2026,15 +2066,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           setPaymentStatus('credit');
                           setPaidAmount(0);
                         }}
-                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1.5 transition-all cursor-pointer ${
+                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
                           paymentStatus === 'credit'
                             ? `${theme.primary} text-white ${theme.borderColor} shadow-sm font-black`
                             : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         }`}
                       >
-                        <TrendingDown className={`w-4 h-4 ${paymentStatus === 'credit' ? 'text-white' : theme.activeIcon}`} />
-                        <span className="font-black">تسویه دفتری و اعتباری</span>
-                        <span className={`text-[10px] ${paymentStatus === 'credit' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>کسر خودکار از مطالبات / ثبت بدهی</span>
+                        <span className="font-black text-xs sm:text-sm">تسویه دفتری و اعتباری</span>
+                        <span className={`text-[10px] ${paymentStatus === 'credit' ? 'text-white/90' : 'text-slate-400'}`}>کسر خودکار از مطالبات / ثبت بدهی</span>
                       </button>
 
                       {/* 2. Hybrid Payment / Partial */}
@@ -2048,15 +2087,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             setPaidAmount(Math.min(Math.round(finalAmount / 2), Math.max(0, availBal)));
                           }
                         }}
-                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1.5 transition-all cursor-pointer ${
+                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
                           paymentStatus === 'partial'
                             ? `${theme.primary} text-white ${theme.borderColor} shadow-sm font-black`
                             : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         }`}
                       >
-                        <Sparkles className={`w-4 h-4 ${paymentStatus === 'partial' ? 'text-white' : theme.activeIcon}`} />
-                        <span className="font-black">پرداخت ترکیبی (نقد + دفتری)</span>
-                        <span className={`text-[10px] ${paymentStatus === 'partial' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>پرداخت بخشی نقد + کسر مابقی</span>
+                        <span className="font-black text-xs sm:text-sm">پرداخت ترکیبی (نقد + دفتری)</span>
+                        <span className={`text-[10px] ${paymentStatus === 'partial' ? 'text-white/90' : 'text-slate-400'}`}>پرداخت بخشی نقد + کسر مابقی</span>
                       </button>
 
                       {/* 3. Full Cash Box */}
@@ -2068,15 +2106,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           setPaymentStatus('cash');
                           setPaidAmount(finalAmount);
                         }}
-                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1.5 transition-all cursor-pointer ${
+                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
                           paymentAccount === 'cash' && paymentStatus === 'cash'
                             ? `${theme.primary} text-white ${theme.borderColor} shadow-sm font-black`
                             : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         }`}
                       >
-                        <Coins className={`w-4 h-4 ${paymentAccount === 'cash' && paymentStatus === 'cash' ? 'text-white' : theme.activeIcon}`} />
-                        <span className="font-black">پرداخت نقدی از صندوق</span>
-                        <span className={`text-[10px] ${paymentAccount === 'cash' && paymentStatus === 'cash' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>موجودی: {formatPrice(cashBalance)}</span>
+                        <span className="font-black text-xs sm:text-sm">پرداخت نقدی از صندوق</span>
+                        <span className={`text-[10px] ${paymentAccount === 'cash' && paymentStatus === 'cash' ? 'text-white/90' : 'text-slate-400'}`}>موجودی صندوق: {formatPrice(cashBalance)}</span>
                       </button>
 
                       {/* 4. Full Bank Account */}
@@ -2088,15 +2125,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           setPaymentStatus('cash');
                           setPaidAmount(finalAmount);
                         }}
-                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1.5 transition-all cursor-pointer ${
+                        className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
                           paymentAccount === 'bank' && paymentStatus === 'cash'
                             ? `${theme.primary} text-white ${theme.borderColor} shadow-sm font-black`
                             : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         }`}
                       >
-                        <CreditCard className={`w-4 h-4 ${paymentAccount === 'bank' && paymentStatus === 'cash' ? 'text-white' : theme.activeIcon}`} />
-                        <span className="font-black">واریز کامل از بانک</span>
-                        <span className={`text-[10px] ${paymentAccount === 'bank' && paymentStatus === 'cash' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>موجودی: {formatPrice(bankBalance)}</span>
+                        <span className="font-black text-xs sm:text-sm">واریز کامل از بانک</span>
+                        <span className={`text-[10px] ${paymentAccount === 'bank' && paymentStatus === 'cash' ? 'text-white/90' : 'text-slate-400'}`}>موجودی حساب: {formatPrice(bankBalance)}</span>
                       </button>
                     </div>
                   </div>
@@ -2293,26 +2329,24 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       <button
                         type="button"
                         onClick={() => setPaymentAccount('bank')}
-                        className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
                           paymentAccount === 'bank'
                             ? `${theme.primary} text-white shadow-xs font-black`
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <CreditCard className="w-4 h-4" />
-                        <span>💳 حساب بانکی</span>
+                        <span>واریز به حساب بانکی</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPaymentAccount('cash')}
-                        className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
                           paymentAccount === 'cash'
                             ? `${theme.primary} text-white shadow-xs font-black`
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <Coins className="w-4 h-4" />
-                        <span>💵 صندوق نقدی</span>
+                        <span>دریافت نقدی در صندوق</span>
                       </button>
                     </div>
                   </div>
@@ -2346,6 +2380,79 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 />
               </div>
             </div>
+
+            {/* Smart Sales Customer Settlement & Live Balance Preview Card (فقط در فاکتور فروش) */}
+            {invoiceType === 'sale' && (
+              <div className="mt-3 p-4 rounded-3xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/90 dark:border-slate-800/90 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-xl ${theme.badgeBg} ${theme.badgeText}`}>
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <span className="font-black text-slate-800 dark:text-slate-200 text-xs">
+                      وضعیت تراز حساب مشتری پس از این فاکتور:
+                    </span>
+                  </div>
+                  {customerName && (
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                      طرف‌حساب: <span className="text-slate-800 dark:text-slate-200 font-black">{customerName}</span>
+                    </span>
+                  )}
+                </div>
+
+                {(() => {
+                  const matchedCust = customers?.find(c => c.name.trim().toLowerCase() === customerName.trim().toLowerCase());
+                  const custOldBal = matchedCust ? calculateCustomerLiveBalance(matchedCust, invoices, payments, productReturns) : 0;
+                  const invoiceNetAdd = Math.max(0, finalAmount - (paymentStatus === 'cash' ? finalAmount : paidAmount));
+                  const custNewBal = custOldBal + invoiceNetAdd;
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                      {/* 1. Old Balance */}
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-1">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">۱. مانده پیشین طرف‌حساب:</span>
+                        <span className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                          {custOldBal > 0 
+                            ? `${formatPrice(custOldBal)} (بدهکار)` 
+                            : custOldBal < 0 
+                            ? `${formatPrice(Math.abs(custOldBal))} (بستانکار)` 
+                            : 'بی‌حساب (۰ تومان)'}
+                        </span>
+                      </div>
+
+                      {/* 2. Current Invoice Settle */}
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-1">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">۲. مانده نسیه فاکتور جاری:</span>
+                        <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
+                          +{formatPrice(invoiceNetAdd)}
+                          <span className="text-[10px] font-normal text-slate-400 mr-1.5">
+                            ({paymentStatus === 'cash' ? 'نقدی تسویه شد' : paymentStatus === 'credit' ? 'نسیه کامل' : `بخشی نقد: ${formatPrice(paidAmount)}`})
+                          </span>
+                        </span>
+                      </div>
+
+                      {/* 3. Expected Final Balance */}
+                      <div className={`p-3 rounded-2xl border flex flex-col justify-between space-y-1 ${
+                        custNewBal > 0 
+                          ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-200' 
+                          : custNewBal < 0 
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200' 
+                          : 'bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-200'
+                      }`}>
+                        <span className="text-[10px] font-extrabold opacity-80">۳. مانده نهایی پس از ثبت فاکتور:</span>
+                        <span className="font-black text-sm sm:text-base">
+                          {custNewBal > 0 
+                            ? `${formatPrice(custNewBal)} تومان بدهکار به ما` 
+                            : custNewBal < 0 
+                            ? `${formatPrice(Math.abs(custNewBal))} تومان بستانکار از ما` 
+                            : 'تسویه کامل و بی‌حساب (۰ تومان)'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -5160,6 +5267,95 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* 🚀 STICKY ACTION BAR FOR INVOICE SUBMISSION & INSTANT CONTROLS (CENTERED IN EDITOR) */}
+      <div className="sticky bottom-4 z-40 w-full mt-8">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/15 dark:shadow-black/60 flex flex-wrap items-center justify-between gap-3 transition-all">
+          {/* Summary & Live KPIs */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Items count badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+              <Package className={`w-4 h-4 ${theme.activeIcon}`} />
+              <span className="font-black text-slate-900 dark:text-white">{toPersianDigits(items.length)}</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[11px]">قلم کالا</span>
+            </div>
+
+            {/* Customer Pill */}
+            {customerName && (
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
+                <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{customerName}</span>
+              </div>
+            )}
+
+            {/* Payment Status Pill */}
+            <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black border ${
+              paymentStatus === 'cash'
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                : paymentStatus === 'credit'
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+            }`}>
+              <span>{paymentStatus === 'cash' ? 'نقدی کامل' : paymentStatus === 'credit' ? 'نسیه دفتری' : 'بخشی نقد + نسیه'}</span>
+            </div>
+
+            {/* Final Payable Amount */}
+            <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
+              <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
+                {formatPrice(finalAmount)}
+              </span>
+              <span className="text-[10px] text-slate-400">تومان</span>
+            </div>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-2 mr-auto flex-wrap">
+            {/* Scroll to Top */}
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+              title="بازگشت به ابتدای فرم"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-3 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+            >
+              انصراف
+            </button>
+
+            {/* Draft Button */}
+            <button
+              id="floating-save-draft-btn"
+              type="button"
+              onClick={() => handleSaveInvoice(true)}
+              className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
+              title="ذخیره پیش‌نویس بدون کسر انبار"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>پیش‌نویس</span>
+            </button>
+
+            {/* Final Submit Button (Prominent Floating Primary) */}
+            <button
+              id="floating-save-final-btn"
+              type="button"
+              onClick={() => handleSaveInvoice(false)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
+              title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
+            >
+              <Save className="w-4 h-4" />
+              <span>ثبت نهایی فاکتور</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

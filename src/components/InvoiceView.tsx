@@ -133,6 +133,9 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   const [customItemUnitPrices, setCustomItemUnitPrices] = useState<{ [itemKey: string]: number }>({});
   const [isPresentationPanelOpen, setIsPresentationPanelOpen] = useState<boolean>(false);
 
+  // Toggle to include profit/loss rows in print and image exports
+  const [includeProfitInExport, setIncludeProfitInExport] = useState<boolean>(false);
+
   const theme = themes[settings.themeColor] || themes.teal;
   const badges = getThemeBadges(settings.themeColor);
   const isPurchase = invoice.type === 'purchase';
@@ -568,6 +571,22 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         ? Math.round(displayLineTotal * (1 - (invDiscountPercent / 100)))
         : displayLineTotal;
 
+      // Profit / loss calculation for item
+      const unitPurchasePrice = item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0
+        ? item.unitPurchasePrice
+        : (prod?.purchasePrice || (item.totalPurchaseCost && item.totalPieces ? Math.round(item.totalPurchaseCost / item.totalPieces) : 0));
+
+      const effectiveSellingUnitPrice = discountedUnitPrice || displayUnitPrice;
+      const effectiveSellingLineTotal = discountedLineTotal || displayLineTotal;
+      const unitProfit = effectiveSellingUnitPrice - unitPurchasePrice;
+      const totalCostForLine = unitPurchasePrice * item.totalPieces;
+      const totalProfit = effectiveSellingLineTotal - totalCostForLine;
+      const profitMarginPercent = totalCostForLine > 0 
+        ? Math.round((totalProfit / totalCostForLine) * 100 * 10) / 10 
+        : 0;
+      const isProfit = totalProfit > 0;
+      const isLoss = totalProfit < 0;
+
       return {
         item,
         index,
@@ -589,9 +608,30 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         discountPercent: invDiscountPercent,
         discountedUnitPrice,
         discountedLineTotal,
+        unitPurchasePrice,
+        unitProfit,
+        totalProfit,
+        profitMarginPercent,
+        isProfit,
+        isLoss,
       };
     });
   }, [invoice.items, products, matchedReturns, isPresentationModeActive, presentationModeType, markupPercent, fixedMarkupPerUnit, customItemUnitPrices, hasInvDiscount, invDiscountPercent]);
+
+  const isExporting = isExportingImage || isExportingPDF || isCopyingScreenshot;
+  const shouldShowProfitUnderItems = !isSecretMode && !settings.hideConfidentialPrices && (!isExporting || includeProfitInExport);
+
+  const totalInvoiceProfit = useMemo(() => {
+    return processedItems.reduce((sum, item) => sum + (item.totalProfit || 0), 0);
+  }, [processedItems]);
+
+  const totalInvoiceCost = useMemo(() => {
+    return processedItems.reduce((sum, item) => sum + ((item.unitPurchasePrice || 0) * item.item.totalPieces), 0);
+  }, [processedItems]);
+
+  const totalInvoiceProfitMargin = useMemo(() => {
+    return totalInvoiceCost > 0 ? Math.round((totalInvoiceProfit / totalInvoiceCost) * 100 * 10) / 10 : 0;
+  }, [totalInvoiceProfit, totalInvoiceCost]);
 
   const creditCalculationFormula = useMemo(() => {
     if (!isCreditOrPartial && prevValNumber === 0) return '';
@@ -635,6 +675,11 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
     inwardSellThroughSummary,
     onCopyCardNumber: handleCopyCardNumber,
     copiedCard,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
+    totalInvoiceProfit,
+    totalInvoiceCost,
+    totalInvoiceProfitMargin,
   };
 
   return (
@@ -757,6 +802,22 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 <ChevronDown className="w-3.5 h-3.5 mr-0.5" />
               )}
             </button>
+          )}
+
+          {/* Export Profit/Loss Include Checkbox Toggle */}
+          {!isSecretMode && (
+            <label 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer select-none transition-colors"
+              title="در صورت فعال بودن، سود و زیان اقلام و جمع کل سود در چاپ، عکس و خروجی PDF نیز نمایش داده می‌شود"
+            >
+              <input
+                type="checkbox"
+                checked={includeProfitInExport}
+                onChange={(e) => setIncludeProfitInExport(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span>نمایش سود/زیان در چاپ و عکس</span>
+            </label>
           )}
 
           {/* Edit Invoice */}

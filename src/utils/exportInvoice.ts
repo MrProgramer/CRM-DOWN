@@ -91,6 +91,10 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
 
   const isInvoicePaper = element.id === 'invoice-paper' || element.classList.contains('invoice-paper-container');
 
+  const activeFontFamily = typeof window !== 'undefined'
+    ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
+    : "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
   if (isInvoicePaper) {
     // Standard Desktop A4 Paper Width (794px = 210mm at 96dpi)
     element.style.width = '794px';
@@ -101,11 +105,11 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
     element.style.backgroundColor = '#ffffff';
     element.style.color = '#0f172a';
     element.style.boxSizing = 'border-box';
-    element.style.fontFamily = "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    element.style.fontFamily = activeFontFamily;
   } else {
     element.style.backgroundColor = '#ffffff';
     element.style.color = '#0f172a';
-    element.style.fontFamily = "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    element.style.fontFamily = activeFontFamily;
   }
 
   // Allow DOM to repaint in light mode
@@ -161,7 +165,12 @@ export async function downloadInvoiceAsImage(
       fontEmbedCSS: fontEmbedCSS || undefined,
       preferredFontFormat: 'woff2',
       filter: (node: HTMLElement) => {
-        if (node.classList && node.classList.contains('no-print')) {
+        if (node.classList && (
+          node.classList.contains('no-print') || 
+          node.classList.contains('hide-on-export') || 
+          node.classList.contains('confidential-price-data') || 
+          node.classList.contains('item-profit-badge')
+        )) {
           return false;
         }
         return true;
@@ -216,7 +225,12 @@ export async function downloadInvoiceAsPDF(
       fontEmbedCSS: fontEmbedCSS || undefined,
       preferredFontFormat: 'woff2',
       filter: (node: HTMLElement) => {
-        if (node.classList && node.classList.contains('no-print')) {
+        if (node.classList && (
+          node.classList.contains('no-print') || 
+          node.classList.contains('hide-on-export') || 
+          node.classList.contains('confidential-price-data') || 
+          node.classList.contains('item-profit-badge')
+        )) {
           return false;
         }
         return true;
@@ -319,7 +333,12 @@ export async function copyInvoiceImageToClipboard(
       fontEmbedCSS: fontEmbedCSS || undefined,
       preferredFontFormat: 'woff2',
       filter: (node: HTMLElement) => {
-        if (node.classList && node.classList.contains('no-print')) {
+        if (node.classList && (
+          node.classList.contains('no-print') || 
+          node.classList.contains('hide-on-export') || 
+          node.classList.contains('confidential-price-data') || 
+          node.classList.contains('item-profit-badge')
+        )) {
           return false;
         }
         return true;

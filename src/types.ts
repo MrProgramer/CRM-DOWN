@@ -163,12 +163,15 @@ export interface TreasuryTransaction {
   impactOnLiquidity?: 'deduct' | 'none' | 'inject'; // نحوه اثر: کسر از صندوق/بانک، بدون کسر (جیب شخصی)، یا افزایش موجودی
 }
 
+export type BackupSnapshotType = 'change' | 'auto' | 'manual';
+
 export interface BackupSnapshot {
   id: string;
   createdAt: number;
   dateFormatted: string;
   timeFormatted: string;
-  type: 'auto' | 'manual';
+  type: BackupSnapshotType;
+  changeAction?: string;
   productsCount: number;
   invoicesCount: number;
   draftsCount?: number;

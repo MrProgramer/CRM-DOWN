@@ -48,6 +48,12 @@ export interface ProcessedItem {
   discountPercent?: number;
   discountedUnitPrice?: number;
   discountedLineTotal?: number;
+  unitPurchasePrice?: number;
+  unitProfit?: number;
+  totalProfit?: number;
+  profitMarginPercent?: number;
+  isProfit?: boolean;
+  isLoss?: boolean;
 }
 
 export interface InvoiceTemplateProps {
@@ -78,7 +84,107 @@ export interface InvoiceTemplateProps {
   inwardSellThroughSummary: InvoiceSellThroughSummary | null;
   onCopyCardNumber: () => void;
   copiedCard: boolean;
+  shouldShowProfitUnderItems?: boolean;
+  includeProfitInExport?: boolean;
+  totalInvoiceProfit?: number;
+  totalInvoiceCost?: number;
+  totalInvoiceProfitMargin?: number;
 }
+
+/* ========================================================================= */
+/* HELPER: RENDER ITEM PROFIT / LOSS BADGE (CONFIDENTIAL & PRINT-HIDDEN)     */
+/* ========================================================================= */
+export const renderItemProfitBadge = (
+  processedItem: ProcessedItem,
+  shouldShowProfit?: boolean,
+  includeInExport?: boolean
+) => {
+  if (!shouldShowProfit) return null;
+
+  const unitPurchasePrice = processedItem.unitPurchasePrice || 0;
+  const totalProfit = processedItem.totalProfit || 0;
+  const profitMarginPercent = processedItem.profitMarginPercent || 0;
+  const isProfit = totalProfit > 0;
+  const isLoss = totalProfit < 0;
+
+  // Render for any item with calculated cost or profit
+  if (unitPurchasePrice <= 0 && totalProfit === 0) return null;
+
+  const hideClasses = includeInExport 
+    ? 'item-profit-badge-exportable' 
+    : 'item-profit-badge no-print hide-on-export confidential-price-data print:hidden';
+
+  return (
+    <div 
+      className={`${hideClasses} mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/95 dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/80 text-[10px] font-mono select-none`}
+      title={includeInExport ? "سود و زیان این قلم (در چاپ و خروجی فعال)" : "سود و زیان این قلم (در چاپ و خروجی مخفی)"}
+    >
+      <span className="text-slate-500 dark:text-slate-400">
+        خرید: {formatPrice(unitPurchasePrice)}
+      </span>
+      <span className="text-slate-300 dark:text-slate-600">|</span>
+      <span className={`font-black flex items-center gap-0.5 ${
+        isProfit 
+          ? 'text-emerald-600 dark:text-emerald-400' 
+          : isLoss 
+          ? 'text-rose-600 dark:text-rose-400' 
+          : 'text-slate-600 dark:text-slate-300'
+      }`}>
+        <span>{isProfit ? 'سود:' : isLoss ? 'زیان:' : 'تراز:'}</span>
+        <span dir="ltr">{formatPrice(Math.abs(totalProfit))}</span>
+        {profitMarginPercent !== 0 && (
+          <span className="text-[9px] font-bold">
+            ({profitMarginPercent > 0 ? '+' : ''}{toPersianDigits(profitMarginPercent)}٪)
+          </span>
+        )}
+      </span>
+    </div>
+  );
+};
+
+/* ========================================================================= */
+/* HELPER: RENDER TOTAL INVOICE PROFIT SUMMARY ROW / RECORD                  */
+/* ========================================================================= */
+export const renderTotalInvoiceProfitRow = (props: InvoiceTemplateProps) => {
+  const { 
+    shouldShowProfitUnderItems, 
+    includeProfitInExport, 
+    totalInvoiceProfit = 0,
+    totalInvoiceProfitMargin = 0,
+    isPurchase,
+    isSecretMode,
+  } = props;
+
+  if (!shouldShowProfitUnderItems || isPurchase || isSecretMode) return null;
+
+  const isProfit = totalInvoiceProfit > 0;
+  const isLoss = totalInvoiceProfit < 0;
+  const hideClasses = includeProfitInExport 
+    ? 'item-profit-badge-exportable' 
+    : 'item-profit-badge no-print hide-on-export confidential-price-data print:hidden';
+
+  return (
+    <div className={`invoice-total-profit-box ${hideClasses} p-2.5 rounded-xl border mt-2 flex items-center justify-between text-xs font-bold ${
+      isProfit
+        ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200'
+        : isLoss
+        ? 'bg-rose-50/90 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-200'
+        : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+    }`}>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span>{isProfit ? '📊 جمع کل سود ناخالص فاکتور:' : isLoss ? '⚠️ جمع کل زیان ناخالص فاکتور:' : '📊 تراز کل سود فاکتور:'}</span>
+        {totalInvoiceProfitMargin !== 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 border border-current">
+            حاشیه سود: {totalInvoiceProfitMargin > 0 ? '+' : ''}{toPersianDigits(totalInvoiceProfitMargin)}٪
+          </span>
+        )}
+      </div>
+      <div className="font-mono text-sm font-black dir-ltr">
+        {isProfit ? `+${formatPrice(totalInvoiceProfit)}` : isLoss ? `-${formatPrice(Math.abs(totalInvoiceProfit))}` : '۰'} تومان
+      </div>
+    </div>
+  );
+};
 
 /* ========================================================================= */
 /* HELPER 1: RENDER CUMULATIVE BALANCE ROW UNDER NET PAYABLE BOX             */
@@ -308,6 +414,8 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
     netPayableAmount,
     invoiceCartonBreakdownText,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -420,50 +528,53 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {processedItems.map(({
-              item,
-              index,
-              cartonLabel,
-              packagingSpec,
-              isUnknown,
-              hasCustomNote,
-              itemReturns,
-              itemReturnedCartons,
-              itemReturnedExtraPieces,
-              itemReturnedTotalAmount,
-              itemNetPrice,
-              displayUnitPrice,
-              displayLineTotal,
-              hasDiscount,
-              discountPercent,
-              discountedUnitPrice,
-              discountedLineTotal
-            }) => (
-              <tr key={`mono-item-${item.id || index}`} className="text-slate-900">
-                <td className="py-2.5 px-2 text-center text-slate-500">
-                  {toPersianDigits(index + 1)}
-                </td>
-                <td className="py-2.5 px-3">
-                  <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-400' : 'text-slate-950'}`}>
-                    {item.productName}
-                  </div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
-                    {!isUnknown && <span>{packagingSpec}</span>}
-                    {hasCustomNote && (
-                      <>
-                        <span>·</span>
-                        <span>{item.customDescription}</span>
-                      </>
-                    )}
-                  </div>
-                  {itemReturns.length > 0 && (
-                    <div className="text-[11px] font-bold text-slate-900 mt-0.5">
-                      مرجوع شده: {toPersianDigits(itemReturnedCartons)} کارتن
-                      {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''}
-                      <span className="mr-1 dir-ltr inline-block">(-{formatPrice(itemReturnedTotalAmount)})</span>
+            {processedItems.map((processedItem) => {
+              const {
+                item,
+                index,
+                cartonLabel,
+                packagingSpec,
+                isUnknown,
+                hasCustomNote,
+                itemReturns,
+                itemReturnedCartons,
+                itemReturnedExtraPieces,
+                itemReturnedTotalAmount,
+                itemNetPrice,
+                displayUnitPrice,
+                displayLineTotal,
+                hasDiscount,
+                discountPercent,
+                discountedUnitPrice,
+                discountedLineTotal
+              } = processedItem;
+              return (
+                <tr key={`mono-item-${item.id || index}`} className="text-slate-900">
+                  <td className="py-2.5 px-2 text-center text-slate-500">
+                    {toPersianDigits(index + 1)}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-400' : 'text-slate-950'}`}>
+                      {item.productName}
                     </div>
-                  )}
-                </td>
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                      {!isUnknown && <span>{packagingSpec}</span>}
+                      {hasCustomNote && (
+                        <>
+                          <span>·</span>
+                          <span>{item.customDescription}</span>
+                        </>
+                      )}
+                    </div>
+                    {itemReturns.length > 0 && (
+                      <div className="text-[11px] font-bold text-slate-900 mt-0.5">
+                        مرجوع شده: {toPersianDigits(itemReturnedCartons)} کارتن
+                        {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''}
+                        <span className="mr-1 dir-ltr inline-block">(-{formatPrice(itemReturnedTotalAmount)})</span>
+                      </div>
+                    )}
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-2.5 px-3 text-center whitespace-nowrap">
                   <div className="font-bold text-sm">
                     {toPersianDigits(item.totalPieces.toLocaleString())} {item.unitTitle || 'عدد'}
@@ -493,7 +604,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -555,6 +666,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -585,6 +697,8 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
     netPayableAmount,
     invoiceCartonBreakdownText,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -661,43 +775,46 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800/60' : 'divide-slate-100'}`}>
-            {processedItems.map(({
-              item,
-              index,
-              cartonLabel,
-              packagingSpec,
-              isUnknown,
-              hasCustomNote,
-              itemReturns,
-              itemReturnedCartons,
-              itemReturnedExtraPieces,
-              itemReturnedTotalAmount,
-              itemNetPrice,
-              displayUnitPrice,
-              displayLineTotal,
-              hasDiscount,
-              discountPercent,
-              discountedUnitPrice,
-              discountedLineTotal
-            }) => (
-              <tr key={`swiss-item-${item.id || index}`}>
-                <td className="py-3 px-3 text-center text-slate-400">
-                  {toPersianDigits(index + 1)}
-                </td>
-                <td className="py-3 px-4">
-                  <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
-                    {item.productName}
-                  </div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
-                    {!isUnknown && <span>{packagingSpec}</span>}
-                    {hasCustomNote && <span>· {item.customDescription}</span>}
-                  </div>
-                  {itemReturns.length > 0 && (
-                    <div className="text-[11px] font-bold text-rose-500 mt-0.5">
-                      مرجوع: {toPersianDigits(itemReturnedCartons)} کارتن {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''} (-{formatPrice(itemReturnedTotalAmount)})
+            {processedItems.map((processedItem) => {
+              const {
+                item,
+                index,
+                cartonLabel,
+                packagingSpec,
+                isUnknown,
+                hasCustomNote,
+                itemReturns,
+                itemReturnedCartons,
+                itemReturnedExtraPieces,
+                itemReturnedTotalAmount,
+                itemNetPrice,
+                displayUnitPrice,
+                displayLineTotal,
+                hasDiscount,
+                discountPercent,
+                discountedUnitPrice,
+                discountedLineTotal
+              } = processedItem;
+              return (
+                <tr key={`swiss-item-${item.id || index}`}>
+                  <td className="py-3 px-3 text-center text-slate-400">
+                    {toPersianDigits(index + 1)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                      {item.productName}
                     </div>
-                  )}
-                </td>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                      {!isUnknown && <span>{packagingSpec}</span>}
+                      {hasCustomNote && <span>· {item.customDescription}</span>}
+                    </div>
+                    {itemReturns.length > 0 && (
+                      <div className="text-[11px] font-bold text-rose-500 mt-0.5">
+                        مرجوع: {toPersianDigits(itemReturnedCartons)} کارتن {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''} (-{formatPrice(itemReturnedTotalAmount)})
+                      </div>
+                    )}
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <span className="font-bold">
                     {toPersianDigits(item.totalPieces.toLocaleString())} {item.unitTitle || 'عدد'}
@@ -727,7 +844,7 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -766,6 +883,7 @@ export const GraphicSwissTemplate: React.FC<InvoiceTemplateProps> = (props) => {
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -796,6 +914,8 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     netPayableAmount,
     invoiceCartonBreakdownText,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -852,13 +972,16 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`fintech-item-${item.id || index}`}>
-                <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-3 px-4">
-                  <div className="font-bold text-slate-900 dark:text-white">{item.productName}</div>
-                  <div className="text-[10.5px] text-slate-400 mt-0.5">{packagingSpec}</div>
-                </td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`fintech-item-${item.id || index}`}>
+                  <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-bold text-slate-900 dark:text-white">{item.productName}</div>
+                    <div className="text-[10.5px] text-slate-400 mt-0.5">{packagingSpec}</div>
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-3 px-3 text-center">
                   <span className="font-bold">{toPersianDigits(item.totalPieces.toLocaleString())}</span>
                   <div className="text-[10px] text-slate-400">{cartonLabel}</div>
@@ -886,7 +1009,7 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -925,6 +1048,7 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -951,6 +1075,8 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -993,13 +1119,16 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-300 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`exec-item-${item.id || index}`}>
-                <td className="py-2.5 px-2 text-center text-slate-500">{toPersianDigits(index + 1)}</td>
-                <td className="py-2.5 px-3 font-bold">
-                  {item.productName}
-                  <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
-                </td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`exec-item-${item.id || index}`}>
+                  <td className="py-2.5 px-2 text-center text-slate-500">{toPersianDigits(index + 1)}</td>
+                  <td className="py-2.5 px-3 font-bold">
+                    {item.productName}
+                    <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2.5 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
@@ -1022,7 +1151,7 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1055,6 +1184,7 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -1081,6 +1211,8 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -1126,13 +1258,18 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }, idx) => (
-              <tr 
-                key={`artisan-item-${item.id || index}`}
-                style={{ backgroundColor: idx % 2 === 1 ? `${theme.hex}08` : 'transparent' }}
-              >
-                <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-3 px-4 font-bold">{item.productName}</td>
+            {processedItems.map((processedItem, idx) => {
+              const { item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr 
+                  key={`artisan-item-${item.id || index}`}
+                  style={{ backgroundColor: idx % 2 === 1 ? `${theme.hex}08` : 'transparent' }}
+                >
+                  <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-3 px-4 font-bold">
+                    {item.productName}
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
@@ -1155,7 +1292,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1189,6 +1326,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -1214,6 +1352,8 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -1242,10 +1382,15 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`compact-item-${item.id || index}`}>
-                <td className="py-2 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-2 px-3 font-bold">{item.productName}</td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`compact-item-${item.id || index}`}>
+                  <td className="py-2 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-2 px-3 font-bold">
+                    {item.productName}
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-2 px-2 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2 px-2 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
@@ -1268,7 +1413,7 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1302,6 +1447,7 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -1328,6 +1474,8 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -1385,13 +1533,16 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800/80' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`comm-item-${item.id || index}`}>
-                <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-3 px-4">
-                  <div className="font-bold text-slate-900 dark:text-white">{item.productName}</div>
-                  <div className="text-[10.5px] text-slate-400 mt-0.5">{packagingSpec}</div>
-                </td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, packagingSpec, cartonLabel, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`comm-item-${item.id || index}`}>
+                  <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-bold text-slate-900 dark:text-white">{item.productName}</div>
+                    <div className="text-[10.5px] text-slate-400 mt-0.5">{packagingSpec}</div>
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-3 px-3 text-center">
                   <span className="font-bold">{toPersianDigits(item.totalPieces.toLocaleString())}</span>
                   <div className="text-[10px] text-slate-400">{cartonLabel}</div>
@@ -1419,7 +1570,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1453,6 +1604,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -1479,6 +1631,8 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -1529,13 +1683,16 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
             </tr>
           </thead>
           <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800' : 'divide-slate-100'}`}>
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`neo-item-${item.id || index}`}>
-                <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-3 px-4 font-bold">
-                  {item.productName}
-                  <span className="block text-[10.5px] text-slate-400 font-normal">{packagingSpec}</span>
-                </td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`neo-item-${item.id || index}`}>
+                  <td className="py-3 px-3 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-3 px-4 font-bold">
+                    {item.productName}
+                    <span className="block text-[10.5px] text-slate-400 font-normal">{packagingSpec}</span>
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
@@ -1558,7 +1715,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1591,6 +1748,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 
@@ -1616,6 +1774,8 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
     grossAmount,
     netPayableAmount,
     inwardSellThroughSummary,
+    shouldShowProfitUnderItems,
+    includeProfitInExport,
   } = props;
 
   return (
@@ -1659,13 +1819,16 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {processedItems.map(({ item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal }) => (
-              <tr key={`hyper-item-${item.id || index}`}>
-                <td className="py-2.5 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
-                <td className="py-2.5 px-3 font-bold">
-                  {item.productName}
-                  <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
-                </td>
+            {processedItems.map((processedItem) => {
+              const { item, index, displayUnitPrice, displayLineTotal, packagingSpec, hasDiscount, discountPercent, discountedUnitPrice, discountedLineTotal } = processedItem;
+              return (
+                <tr key={`hyper-item-${item.id || index}`}>
+                  <td className="py-2.5 px-2 text-center text-slate-400">{toPersianDigits(index + 1)}</td>
+                  <td className="py-2.5 px-3 font-bold">
+                    {item.productName}
+                    <span className="block text-[10px] text-slate-400 font-normal">{packagingSpec}</span>
+                    {renderItemProfitBadge(processedItem, shouldShowProfitUnderItems, includeProfitInExport)}
+                  </td>
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2.5 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
@@ -1688,7 +1851,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
                   )}
                 </td>
               </tr>
-            ))}
+            ); })}
           </tbody>
         </table>
       </div>
@@ -1722,6 +1885,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
 
             {/* Cumulative Balance Underneath Net Amount */}
             {renderCumulativeBalanceSection(props)}
+            {renderTotalInvoiceProfitRow(props)}
           </div>
         </div>
 

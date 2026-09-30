@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Product, Invoice, StoreSettings, Customer, CustomerPayment, ActivityLog, ProductReturn, AppDesignMode } from './types';
 import { initialProducts, initialInvoices, initialStoreSettings, initialCustomers } from './data/initialData';
 import { HeaderNav, AppTab } from './components/HeaderNav';
@@ -32,7 +32,7 @@ import {
   formatStockBreakdown,
   formatProductPackagingSpec
 } from './utils/formatters';
-import { checkAndRunAutoBackup, createSafetyPreDeleteSnapshot } from './utils/backupManager';
+import { checkAndRunAutoBackup, createSafetyPreDeleteSnapshot, createOnChangeSnapshot, TOTAL_BACKUP_LIMIT } from './utils/backupManager';
 import { syncInvoiceWithReturns, syncAllInvoicesWithReturns } from './utils/invoiceSync';
 
 const STORAGE_KEYS = {
@@ -707,6 +707,122 @@ export default function App() {
       if (res.created) {
         console.log(`Smart auto backup created. ${res.prunedCount} old backups pruned.`);
       }
+    }
+  }, [products, invoices, customers, payments, productReturns, treasuryTransactions]);
+
+  // Dedicated Intelligent On-Change Backup Watcher:
+  // Automatically creates a snapshot in the 5 dedicated live-change slots whenever any data is added/edited/drafted
+  const prevDataFingerprintRef = useRef<string | null>(null);
+  const changeBackupTimerRef = useRef<any>(null);
+  const isDataMountedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (products.length === 0 && invoices.length === 0 && customers.length === 0) {
+      return;
+    }
+
+    const currentFingerprint = JSON.stringify({
+      prodLen: products.length,
+      prodDigest: products.map(p => 
+        `${p.id}:${p.name}:${p.stockPieces}:${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}:${p.sellingPrice}:${p.purchasePrice}`
+      ).join(';'),
+      prodPackagingDigest: products.map(p =>
+        `${p.id}:${p.name}:${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}`
+      ).join(';'),
+      invLen: invoices.length,
+      invDigest: invoices.map(i => `${i.id}:${i.isDraft ? 'D' : 'F'}:${i.finalAmount}:${i.items?.length || 0}:${i.updatedAt || ''}`).join(';'),
+      custLen: customers.length,
+      custDigest: customers.map(c => `${c.id}:${c.balance || 0}`).join(';'),
+      payLen: payments.length,
+      payDigest: payments.map(p => `${p.id}:${p.amount}`).join(';'),
+      retLen: productReturns.length,
+      retDigest: productReturns.map(r => `${r.id}:${r.totalAmount}`).join(';'),
+      treLen: treasuryTransactions.length,
+      treDigest: treasuryTransactions.map(t => `${t.id}:${t.amount}`).join(';'),
+    });
+
+    if (!isDataMountedRef.current) {
+      isDataMountedRef.current = true;
+      prevDataFingerprintRef.current = currentFingerprint;
+      return;
+    }
+
+    if (prevDataFingerprintRef.current && prevDataFingerprintRef.current !== currentFingerprint) {
+      let changeNote = 'پشتیبان هوشمند پس از اعمال تغییرات در سیستم';
+      try {
+        const prev = JSON.parse(prevDataFingerprintRef.current);
+        const curr = JSON.parse(currentFingerprint);
+        const currDraftCount = invoices.filter(i => i.isDraft).length;
+        const prevDraftCount = (prev.invDigest.match(/:D:/g) || []).length;
+
+        // Check if packaging was modified
+        if (prev.prodPackagingDigest && prev.prodPackagingDigest !== curr.prodPackagingDigest) {
+          const prevPackMap = new Map<string, string>();
+          (prev.prodPackagingDigest.split(';') || []).forEach((item: string) => {
+            const parts = item.split(':');
+            if (parts[0]) prevPackMap.set(parts[0], parts.slice(2).join(':'));
+          });
+
+          const changedProd = products.find(p => {
+            const prevPack = prevPackMap.get(p.id);
+            const currPack = `${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}`;
+            return prevPack && prevPack !== currPack;
+          });
+
+          if (changedProd) {
+            const packSpec = changedProd.isUnpackaged 
+              ? 'کالای فله / بدون بسته‌بندی' 
+              : `هر کارتن: ${toPersianDigits(changedProd.piecesPerCarton)} عدد${changedProd.packsPerCarton ? ` (${toPersianDigits(changedProd.packsPerCarton)} بسته)` : ''}`;
+            changeNote = `تغییر بسته‌بندی کالای «${changedProd.name}» (${packSpec})`;
+          } else {
+            changeNote = 'تغییر مشخصات بسته‌بندی و کارتن‌بندی کالاها';
+          }
+        } else if (currDraftCount > prevDraftCount) {
+          changeNote = `ثبت پیش‌نویس جدید فاکتور (تعداد پیش‌نویس‌ها: ${toPersianDigits(currDraftCount)})`;
+        } else if (currDraftCount < prevDraftCount) {
+          changeNote = `نهایی‌سازی یا تغییر وضعیت پیش‌نویس فاکتور`;
+        } else if (invoices.length !== prev.invLen) {
+          changeNote = `ثبت یا حذف فاکتور (تعداد فاکتورها: ${toPersianDigits(invoices.length)})`;
+        } else if (invoices.length > 0 && prev.invDigest !== curr.invDigest) {
+          changeNote = `ویرایش فاکتور یا پیش‌نویس (${toPersianDigits(invoices.length)} فاکتور)`;
+        } else if (products.length !== prev.prodLen || prev.prodDigest !== curr.prodDigest) {
+          changeNote = `بروزرسانی انبار و مشخصات کالا (${toPersianDigits(products.length)} کالا)`;
+        } else if (customers.length !== prev.custLen || prev.custDigest !== curr.custDigest) {
+          changeNote = `تغییر در اطلاعات یا مانده طرف‌حساب‌ها`;
+        } else if (payments.length !== prev.payLen) {
+          changeNote = `ثبت یا ویرایش فیش واریزی`;
+        } else if (productReturns.length !== prev.retLen) {
+          changeNote = `ثبت یا تغییر سند مرجوعی کالا`;
+        } else if (treasuryTransactions.length !== prev.treLen) {
+          changeNote = `تراکنش جدید در صندوق و خزانه‌داری`;
+        }
+      } catch {
+        changeNote = 'پشتیبان هوشمند پس از اعمال تغییرات در سیستم';
+      }
+
+      if (changeBackupTimerRef.current) {
+        clearTimeout(changeBackupTimerRef.current);
+      }
+
+      changeBackupTimerRef.current = setTimeout(() => {
+        try {
+          createOnChangeSnapshot(
+            products,
+            invoices,
+            customers,
+            payments,
+            settings,
+            changeNote,
+            productReturns,
+            treasuryTransactions,
+            activityLogs
+          );
+        } catch (e) {
+          console.error('Auto change backup error:', e);
+        }
+      }, 800);
+
+      prevDataFingerprintRef.current = currentFingerprint;
     }
   }, [products, invoices, customers, payments, productReturns, treasuryTransactions]);
 
@@ -2042,13 +2158,32 @@ export default function App() {
           'inventory'
         );
       } else {
-        // Specification or price updated
-        addActivityLog(
-          'بروزرسانی مشخصات کالا',
-          `مشخصات و قیمت‌های کالای «${updatedProd.name}» ویرایش و ذخیره شد.`,
-          'product',
-          'inventory'
+        const isPackagingChanged = matchedPrev && (
+          matchedPrev.piecesPerCarton !== updatedProd.piecesPerCarton ||
+          matchedPrev.packsPerCarton !== updatedProd.packsPerCarton ||
+          matchedPrev.piecesPerPack !== updatedProd.piecesPerPack ||
+          matchedPrev.leavesPerPiece !== updatedProd.leavesPerPiece ||
+          matchedPrev.unitTitle !== updatedProd.unitTitle ||
+          matchedPrev.isUnpackaged !== updatedProd.isUnpackaged ||
+          matchedPrev.isCartonUnknown !== updatedProd.isCartonUnknown
         );
+
+        if (isPackagingChanged) {
+          addActivityLog(
+            'تغییر بسته‌بندی کالا و ثبت پشتیبان',
+            `مشخصات بسته‌بندی و تعداد در کارتن کالای «${updatedProd.name}» ویرایش و در نسخه پشتیبان دیتابیس ثبت گردید.`,
+            'product',
+            'inventory'
+          );
+        } else {
+          // Specification or price updated
+          addActivityLog(
+            'بروزرسانی مشخصات کالا',
+            `مشخصات و قیمت‌های کالای «${updatedProd.name}» ویرایش و ذخیره شد.`,
+            'product',
+            'inventory'
+          );
+        }
       }
     } else {
       addActivityLog(
@@ -2058,7 +2193,19 @@ export default function App() {
         'inventory'
       );
     }
-    showAlert(`مشخصات و موجودی کالای «${updatedProd.name}» با موفقیت به‌روزرسانی شد.`, 'success', 'ویرایش کالا');
+    const isPackagingChanged = matchedPrev && (
+      matchedPrev.piecesPerCarton !== updatedProd.piecesPerCarton ||
+      matchedPrev.packsPerCarton !== updatedProd.packsPerCarton ||
+      matchedPrev.piecesPerPack !== updatedProd.piecesPerPack ||
+      matchedPrev.leavesPerPiece !== updatedProd.leavesPerPiece ||
+      matchedPrev.unitTitle !== updatedProd.unitTitle ||
+      matchedPrev.isUnpackaged !== updatedProd.isUnpackaged ||
+      matchedPrev.isCartonUnknown !== updatedProd.isCartonUnknown
+    );
+    const alertMsg = isPackagingChanged
+      ? `بسته‌بندی کالای «${updatedProd.name}» به‌روزرسانی و در نسخه پشتیبان دیتابیس ذخیره شد.`
+      : `مشخصات و موجودی کالای «${updatedProd.name}» با موفقیت به‌روزرسانی شد.`;
+    showAlert(alertMsg, 'success', isPackagingChanged ? 'تغییر بسته‌بندی کالا' : 'ویرایش کالا');
   };
 
   const handleRestockProduct = (
@@ -2459,6 +2606,25 @@ export default function App() {
     const snapshotData = (rawSnapshot.data && typeof rawSnapshot.data === 'object' && !Array.isArray(rawSnapshot.data))
       ? rawSnapshot.data
       : rawSnapshot;
+
+    // Take an instant safety pre-restore snapshot of current live data before replacing
+    if (products.length > 0 || invoices.length > 0) {
+      try {
+        createSafetyPreDeleteSnapshot(
+          products,
+          invoices,
+          customers,
+          payments,
+          settings,
+          'بازگردانی اطلاعات به نسخه پشتیبان',
+          productReturns,
+          treasuryTransactions,
+          activityLogs
+        );
+      } catch (err) {
+        console.error('Safety snapshot failed:', err);
+      }
+    }
 
     if (Array.isArray(snapshotData.products)) {
       setProducts(snapshotData.products);
@@ -3024,6 +3190,10 @@ export default function App() {
             >
               <BackupPage
                 settings={settings}
+                onUpdateSettings={(newSettings) => {
+                  setSettings(newSettings);
+                  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
+                }}
                 runWithSecurityCheck={runWithSecurityCheck}
                 onExportData={handleExportData}
                 onImportData={(file) => {
@@ -3054,6 +3224,7 @@ export default function App() {
                 onShowConfirm={showConfirm}
                 productsCount={products.length}
                 invoicesCount={invoices.length}
+                draftsCount={invoices.filter(i => i.isDraft).length}
                 customersCount={customers.length}
                 paymentsCount={payments.length}
                 returnsCount={productReturns.length}

@@ -15,17 +15,12 @@
   }
 
   *, ::before, ::after {
+    font-family: var(--app-font-family) !important;
     font-feature-settings: "ss01" 1, "cv01" 1;
   }
 
-  body {
+  body, #root, input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6, #invoice-paper, .invoice-paper-container, .printable-document {
     font-family: var(--app-font-family) !important;
-    font-feature-settings: "ss01" 1, "cv01" 1 !important;
-    font-size: calc(1rem * var(--app-font-scale, 1));
-    letter-spacing: -0.018em;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   /* High contrast black text strictly in light mode */
@@ -546,7 +541,7 @@
     color: #0f172a !important;
   }
 
-  .no-print, nav, aside, button, .control-bar {
+  .no-print, nav, aside, button, .control-bar, .item-profit-badge, .confidential-price-data, .hide-on-export, .hide-on-print {
     display: none !important;
   }
 
