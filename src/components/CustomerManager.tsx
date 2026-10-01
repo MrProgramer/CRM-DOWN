@@ -2157,7 +2157,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   {balanceAdjAmount && Number(balanceAdjAmount) > 0 && (
                     <div className="mt-1.5 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
                       <span>مبلغ به حروف:</span>
-                      <span className="font-black">{numberToPersianWords(Number(balanceAdjAmount))} تومان</span>
+                      <span className="font-black">{numberToPersianWords(Number(balanceAdjAmount))}</span>
                     </div>
                   )}
                 </div>
@@ -3354,7 +3354,7 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
                     </div>
                     {amt > 0 && (
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                        مبلغ به حروف: <span className="font-bold text-slate-800 dark:text-slate-200">{numberToPersianWords(amt)} تومان</span>
+                        مبلغ به حروف: <span className="font-bold text-slate-800 dark:text-slate-200">{numberToPersianWords(amt)}</span>
                       </p>
                     )}
                   </div>
@@ -3589,7 +3589,7 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
 
                     {liveBal !== 0 && (
                       <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                        مبلغ تسویه به حروف: <span className="font-black text-slate-900 dark:text-slate-200">{numberToPersianWords(Math.abs(liveBal))} تومان</span>
+                        مبلغ تسویه به حروف: <span className="font-black text-slate-900 dark:text-slate-200">{numberToPersianWords(Math.abs(liveBal))}</span>
                       </div>
                     )}
                   </div>

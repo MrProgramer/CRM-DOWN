@@ -894,7 +894,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
                 {formatPrice(Math.abs(liveBal))}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                {numberToPersianWords(Math.abs(liveBal))} تومان
+                {numberToPersianWords(Math.abs(liveBal))}
               </div>
             </div>
 

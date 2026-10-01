@@ -164,6 +164,39 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     });
   };
 
+  // Helper to get effective discounted purchase price for any product/item
+  const getProductDiscountedPurchasePrice = (productId?: string, productName?: string, fallbackPrice: number = 0) => {
+    const matchingProduct = getMatchingProduct(productId, productName);
+    let basePrice = (matchingProduct && matchingProduct.purchasePrice > 0) ? matchingProduct.purchasePrice : fallbackPrice;
+
+    // Search purchase invoices for the exact acquisition cost including any supplier invoice discount
+    const purchaseInvs = invoices.filter(inv => inv.type === 'purchase' && !inv.isDraft && inv.items);
+    // Sort to inspect latest purchase invoices first
+    const sortedPurchases = [...purchaseInvs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    for (const pInv of sortedPurchases) {
+      const found = pInv.items.find(pi => 
+        (productId && pi.productId === productId) || 
+        (productName && pi.productName && pi.productName.trim().toLowerCase() === productName?.trim().toLowerCase())
+      );
+      if (found) {
+        const hasDiscount = Boolean(pInv.hasDiscount || (pInv.discount && pInv.discount > 0));
+        const grossSubtotal = (pInv.items || []).reduce((s, it) => s + (it.totalPrice || (it.totalPieces * (it.unitPurchasePrice || it.unitPrice || 0))), 0);
+        const discountPercent = pInv.discountPercent || (grossSubtotal > 0 && pInv.discount ? (pInv.discount / grossSubtotal) * 100 : 0);
+        
+        let rawUnitCost = found.unitPurchasePrice || (found.totalPieces > 0 && found.totalPurchaseCost ? Math.round(found.totalPurchaseCost / found.totalPieces) : (found.unitPrice || 0));
+        if (rawUnitCost > 0) {
+          if (hasDiscount && discountPercent > 0) {
+            return Math.round(rawUnitCost * (1 - (discountPercent / 100)));
+          }
+          return rawUnitCost;
+        }
+      }
+    }
+
+    return basePrice;
+  };
+
   // Reset pagination on tab, period, search or sort change
   React.useEffect(() => {
     setCurrentPage(1);
@@ -199,18 +232,36 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       } else if (salesSortField === 'amount') {
         cmp = (a.finalAmount || 0) - (b.finalAmount || 0);
       } else if (salesSortField === 'cost') {
-        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
-        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const aCost = a.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
+        const bCost = b.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
         cmp = aCost - bCost;
       } else if (salesSortField === 'profit') {
-        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
-        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const aCost = a.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
+        const bCost = b.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
         const aExp = (a.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
         const bExp = (b.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
         cmp = ((a.finalAmount || 0) - aCost - aExp) - ((b.finalAmount || 0) - bCost - bExp);
       } else if (salesSortField === 'margin') {
-        const aCost = a.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
-        const bCost = b.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+        const aCost = a.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
+        const bCost = b.items.reduce((s, it) => {
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
+        }, 0);
         const aMargin = a.finalAmount > 0 ? ((a.finalAmount - aCost) / a.finalAmount) : 0;
         const bMargin = b.finalAmount > 0 ? ((b.finalAmount - bCost) / b.finalAmount) : 0;
         cmp = aMargin - bMargin;
@@ -361,7 +412,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       totalRevenue += inv.finalAmount;
       totalDiscountsGiven += (inv.hasDiscount ? (inv.discount || 0) : (inv.discount || 0));
       inv.items.forEach(it => {
-        const cost = it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0));
+        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const cost = it.totalPieces > 0 ? (it.totalPieces * itemUnitCost) : (it.totalPurchaseCost || 0);
         totalCost += cost;
         totalItemsCount += it.totalPieces || 0;
       });
@@ -458,13 +510,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     filteredSalesInvoices.forEach(inv => {
       inv.items.forEach(it => {
         const key = it.productId || it.productName;
-        const matchingProduct = products.find(p => (it.productId && p.id === it.productId) || p.name.trim() === it.productName?.trim());
+        const matchingProduct = getMatchingProduct(it.productId, it.productName);
         const totalPieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
         const rev = (it.totalPrice !== undefined && it.totalPrice > 0) ? it.totalPrice : (totalPieces * (it.unitSellingPrice || 0));
-        const unitCost = (matchingProduct?.purchasePrice && matchingProduct.purchasePrice > 0)
-          ? matchingProduct.purchasePrice
-          : ((it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : 0);
-        const cost = (it.totalPurchaseCost !== undefined && it.totalPurchaseCost > 0) ? it.totalPurchaseCost : (totalPieces * unitCost);
+        const unitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const cost = totalPieces > 0 ? (totalPieces * unitCost) : (it.totalPurchaseCost || 0);
         const profit = rev - cost;
 
         const current = map.get(key) || {
@@ -529,7 +579,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     filteredSalesInvoices.forEach(inv => {
       const key = inv.customerId || inv.customerName;
       const invRevenue = inv.finalAmount;
-      const invCost = inv.items.reduce((s, it) => s + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+      const invCost = inv.items.reduce((s, it) => {
+        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        return s + (it.totalPieces > 0 ? (it.totalPieces * itemUnitCost) : (it.totalPurchaseCost || 0));
+      }, 0);
       const invProfit = invRevenue - invCost;
 
       const current = map.get(key) || {
@@ -651,9 +704,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           unitSellGross = it.unitSellingPrice || 0;
         }
       } else {
-        unitCostGross = (matchingProduct && matchingProduct.purchasePrice > 0)
-          ? matchingProduct.purchasePrice
-          : ((it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : 0);
+        unitCostGross = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
 
         unitSellGross = (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0)
           ? it.unitSellingPrice
@@ -1467,7 +1518,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   </tr>
                 ) : (
                   paginatedSalesInvoices.map((inv, idx) => {
-                    const invCost = inv.items.reduce((sum, it) => sum + (it.totalPurchaseCost || (it.totalPieces * (it.unitPurchasePrice || 0))), 0);
+                    const invCost = inv.items.reduce((sum, it) => {
+                      const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+                      return sum + (it.totalPieces > 0 ? (it.totalPieces * uCost) : (it.totalPurchaseCost || 0));
+                    }, 0);
                     const invRevenue = inv.finalAmount;
                     const allSalesExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
                     const invProfit = invRevenue - invCost - allSalesExpenses;
@@ -1572,30 +1626,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           </div>
         )}
 
-        {/* TAB 2: PURCHASE INVOICES PROFITABILITY (INWARD GOODS WITH CLEAN DISCOUNT & FREIGHT PLACEMENT) */}
+        {/* TAB 2: PURCHASE INVOICES PROFITABILITY (INWARD GOODS COMPACT & CLEAN) */}
         {activeTab === 'purchases' && (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11px] select-none">
                 <tr>
                   <SortableTableHeader
                     field="invoiceNumber"
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    className="p-3.5"
+                    className="py-2.5 px-3 w-28"
                   >
-                    شماره سند خرید
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="date"
-                    currentField={purchaseSortField}
-                    currentDirection={purchaseSortDirection}
-                    onSort={handlePurchaseSort}
-                    className="p-3.5"
-                  >
-                    تاریخ ورود
+                    سند و تاریخ
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1603,9 +1647,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    className="p-3.5"
+                    className="py-2.5 px-3 min-w-[120px]"
                   >
-                    تأمین‌کننده / فروشنده
+                    تأمین‌کننده
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1614,20 +1658,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left min-w-[130px]"
                   >
-                    بهای تمام‌شده کل (اصلی + کرایه)
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="expenses"
-                    currentField={purchaseSortField}
-                    currentDirection={purchaseSortDirection}
-                    onSort={handlePurchaseSort}
-                    align="center"
-                    className="p-3.5 text-center"
-                  >
-                    تخفیف و کرایه بار
+                    بهای تمام‌شده خرید
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1636,9 +1669,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left min-w-[110px]"
                   >
-                    ارزش تخمینی فروش
+                    ارزش فروش
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1647,9 +1680,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left min-w-[110px]"
                   >
-                    سود خالص فاکتور ورودی
+                    سود برآوردی
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1658,105 +1691,97 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="center"
-                    className="p-3.5 text-center"
+                    className="py-2.5 px-2 text-center w-24"
                   >
-                    ضریب مارک‌آپ (٪)
+                    مارک‌آپ
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center">عملیات</th>
+                  <th className="py-2.5 px-3 text-center w-36">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedPurchaseInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-12 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">
                       هیچ فاکتور ورودی کالا در این بازه یافت نشد.
                     </td>
                   </tr>
                 ) : (
                   paginatedPurchaseInvoices.map((inv, idx) => (
                     <tr key={`profit-pur-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="p-3.5 font-bold">
-                        <span className="font-mono text-xs text-amber-900 dark:text-amber-200 font-black px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800">
-                          #{toPersianDigits(inv.invoiceNumber)}
-                        </span>
+                      {/* 1. Number & Date */}
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs text-amber-900 dark:text-amber-200 font-black px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800">
+                            #{toPersianDigits(inv.invoiceNumber)}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {toPersianDigits(inv.date)}
+                        </div>
                       </td>
-                      <td className="p-3.5 text-slate-600 dark:text-slate-300 font-bold font-mono">
-                        {toPersianDigits(inv.date)}
+
+                      {/* 2. Supplier */}
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
+                        <div className="truncate max-w-[140px]" title={inv.customerName}>
+                          {inv.customerName}
+                        </div>
+                        <span className="text-[9.5px] text-slate-400 font-normal">ورود به انبار</span>
                       </td>
-                      <td className="p-3.5 font-bold text-slate-900 dark:text-white">
-                        <div>{inv.customerName}</div>
-                        <span className="text-[10px] text-slate-400 font-normal">ورود به انبار</span>
-                      </td>
-                      <td className="p-3.5 text-left dir-ltr">
-                        <div className="font-black text-slate-900 dark:text-white">
+
+                      {/* 3. Cost (with compact freight & discount info) */}
+                      <td className="py-2.5 px-3 text-left dir-ltr">
+                        <div className="font-black text-slate-900 dark:text-white text-xs">
                           {isSecretMode ? '••••••' : formatPrice(inv.netPurchaseCost)}
                         </div>
-                        {inv.totalExpensesAmount > 0 && (
-                          <div className="text-[10px] text-teal-600 dark:text-teal-400 font-bold dir-rtl text-right mt-0.5">
-                            (فاکتور اصلی: {formatPrice(inv.grossPurchaseCost - inv.discountAmount)} + کرایه: {formatPrice(inv.totalExpensesAmount)})
-                          </div>
-                        )}
-                        {inv.hasDiscount && inv.discountAmount > 0 && (
-                          <div className="text-[10px] text-slate-400 line-through">
-                            {isSecretMode ? '••••••' : formatPrice(inv.grossPurchaseCost)}
-                          </div>
-                        )}
-                      </td>
-                      {/* Clean and beautifully positioned discount & freight expenses placement */}
-                      <td className="p-3.5 text-center space-y-1">
-                        {inv.totalExpensesAmount > 0 && (
-                          <div className="flex items-center justify-center">
-                            <span className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 font-bold text-[11px] border border-teal-200 dark:border-teal-800 dir-rtl inline-flex items-center gap-1">
-                              <Truck className="w-3 h-3 text-teal-600 dark:text-teal-400 shrink-0" />
-                              <span>کرایه بار (+ به هزینه): {formatPrice(inv.totalExpensesAmount)}</span>
+                        <div className="flex items-center gap-1 mt-0.5 dir-rtl flex-wrap">
+                          {inv.totalExpensesAmount > 0 && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold border border-teal-200 dark:border-teal-800">
+                              +کرایه {formatPrice(inv.totalExpensesAmount)}
                             </span>
-                          </div>
-                        )}
-                        {inv.hasDiscount && inv.discountAmount > 0 && (
-                          <div className="flex items-center justify-center">
-                            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800 dir-rtl inline-flex items-center gap-1">
-                              <Tag className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                              <span>تخفیف: {formatPrice(inv.discountAmount)} ({toPersianDigits(inv.discountPercent.toFixed(0))}٪)</span>
+                          )}
+                          {inv.hasDiscount && inv.discountAmount > 0 && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
+                              تخفیف {toPersianDigits(inv.discountPercent.toFixed(0))}٪
                             </span>
-                          </div>
-                        )}
-                        {!inv.hasDiscount && (!inv.totalExpensesAmount || inv.totalExpensesAmount === 0) && (
-                          <span className="text-slate-400 text-xs">بدون هزینه جانبی</span>
-                        )}
+                          )}
+                        </div>
                       </td>
-                      <td className="p-3.5 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr">
+
+                      {/* 4. Projected Sales */}
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr text-xs">
                         {isSecretMode ? '••••••' : formatPrice(inv.totalProjectedSalesValue)}
                       </td>
-                      <td className="p-3.5 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr">
-                        <div>{isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}</div>
-                        {inv.totalExpensesAmount > 0 && (
-                          <div className="text-[10px] text-slate-500 font-normal dir-rtl text-right mt-0.5">
-                            (کسر {formatPrice(inv.totalExpensesAmount)} کرایه از سود اقلام)
-                          </div>
-                        )}
+
+                      {/* 5. Projected Profit */}
+                      <td className="py-2.5 px-3 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr text-xs">
+                        {isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}
                       </td>
-                      <td className="p-3.5 text-center">
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800">
+
+                      {/* 6. Markup */}
+                      <td className="py-2.5 px-2 text-center">
+                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10.5px] border border-emerald-200 dark:border-emerald-800 font-mono">
                           {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(1))}٪`}
                         </span>
                       </td>
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+
+                      {/* 7. Actions */}
+                      <td className="py-2.5 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setSelectedInvoiceForDetail(inv)}
-                            className="px-3 py-1.5 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200 hover:opacity-85 rounded-xl text-xs font-bold transition-all cursor-pointer border border-amber-300 dark:border-amber-800 shadow-2xs flex items-center gap-1"
+                            className="px-2 py-1 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200 hover:opacity-85 rounded-lg text-[11px] font-bold transition-all cursor-pointer border border-amber-300 dark:border-amber-800 shadow-2xs flex items-center gap-1"
                             title="محاسبه دقیق اقلام در همین صفحه"
                           >
-                            <Calculator className="w-3.5 h-3.5" />
-                            <span>محاسبه دقیق اقلام</span>
+                            <Calculator className="w-3 h-3" />
+                            <span>اقلام</span>
                           </button>
                           <button
                             onClick={() => onViewInvoice(inv)}
-                            className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+                            className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
                             title="مشاهده فاکتور خرید"
                           >
-                            <ArrowUpRight className="w-4 h-4" />
+                            <ArrowUpRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -1769,33 +1794,27 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
               {paginatedPurchaseInvoices.length > 0 && (
                 <tfoot className="bg-slate-50/90 dark:bg-slate-800/70 border-t-2 border-slate-200/90 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                   <tr>
-                    <td colSpan={3} className="p-3.5">
-                      <span>جمع کل فاکتورهای ورودی کالا ({toPersianDigits(purchaseInvoicesProfitability.length)} فاکتور خرید)</span>
+                    <td colSpan={2} className="py-3 px-3">
+                      <span>جمع ({toPersianDigits(purchaseInvoicesProfitability.length)} فاکتور)</span>
                     </td>
-                    <td className="p-3.5 text-left dir-ltr font-black">
+                    <td className="py-3 px-3 text-left dir-ltr font-black">
                       <div>{isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}</div>
                     </td>
-                    <td className="p-3.5 text-center font-bold text-emerald-600 dark:text-emerald-400">
-                      {summaryMetrics.totalInwardPurchaseDiscounts > 0 
-                        ? `مجموع تخفیف‌های خرید: ${formatPrice(summaryMetrics.totalInwardPurchaseDiscounts)}` 
-                        : '-'
-                      }
-                    </td>
-                    <td className="p-3.5 text-left dir-ltr font-bold text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-3 text-left dir-ltr font-bold text-slate-700 dark:text-slate-300">
                       {isSecretMode ? '••••••' : formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalProjectedSalesValue, 0))}
                     </td>
-                    <td className="p-3.5 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-3 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
                       {isSecretMode ? '••••••' : `+${formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0))}`}
                     </td>
-                    <td className="p-3.5 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
                       {isSecretMode ? '••٪' : `+${toPersianDigits(
                         summaryMetrics.totalInwardPurchasesNet > 0
                           ? ((purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0) / summaryMetrics.totalInwardPurchasesNet) * 100).toFixed(1)
                           : '0.0'
                       )}٪`}
                     </td>
-                    <td className="p-3.5 text-center text-[11px] text-slate-500 font-medium">
-                      کل اقلام ورودی: {toPersianDigits(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalItemsPieces, 0))} عدد
+                    <td className="py-3 px-3 text-center text-[10.5px] text-slate-500 font-medium">
+                      {toPersianDigits(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalItemsPieces, 0))} عدد کالا
                     </td>
                   </tr>
                 </tfoot>

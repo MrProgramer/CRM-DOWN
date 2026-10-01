@@ -315,8 +315,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </button>
           </div>
 
-          {/* Form Content */}
-          <form noValidate onSubmit={handleSave} className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {/* Form Content with Floating Action Bar */}
+          <form noValidate onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            
+            {/* Scrollable Form Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
             
             {/* 1. SECTION: General Info */}
             <div className="bg-slate-50/80 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 space-y-3.5">
@@ -870,23 +873,38 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Buttons */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer transition-colors"
-              >
-                انصراف
-              </button>
+            </div>
 
-              <button
-                type="submit"
-                className={`px-6 py-2.5 rounded-2xl ${theme.primary} hover:opacity-95 text-white font-black cursor-pointer shadow-lg transition-all flex items-center gap-2 active:scale-95`}
-              >
-                <Save className="w-4 h-4" />
-                <span>{editingProduct ? 'ذخیره تغییرات شناسنامه کالا' : 'ثبت و تعریف کالای جدید'}</span>
-              </button>
+            {/* Floating Sticky Action Bar (کادر شناور دکمه‌های ذخیره و انصراف) */}
+            <div className="p-3 sm:p-4 border-t border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex items-center justify-between gap-3 shrink-0 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_25px_rgba(0,0,0,0.3)] z-30 sticky bottom-0">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 min-w-0">
+                <span className="truncate max-w-[140px] sm:max-w-[220px] font-black text-slate-900 dark:text-white text-xs sm:text-sm">
+                  {formData.name || 'کالای بدون نام'}
+                </span>
+                {formData.sellingPrice > 0 && (
+                  <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-black text-[11px] border border-emerald-200 dark:border-emerald-800 dir-ltr whitespace-nowrap">
+                    {formatPrice(formData.sellingPrice)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3.5 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer transition-colors text-xs sm:text-sm"
+                >
+                  انصراف
+                </button>
+
+                <button
+                  type="submit"
+                  className={`px-4 sm:px-6 py-2.5 rounded-xl sm:rounded-2xl ${theme.primary} hover:opacity-95 text-white font-black cursor-pointer shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 flex-1 sm:flex-initial text-xs sm:text-sm`}
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingProduct ? 'ذخیره تغییرات کالا' : 'ثبت و تعریف کالا'}</span>
+                </button>
+              </div>
             </div>
           </form>
         </motion.div>

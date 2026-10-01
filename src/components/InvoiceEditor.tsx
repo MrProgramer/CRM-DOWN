@@ -1475,19 +1475,19 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
       {/* 📦 EXECUTIVE INWARD PRODUCT INTELLIGENCE & PURCHASING POWER DASHBOARD (فقط در فاکتور ورود کالا / خرید) */}
       {invoiceType === 'purchase' && (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {/* Section Header with Quick Action */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                     مرکز تحلیل هوشمند قدرت خرید ورود کالا و تراز تامین‌کننده
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     کنترل نقدینگی و نسیه
                   </span>
                 </div>
@@ -1501,121 +1501,113 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               type="button"
               id="open-inward-product-modal-from-banner"
               onClick={() => setIsInwardModalOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl ${theme.primary} ${theme.primaryHover} active:scale-95 text-white text-xs font-black shadow-xs hover:shadow-md transition-all cursor-pointer w-full sm:w-auto justify-center`}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer w-full sm:w-auto justify-center"
             >
               <PackagePlus className="w-4 h-4" />
               <span>+ ورود و شارژ کالا به انبار</span>
             </button>
           </div>
 
-          {/* 4 Analytical KPI Metric Cards (Matching ReturnsManager Style) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 4 Analytical KPI Metric Cards - Clean Corporate Style */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Card 1: نقدینگی حاضر */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">نقدینگی در دسترس (صندوق و بانک)</span>
-                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">نقدینگی در دسترس (صندوق و بانک)</span>
+                <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   <Wallet className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-lg font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-                {formatPrice(totalLiquidity)} <span className="text-xs font-normal text-slate-500">تومان</span>
+              <div className="text-lg font-black text-slate-900 dark:text-white dir-ltr text-right">
+                {formatPrice(totalLiquidity, false)} <span className="text-xs font-normal text-slate-500">تومان</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <span>صندوق: {formatPrice(cashBalance)}</span>
                 <span>بانک: {formatPrice(bankBalance)}</span>
               </div>
             </div>
 
             {/* Card 2: بدهی / تراز تامین‌کننده */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-blue-700 dark:text-blue-400 truncate">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 truncate">
                   تراز تامین‌کننده {customerName ? `(${customerName})` : ''}
                 </span>
-                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
+                <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   <Building2 className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-lg font-black mt-3 dir-ltr text-right">
+              <div className="text-lg font-black dir-ltr text-right">
                 {supplierDebtToUs > 0 ? (
                   <span className="text-emerald-600 dark:text-emerald-400">
-                    {formatPrice(supplierDebtToUs)} <span className="text-xs font-normal">تومان (بدهکار به ما)</span>
+                    {formatPrice(supplierDebtToUs, false)} <span className="text-xs font-normal">تومان (طلبکاریم)</span>
                   </span>
                 ) : ourDebtToSupplier > 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400">
-                    {formatPrice(ourDebtToSupplier)} <span className="text-xs font-normal">تومان (بستانکار)</span>
+                  <span className="text-slate-800 dark:text-slate-200">
+                    {formatPrice(ourDebtToSupplier, false)} <span className="text-xs font-normal">تومان (بدهکاریم)</span>
                   </span>
                 ) : (
-                  <span className="text-slate-600 dark:text-slate-400">
+                  <span className="text-slate-500 dark:text-slate-400">
                     بی‌حساب و تسویه <span className="text-xs font-normal">(۰ تومان)</span>
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <span>
                   {supplierDebtToUs > 0 
-                    ? '✨ قابل تهاتر مستقیم با کالا' 
+                    ? 'قابل تهاتر مستقیم با کالا' 
                     : ourDebtToSupplier > 0 
                       ? 'بدهی قبلی ما به شرکت' 
                       : 'حساب طرف‌حساب کاملاً صفر است'}
                 </span>
-                <span className="font-bold text-blue-600 dark:text-blue-400 font-mono text-[10px]">
+                <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[10px]">
                   {supplierDebtToUs > 0 ? 'طلبکاریم' : ourDebtToSupplier > 0 ? 'بدهکاریم' : 'صاف'}
                 </span>
               </div>
             </div>
 
             {/* Card 3: حداکثر سقف خرید بدون نسیه */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-teal-200/70 dark:border-teal-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-teal-700 dark:text-teal-400">سقف خرید بدون نسیه (نقدی و تهاتر)</span>
-                <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border border-teal-200/80 dark:border-teal-800">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">سقف خرید بدون نسیه</span>
+                <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-lg font-black text-teal-600 dark:text-teal-300 mt-3 dir-ltr text-right">
-                {formatPrice(maxNonCreditPurchasingPower)}
+              <div className="text-lg font-black text-slate-900 dark:text-white dir-ltr text-right">
+                {formatPrice(maxNonCreditPurchasingPower, false)} <span className="text-xs font-normal text-slate-500">تومان</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <span>{supplierDebtToUs > 0 ? 'نقدینگی کل + تهاتر طلب تامین‌کننده' : 'حداکثر خرید ۱۰۰٪ نقدی بدون ایجاد بدهی'}</span>
-                <span className="font-bold text-teal-600 dark:text-teal-400 text-[10px]">سقف امن</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span>{supplierDebtToUs > 0 ? 'نقدینگی کل + تهاتر طلب' : 'خرید نقدی بدون ایجاد بدهی'}</span>
+                <span className="font-bold text-slate-600 dark:text-slate-400 text-[10px]">سقف امن</span>
               </div>
             </div>
 
             {/* Card 4: ارزش فاکتور ورود جاری و مانده توان خرید */}
-            <div className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border ${
-              isPurchasingExceedingCash 
-                ? 'border-amber-200/80 dark:border-amber-900/50' 
-                : 'border-emerald-200/70 dark:border-emerald-900/40'
-            } shadow-xs relative overflow-hidden group hover:shadow-md transition-all`}>
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
                   فاکتور جاری ({toPersianDigits(items.length)} قلم)
                 </span>
-                <div className={`p-2 rounded-xl border ${
-                  isPurchasingExceedingCash
-                    ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border-amber-200/80 dark:border-amber-800'
-                    : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800'
-                }`}>
-                  {isPurchasingExceedingCash ? <AlertTriangle className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  {isPurchasingExceedingCash ? <AlertTriangle className="w-4 h-4 text-amber-600" /> : <TrendingUp className="w-4 h-4 text-emerald-600" />}
                 </div>
               </div>
-              <div className="text-lg font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-                {formatPrice(finalAmount)}
+              <div className="text-lg font-black text-slate-900 dark:text-white dir-ltr text-right">
+                {formatPrice(finalAmount, false)} <span className="text-xs font-normal text-slate-500">تومان</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
                 {!isPurchasingExceedingCash ? (
                   <>
                     <span className="text-slate-500">مانده سقف نقدی:</span>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {formatPrice(remainingNonCreditPurchasingPower)}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">⚠️ مازاد به نسیه:</span>
-                    <span className="font-black text-amber-600 dark:text-amber-400">
+                    <span className="text-slate-500 font-bold">مازاد به نسیه:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400">
                       {formatPrice(exceedingCreditAmount)}
                     </span>
                   </>
@@ -1624,30 +1616,22 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             </div>
           </div>
 
-          {/* Smart Analytical Narrative Banner with Gauge */}
-          <div className={`p-4 sm:p-5 rounded-3xl border transition-all ${
-            isPurchasingExceedingCash
-              ? 'bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-white dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900 border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-200'
-              : 'bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
-          }`}>
+          {/* Clean Executive Narrative Box */}
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-2xl shrink-0 ${
-                  isPurchasingExceedingCash
-                    ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400'
-                    : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400'
-                }`}>
-                  <Sparkles className="w-5 h-5" />
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-black text-xs sm:text-sm">
+                <div className="space-y-0.5">
+                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
                     {finalAmount === 0
                       ? 'راهنمای توان خرید و مدیریت ریسک نقدینگی'
                       : !isPurchasingExceedingCash
                         ? 'تراکنش ۱۰۰٪ نقدی و امن (در محدوده سقف نقدینگی)'
                         : 'هشدار ورود به نسیه و بدهی دفتری'}
                   </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-4xl">
                     {finalAmount === 0 ? (
                       <>
                         شما در حال حاضر <strong>{formatPrice(totalLiquidity)}</strong> نقدینگی حاضر (صندوق: {formatPrice(cashBalance)} | بانک: {formatPrice(bankBalance)}) دارید.
@@ -1670,21 +1654,19 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 self-stretch md:self-auto shrink-0 bg-white/90 dark:bg-slate-900/90 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                <div className="space-y-1 text-right">
+              <div className="flex items-center gap-3 self-stretch md:self-auto shrink-0 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="space-y-0.5 text-right">
                   <div className="text-[10px] text-slate-500 font-bold">مصرف سقف خرید بدون نسیه:</div>
                   <div className={`text-base font-black ${isPurchasingExceedingCash ? 'text-amber-600' : 'text-emerald-600'}`}>
                     %{toPersianDigits(purchaseCapacityPercent)}
                   </div>
                 </div>
-                <div className="w-20 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-20 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       isPurchasingExceedingCash
                         ? 'bg-amber-500'
-                        : purchaseCapacityPercent > 80
-                          ? 'bg-teal-500'
-                          : 'bg-emerald-500'
+                        : 'bg-emerald-500'
                     }`}
                     style={{ width: `${purchaseCapacityPercent}%` }}
                   />
@@ -1774,8 +1756,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               </div>
               <span>{invoiceType === 'purchase' ? 'مشخصات تامین‌کننده / فروشنده کالا' : 'مشخصات خریدار / طرف‌حساب'}</span>
               {unsettledPartyReturns.length > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800 flex items-center gap-1 animate-pulse">
-                  <RotateCcw className="w-3 h-3" />
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 flex items-center gap-1">
+                  <RotateCcw className="w-3 h-3 text-slate-500" />
                   <span>دارای {toPersianDigits(unsettledPartyReturns.length)} مرجوعی تسویه نشده</span>
                 </span>
               )}
@@ -2442,9 +2424,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         <span className="text-[10px] font-extrabold opacity-80">۳. مانده نهایی پس از ثبت فاکتور:</span>
                         <span className="font-black text-sm sm:text-base">
                           {custNewBal > 0 
-                            ? `${formatPrice(custNewBal)} تومان بدهکار به ما` 
+                            ? `${formatPrice(custNewBal, false)} تومان بدهکار به ما` 
                             : custNewBal < 0 
-                            ? `${formatPrice(Math.abs(custNewBal))} تومان بستانکار از ما` 
+                            ? `${formatPrice(Math.abs(custNewBal), false)} تومان بستانکار از ما` 
                             : 'تسویه کامل و بی‌حساب (۰ تومان)'}
                         </span>
                       </div>
@@ -2459,44 +2441,44 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
       {/* Intelligent Inward Sell-Through & Realized Profit Summary for Purchase Invoices (درصدی، تومانی، کارتنی، عددی) */}
       {invoiceType === 'purchase' && !isSecretMode && inwardSellThroughSummary && (
-        <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-emerald-950/40 border border-purple-200/80 dark:border-purple-800/80 rounded-3xl shadow-xs space-y-3">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                <Package className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                <Package className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
+                  <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                     وضعیت جامع فروش این فاکتور ورود کالا:
                   </span>
                   {inwardSellThroughSummary.isFullySold ? (
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1 shadow-xs">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>کاملاً فروخته شده (۱۰۰٪)</span>
                     </span>
                   ) : inwardSellThroughSummary.percentSold > 0 ? (
-                    <span className="px-2.5 py-1 rounded-xl bg-sky-100 dark:bg-sky-900/80 text-sky-900 dark:text-sky-200 font-black text-xs border border-sky-300 dark:border-sky-700">
-                      {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروخته شده • {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ باقیمانده در انبار
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                      {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروخته شده · {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ در انبار
                     </span>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs border border-slate-200 dark:border-slate-700">
-                      ۰٪ فروش (موجودی کامل دست‌نخورده در انبار)
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      ۰٪ فروش (موجودی کامل در انبار)
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  فروش‌رفته: {toPersianDigits(inwardSellThroughSummary.totalSoldPieces)} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces)} عدد کل اقلام فاکتور
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  فروش‌رفته: {toPersianDigits(inwardSellThroughSummary.totalSoldPieces)} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces)} عدد کل اقلام
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs px-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shrink-0">
+            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 shrink-0">
               <div className="text-right">
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                   سود قطعی حاصل از فروش:
                 </div>
-                <div className={`text-sm sm:text-base font-black ${inwardSellThroughSummary.totalRealizedProfit > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'} font-mono`}>
+                <div className={`text-sm sm:text-base font-black ${inwardSellThroughSummary.totalRealizedProfit > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'} font-mono`}>
                   {inwardSellThroughSummary.totalRealizedProfit > 0 ? `+${formatPrice(inwardSellThroughSummary.totalRealizedProfit)}` : '۰ تومان'}
                 </div>
               </div>
@@ -2514,26 +2496,26 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           </div>
 
           {/* 4 Pillars Breakdown in Editor */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs text-right pt-2 border-t border-purple-200/50 dark:border-purple-800/40">
-            <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-purple-100 dark:border-purple-900/50">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-right pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-[10px] text-slate-500 font-bold block">درصدی:</span>
-              <span className="font-mono font-black text-sky-700 dark:text-sky-300">{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-white">{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش</span>
               <span className="text-slate-400 mx-1">·</span>
-              <span className="font-mono text-amber-700 dark:text-amber-300">{toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ مانده</span>
+              <span className="font-mono text-slate-600 dark:text-slate-400">{toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ مانده</span>
             </div>
-            <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-purple-100 dark:border-purple-900/50">
+            <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-[10px] text-slate-500 font-bold block">کارتنی:</span>
               <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
-                فروش: {toPersianDigits(inwardSellThroughSummary.totalSoldCartons)} کارتن · مانده: {toPersianDigits(inwardSellThroughSummary.totalRemainingCartons)}
+                فروش: {toPersianDigits(inwardSellThroughSummary.totalSoldCartons)} · مانده: {toPersianDigits(inwardSellThroughSummary.totalRemainingCartons)}
               </span>
             </div>
-            <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-purple-100 dark:border-purple-900/50">
+            <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-[10px] text-slate-500 font-bold block">عددی:</span>
               <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
                 فروش: {toPersianDigits(inwardSellThroughSummary.totalSoldPieces)} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces)}
               </span>
             </div>
-            <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-purple-100 dark:border-purple-900/50">
+            <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-[10px] text-slate-500 font-bold block">ارزش تومانی:</span>
               <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
                 فروش: {formatPrice(inwardSellThroughSummary.totalSoldCost)}
@@ -2677,14 +2659,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   {!isSecretMode ? (
                     <>
                       {/* 1. ستون قیمت خرید (اول) */}
-                      <th className="py-3 px-3 text-center min-w-[145px] bg-amber-50/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border-x border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-center gap-1">
-                          <span>قیمت خرید (تومان)</span>
-                        </div>
+                      <th className="py-3 px-3 text-center min-w-[140px] text-slate-700 dark:text-slate-300">
+                        <span>قیمت خرید (تومان)</span>
                       </th>
 
                       {/* 2. ستون قیمت فروش (دوم) */}
-                      <th className="py-3 px-3 text-center min-w-[190px] bg-blue-50/60 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 border-r border-slate-200 dark:border-slate-800">
+                      <th className="py-3 px-3 text-center min-w-[180px] text-slate-700 dark:text-slate-300">
                         <div className="flex items-center justify-center gap-1.5">
                           <span>قیمت فروش (تومان)</span>
                           <PricePeekButton 
@@ -2696,10 +2676,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       </th>
 
                       {/* 3. ستون سود ردیف */}
-                      <th className="py-3 px-3 text-center min-w-[160px] bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 border-r border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-center gap-1">
-                          <span>سود ناخالص ردیف</span>
-                        </div>
+                      <th className="py-3 px-3 text-center min-w-[150px] text-slate-700 dark:text-slate-300">
+                        <span>سود ناخالص ردیف</span>
                       </th>
                     </>
                   ) : (
@@ -2882,7 +2860,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       {!isSecretMode ? (
                         <>
                           {/* 1. ستون قیمت خرید (اول) */}
-                          <td className="py-3.5 px-3 bg-amber-50/30 dark:bg-amber-950/10 border-x border-slate-200/60 dark:border-slate-800/60">
+                          <td className="py-3 px-3">
                             <div className="space-y-1 text-center">
                               {invoiceType === 'purchase' ? (
                                 <div className="flex items-center justify-center gap-1">
@@ -2893,7 +2871,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                       handleUpdateItem(item.id, { unitPurchasePrice: Math.max(0, cur - 1000) });
                                     }}
                                     title="کاهش ۱۰۰۰ تومان خرید"
-                                    className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-red-50 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                    className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
                                   >
                                     <ChevronDown className="w-3 h-3" />
                                   </button>
@@ -2905,7 +2883,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                       const val = Math.max(0, parseInt(e.target.value) || 0);
                                       handleUpdateItem(item.id, { unitPurchasePrice: val });
                                     }}
-                                    className="w-24 px-1.5 py-1 text-center font-black text-amber-900 dark:text-amber-200 bg-white dark:bg-slate-900 rounded-lg border border-amber-300 dark:border-amber-700/60 focus:ring-2 focus:ring-amber-500 text-xs"
+                                    className="w-24 px-1.5 py-1 text-center font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-slate-400 text-xs font-mono"
                                   />
                                   <button
                                     type="button"
@@ -2914,7 +2892,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                       handleUpdateItem(item.id, { unitPurchasePrice: cur + 1000 });
                                     }}
                                     title="افزایش ۱۰۰۰ تومان خرید"
-                                    className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                    className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
                                   >
                                     <ChevronUp className="w-3 h-3" />
                                   </button>
@@ -2928,11 +2906,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                       handleUpdateItem(item.id, { unitPurchasePrice: Math.max(0, cur - 500) });
                                     }}
                                     title="کاهش ۵۰۰ تومان قیمت خرید این قلم"
-                                    className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                    className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
                                   >
                                     <ChevronDown className="w-3 h-3" />
                                   </button>
-                                  <span className="font-extrabold text-amber-900 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/70 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-800 text-xs font-mono">
+                                  <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-xs font-mono">
                                     {formatPrice(item.unitPurchasePrice)}
                                   </span>
                                   <button
@@ -2942,35 +2920,35 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                       handleUpdateItem(item.id, { unitPurchasePrice: cur + 500 });
                                     }}
                                     title="افزایش ۵۰۰ تومان قیمت خرید این قلم"
-                                    className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
+                                    className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 cursor-pointer"
                                   >
                                     <ChevronUp className="w-3 h-3" />
                                   </button>
                                 </div>
                               )}
                               {ppc > 1 && (
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 block text-center font-mono">
+                                <span className="text-[10px] text-slate-400 block text-center font-mono">
                                   کارتن: {formatPrice(unitPur * ppc)}
                                 </span>
                               )}
                               {hasDiscount && effectiveDiscountPercent > 0 && (
-                                <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold block text-center font-mono bg-amber-100/70 dark:bg-amber-950/70 px-1.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-800 mt-1">
-                                  با {toPersianDigits(effectiveDiscountPercent)}٪ تخفیف: {formatPrice(Math.round(unitPur * (1 - effectiveDiscountPercent / 100)))}
+                                <span className="text-[10px] text-slate-500 font-bold block text-center font-mono">
+                                  تخفیف: {toPersianDigits(effectiveDiscountPercent)}٪ ({formatPrice(Math.round(unitPur * (1 - effectiveDiscountPercent / 100)))})
                                 </span>
                               )}
                             </div>
                           </td>
 
                           {/* 2. ستون قیمت فروش (دوم) */}
-                          <td className="py-3.5 px-3 bg-blue-50/30 dark:bg-blue-950/10 border-r border-slate-200/60 dark:border-slate-800/60">
-                            <div className="space-y-1.5 text-center">
+                          <td className="py-3 px-3">
+                            <div className="space-y-1 text-center">
                               {/* Price input + Stepper Buttons */}
                               <div className="flex items-center justify-center gap-1">
                                 <button
                                   type="button"
                                   onClick={() => stepPrice(item.id, -1000)}
                                   title="کاهش ۱۰۰۰ تومان"
-                                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
                                 >
                                   <ChevronDown className="w-3.5 h-3.5" />
                                 </button>
@@ -2982,13 +2960,13 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                     const val = Math.max(0, parseInt(e.target.value) || 0);
                                     handleUpdateItem(item.id, { unitSellingPrice: val });
                                   }}
-                                  className={`w-28 px-2 py-1.5 text-center font-extrabold text-blue-900 dark:text-blue-100 bg-white dark:bg-slate-900 rounded-lg border border-blue-200 dark:border-blue-800 focus:ring-2 ${theme.ring} focus:outline-none text-xs`}
+                                  className="w-28 px-2 py-1 text-center font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-slate-400 text-xs font-mono"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => stepPrice(item.id, 1000)}
                                   title="افزایش ۱۰۰۰ تومان"
-                                  className={`p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 ${theme.accentHoverBg} hover:text-emerald-700 dark:hover:text-emerald-400 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer`}
+                                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
                                 >
                                   <ChevronUp className="w-3.5 h-3.5" />
                                 </button>
@@ -3007,50 +2985,42 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => applyMarkupPercent(item.id, 10)}
-                                  className={`px-1.5 py-0.5 rounded ${theme.badgeBg} ${theme.primaryText} font-bold cursor-pointer`}
+                                  className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold cursor-pointer border border-slate-200 dark:border-slate-700"
                                 >
                                   +۱۰٪
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => applyMarkupPercent(item.id, 15)}
-                                  className={`px-1.5 py-0.5 rounded ${theme.badgeBg} ${theme.primaryText} font-bold cursor-pointer`}
+                                  className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold cursor-pointer border border-slate-200 dark:border-slate-700"
                                 >
                                   +۱۵٪
                                 </button>
                               </div>
 
                               {ppc > 1 && (
-                                <span className="text-[10px] text-blue-600 dark:text-blue-400 block text-center font-mono font-medium">
+                                <span className="text-[10px] text-slate-400 block text-center font-mono">
                                   کارتن: {formatPrice(unitSell * ppc)}
                                 </span>
                               )}
                               {hasDiscount && effectiveDiscountPercent > 0 && (
-                                <span className="text-[10px] text-sky-700 dark:text-sky-300 font-bold block text-center font-mono bg-sky-100/70 dark:bg-sky-950/70 px-1.5 py-0.5 rounded-md border border-sky-300 dark:border-sky-800 mt-1">
-                                  با {toPersianDigits(effectiveDiscountPercent)}٪ تخفیف: {formatPrice(Math.round(unitSell * (1 - effectiveDiscountPercent / 100)))}
+                                <span className="text-[10px] text-slate-500 font-bold block text-center font-mono">
+                                  تخفیف: {toPersianDigits(effectiveDiscountPercent)}٪ ({formatPrice(Math.round(unitSell * (1 - effectiveDiscountPercent / 100)))})
                                 </span>
                               )}
                             </div>
                           </td>
 
-                          {/* 3. ستون سود ردیف (تومان + مقیاس میلیون/هزار) */}
-                          <td className="py-3.5 px-3 bg-emerald-50/30 dark:bg-emerald-950/10 border-r border-slate-200/60 dark:border-slate-800/60">
-                            <div className="space-y-1 text-center">
-                              <div className={`inline-flex flex-col items-center justify-center p-1.5 rounded-xl border ${
-                                isLoss 
-                                  ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300' 
-                                  : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300'
-                              }`}>
-                                <div className="flex items-center justify-center gap-1 font-black text-xs font-mono">
-                                  <span>{isLoss ? `-` : `+`}{formatPrice(Math.abs(rowProfit))}</span>
-                                </div>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border border-current/20 mt-0.5 font-sans">
-                                  {isLoss ? 'زیان: ' : 'سود: '}{formatAmountScale(Math.abs(rowProfit))}
-                                </span>
+                          {/* 3. ستون سود ردیف */}
+                          <td className="py-3 px-3">
+                            <div className="space-y-0.5 text-center font-mono">
+                              <div className={`font-bold text-xs ${isLoss ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                <span>{isLoss ? '-' : '+'}{formatPrice(Math.abs(rowProfit))}</span>
                               </div>
-                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold flex items-center justify-center gap-1">
-                                <span>دانه: {isLoss ? '-' : '+'}{toPersianDigits(Math.abs(unitDiff).toLocaleString())} ت</span>
-                                <span className={`px-1 rounded font-mono ${isLoss ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                              <div className="text-[10px] text-slate-400 flex items-center justify-center gap-1 font-sans">
+                                <span>فی: {isLoss ? '-' : '+'}{formatPrice(Math.abs(unitDiff))}</span>
+                                <span>·</span>
+                                <span className={`font-bold font-mono ${isLoss ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                   {isLoss ? '' : '+'}{toPersianDigits(marginPct.toFixed(1))}٪
                                 </span>
                               </div>
@@ -3154,23 +3124,23 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
       {/* 🔄 SMART RETURN BARTER / OFFSET SECTION (تهاتر هوشمند مرجوعی تسویه نشده با فاکتور جاری) */}
       {unsettledPartyReturns.length > 0 && (
-        <div className="bg-gradient-to-r from-purple-50/90 via-indigo-50/70 to-blue-50/90 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 p-5 rounded-3xl border-2 border-purple-200/90 dark:border-purple-800/80 shadow-sm space-y-4 transition-all">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-purple-200/70 dark:border-purple-800/70">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4 transition-colors">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 shrink-0">
-                <RotateCcw className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+                <RotateCcw className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-black text-slate-900 dark:text-white text-sm">
-                    تهاتر هوشمند و کسر مرجوعی‌های تسویه نشده (دریافت جنس به‌جای مرجوعی)
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                    تهاتر و کسر مرجوعی‌های تسویه نشده (دریافت جنس به‌جای مرجوعی)
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-200/80 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {toPersianDigits(unsettledPartyReturns.length)} سند مرجوعی
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  این طرف‌حساب دارای کالای مرجوعی تسویه نشده است. با انتخاب آن‌ها، ارزش مرجوعی به عنوان دریافت جنس از مبلغ فاکتور کسر شده و پس از صدور، تسویه خواهد شد.
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  این طرف‌حساب دارای کالای مرجوعی تسویه نشده است. با انتخاب آن‌ها، ارزش مرجوعی به عنوان دریافت جنس از مبلغ فاکتور کسر می‌شود.
                 </p>
               </div>
             </div>
@@ -3179,7 +3149,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedOffsetReturnIds(unsettledPartyReturns.map(r => r.id))}
-                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>انتخاب همه جهت تهاتر</span>
@@ -3188,7 +3158,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedOffsetReturnIds([])}
-                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-purple-200 dark:border-purple-800 font-bold text-xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition-colors cursor-pointer"
                 >
                   لغو انتخاب
                 </button>
@@ -3200,7 +3170,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="text-slate-500 dark:text-slate-400 border-b border-purple-100 dark:border-purple-900/40 text-[11px]">
+                <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 text-[11px]">
                   <th className="pb-2 pr-2">انتخاب جهت تهاتر</th>
                   <th className="pb-2">کالای مرجوعی</th>
                   <th className="pb-2">نوع مرجوعی</th>
@@ -3209,7 +3179,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   <th className="pb-2 text-left pl-2">مبلغ خالص مرجوعی</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-purple-100/60 dark:divide-purple-900/30">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {unsettledPartyReturns.map((ret) => {
                   const isChecked = selectedOffsetReturnIds.includes(ret.id);
                   const retVal = ret.netAmount !== undefined ? ret.netAmount : ret.totalAmount;
@@ -3224,8 +3194,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       }}
                       className={`cursor-pointer transition-colors ${
                         isChecked 
-                          ? 'bg-purple-100/60 dark:bg-purple-900/30 font-semibold text-purple-950 dark:text-purple-100' 
-                          : 'hover:bg-purple-50/50 dark:hover:bg-purple-950/20 text-slate-700 dark:text-slate-300'
+                          ? 'bg-slate-100/80 dark:bg-slate-800/80 font-semibold text-slate-900 dark:text-white' 
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
                       }`}
                     >
                       <td className="py-2.5 pr-2">
@@ -3233,24 +3203,20 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {}} // handled by row onClick
-                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          className="w-4 h-4 rounded text-slate-900 focus:ring-slate-500 cursor-pointer"
                         />
                       </td>
                       <td className="py-2.5 font-bold">
                         <span>{ret.productName}</span>
                         {ret.reason && (
-                          <span className="text-[10px] block text-slate-500 dark:text-slate-400 font-normal">
+                          <span className="text-[10px] block text-slate-400 font-normal">
                             علت: {ret.reason}
                           </span>
                         )}
                       </td>
                       <td className="py-2.5">
-                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
-                          ret.type === 'to_supplier' 
-                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' 
-                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
-                        }`}>
-                          {ret.type === 'to_supplier' ? 'مرجوع شده به تامین‌کننده' : 'مرجوعی از مشتری'}
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {ret.type === 'to_supplier' ? 'مرجوعی به تامین‌کننده' : 'مرجوعی از مشتری'}
                         </span>
                       </td>
                       <td className="py-2.5">
@@ -3263,7 +3229,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       <td className="py-2.5 text-slate-500 dark:text-slate-400 text-[11px]">
                         {toPersianDigits(ret.date)}
                       </td>
-                      <td className="py-2.5 text-left pl-2 font-black text-purple-900 dark:text-purple-200 text-sm">
+                      <td className="py-2.5 text-left pl-2 font-mono font-bold text-slate-900 dark:text-white text-sm">
                         {formatPrice(retVal)}
                       </td>
                     </tr>
@@ -3275,12 +3241,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
           {/* Barter Status Summary */}
           {selectedOffsetReturnIds.length > 0 && (
-            <div className="pt-2 border-t border-purple-200/80 dark:border-purple-800/70 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-bold">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span className="flex items-center gap-1.5 flex-wrap">
                   <span>مبلغ کسر شده بابت {toPersianDigits(selectedOffsetReturnIds.length)} مرجوعی انتخابی:</span>
-                  <strong className="text-emerald-700 dark:text-emerald-300 text-base font-black tracking-normal">
+                  <strong className="text-emerald-600 dark:text-emerald-400 text-base font-bold font-mono">
                     {formatPrice(totalOffsetReturnsAmount)}
                   </strong>
                 </span>
@@ -3295,7 +3261,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     onShowAlert?.('توضیحات تهاتر در یادداشت فاکتور درج شد.', 'info', 'ثبت در یادداشت');
                   }
                 }}
-                className="px-2.5 py-1 rounded-xl bg-purple-100 dark:bg-purple-900/50 hover:bg-purple-200 dark:hover:bg-purple-800 text-purple-800 dark:text-purple-200 text-[11px] font-bold transition-colors cursor-pointer border border-purple-300 dark:border-purple-700 flex items-center gap-1"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1"
               >
                 <Pencil className="w-3 h-3" />
                 <span>درج خودکار توضیح تهاتر در توضیحات فاکتور</span>
@@ -3336,9 +3302,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             </div>
 
             {totalOffsetReturnsAmount > 0 && (
-              <div className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300 font-bold text-xs">
+              <div className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs">
                 <span className="flex items-center gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                   <span>کسر بابت تهاتر مرجوعی (دریافت جنس):</span>
                 </span>
                 <span className="font-black dir-ltr text-rose-600 dark:text-rose-400 text-sm">-{formatPrice(totalOffsetReturnsAmount)}</span>
@@ -3637,10 +3603,10 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
                             {/* Prominent High-Contrast Persian Words Banner */}
                             {exp.amount > 0 && (
-                              <div className="p-2.5 rounded-xl bg-gradient-to-r from-teal-50 via-emerald-50/60 to-white dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-900 border border-teal-200 dark:border-teal-800/80 text-xs flex items-center justify-between gap-2 flex-wrap">
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between gap-2 flex-wrap">
                                 <span className="text-slate-500 dark:text-slate-400 font-bold shrink-0">به حروف:</span>
-                                <span className="font-black text-teal-800 dark:text-teal-200 text-xs sm:text-sm leading-snug">
-                                  {numberToPersianWords(exp.amount)} تومان
+                                <span className="font-black text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-snug">
+                                  {numberToPersianWords(exp.amount)}
                                 </span>
                               </div>
                             )}
@@ -3794,14 +3760,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
             {/* Secret Profit Panel - For Sales and Purchase Invoices */}
             {invoiceType === 'sale' && !isSecretMode && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-900 text-emerald-950 dark:text-emerald-200 text-xs space-y-1.5">
+              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="font-semibold text-emerald-800 dark:text-emerald-300">کل بهای خرید اجناس:</span>
-                  <span className="font-bold">{formatPrice(totalPurchaseCost)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">کل بهای خرید اجناس:</span>
+                  <span className="font-bold font-mono">{formatPrice(totalPurchaseCost)}</span>
                 </div>
-                <div className="flex justify-between font-black text-emerald-900 dark:text-emerald-200 text-sm">
+                <div className="flex justify-between font-bold text-sm">
                   <span>سود خالص فاکتور:</span>
-                  <span>{formatPrice(totalProfit)} ({toPersianDigits(overallMargin.toFixed(1))}٪)</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono">+{formatPrice(totalProfit)} ({toPersianDigits(overallMargin.toFixed(1))}٪)</span>
                 </div>
               </div>
             )}
@@ -3826,24 +3792,24 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               const isLoss = estimatedProfit < 0;
 
               return (
-                <div className={`p-3.5 rounded-2xl border ${!isLoss ? 'bg-blue-50/90 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 text-blue-950 dark:text-blue-200' : 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-950 dark:text-rose-200'} text-xs space-y-2.5`}>
-                  <div className="flex justify-between items-center font-bold pb-2 border-b border-blue-200/70 dark:border-blue-800/70">
-                    <span className="text-blue-900 dark:text-blue-200 font-extrabold flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-xs space-y-2.5">
+                  <div className="flex justify-between items-center font-bold pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-800 dark:text-slate-200 font-bold flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4 text-slate-500" />
                       <span>ارزش پیش‌بینی فروش کل این بار خرید:</span>
                     </span>
-                    <span className="font-black font-mono text-sm sm:text-base text-blue-950 dark:text-blue-100">{formatPrice(estimatedSalesTotal)}</span>
+                    <span className="font-bold font-mono text-sm sm:text-base text-slate-900 dark:text-white">{formatPrice(estimatedSalesTotal)}</span>
                   </div>
 
                   {/* Itemized cost breakdown including discount, freight, deductions and additions */}
-                  <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 p-3 rounded-xl border border-blue-100 dark:border-blue-900/50">
+                  <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
                     <div className="flex justify-between">
                       <span>بهای ناخالص خرید اجناس:</span>
                       <span className="font-bold font-mono">{formatPrice(subtotal)}</span>
                     </div>
 
                     {hasDiscount && activeDiscountAmount > 0 && (
-                      <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold">
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
                         <span>تخفیف تامین‌کننده ({toPersianDigits(effectiveDiscountPercent)}٪):</span>
                         <span className="font-mono dir-ltr font-black">-{formatPrice(activeDiscountAmount)}</span>
                       </div>
@@ -3879,11 +3845,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center font-black text-sm pt-0.5">
-                    <span className={!isLoss ? 'text-emerald-900 dark:text-emerald-200' : 'text-rose-900 dark:text-rose-200'}>
+                  <div className="flex justify-between items-center font-bold text-sm pt-0.5">
+                    <span className={!isLoss ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
                       {!isLoss ? 'سود خالص احتمالی از فروش:' : 'زیان احتمالی فروش:'}
                     </span>
-                    <span className={`font-mono text-base ${!isLoss ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                    <span className={`font-mono text-base font-bold ${!isLoss ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                       {!isLoss ? `+${formatPrice(estimatedProfit)}` : `-${formatPrice(Math.abs(estimatedProfit))}`} ({toPersianDigits(estimatedMargin.toFixed(1))}٪)
                     </span>
                   </div>
@@ -5268,11 +5234,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 🚀 STICKY ACTION BAR FOR INVOICE SUBMISSION & INSTANT CONTROLS (CENTERED IN EDITOR) */}
-      <div className="sticky bottom-4 z-40 w-full mt-8">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/15 dark:shadow-black/60 flex flex-wrap items-center justify-between gap-3 transition-all">
+      {/* 🚀 FIXED FLOATING ACTION DOCK FOR INVOICE SUBMISSION & INSTANT CONTROLS (CENTERED IN VIEWPORT) */}
+      <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl transition-all">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.18)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.7)] flex flex-wrap items-center justify-between gap-3">
           {/* Summary & Live KPIs */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {/* Items count badge */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
               <Package className={`w-4 h-4 ${theme.activeIcon}`} />
@@ -5303,7 +5269,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
               <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
-                {formatPrice(finalAmount)}
+                {formatPrice(finalAmount, false)}
               </span>
               <span className="text-[10px] text-slate-400">تومان</span>
             </div>
@@ -5325,7 +5291,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
             >
               انصراف
             </button>
@@ -5347,7 +5313,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               id="floating-save-final-btn"
               type="button"
               onClick={() => handleSaveInvoice(false)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
+              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
               title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
             >
               <Save className="w-4 h-4" />

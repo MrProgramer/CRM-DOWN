@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
+  UnifiedMasterCommercialTemplate,
   PrintModernMonoTemplate, 
   GraphicSwissTemplate, 
   GraphicFintechTemplate, 
@@ -132,6 +133,9 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   const [fixedMarkupPerUnit, setFixedMarkupPerUnit] = useState<number>(1000);
   const [customItemUnitPrices, setCustomItemUnitPrices] = useState<{ [itemKey: string]: number }>({});
   const [isPresentationPanelOpen, setIsPresentationPanelOpen] = useState<boolean>(false);
+
+  // Toggle to show profit/loss in preview on screen (when prices are in normal display mode)
+  const [showProfitMode, setShowProfitMode] = useState<boolean>(false);
 
   // Toggle to include profit/loss rows in print and image exports
   const [includeProfitInExport, setIncludeProfitInExport] = useState<boolean>(false);
@@ -571,19 +575,87 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         ? Math.round(displayLineTotal * (1 - (invDiscountPercent / 100)))
         : displayLineTotal;
 
-      // Profit / loss calculation for item
-      const unitPurchasePrice = item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0
+      // Profit / loss calculation for item (Both for purchase and sales invoices)
+      const prodPurchase = prod?.purchasePrice || (item.totalPurchaseCost && item.totalPieces ? Math.round(item.totalPurchaseCost / item.totalPieces) : 0);
+      let unitPurchasePrice = (item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0)
         ? item.unitPurchasePrice
-        : (prod?.purchasePrice || (item.totalPurchaseCost && item.totalPieces ? Math.round(item.totalPurchaseCost / item.totalPieces) : 0));
+        : (prodPurchase > 0 ? prodPurchase : (isPurchase ? (discountedUnitPrice || displayUnitPrice) : 0));
 
-      const effectiveSellingUnitPrice = discountedUnitPrice || displayUnitPrice;
-      const effectiveSellingLineTotal = discountedLineTotal || displayLineTotal;
-      const unitProfit = effectiveSellingUnitPrice - unitPurchasePrice;
-      const totalCostForLine = unitPurchasePrice * item.totalPieces;
-      const totalProfit = effectiveSellingLineTotal - totalCostForLine;
-      const profitMarginPercent = totalCostForLine > 0 
-        ? Math.round((totalProfit / totalCostForLine) * 100 * 10) / 10 
-        : 0;
+      // Fallback: search past purchase invoices if unitPurchasePrice is still 0 (taking past supplier discounts into account)
+      if (unitPurchasePrice <= 0 && invoices && invoices.length > 0) {
+        for (const pastInv of invoices) {
+          if (pastInv.type === 'purchase' && !pastInv.isDraft && pastInv.items) {
+            const pastItem = pastInv.items.find(pi =>
+              (pi.productId && pi.productId === item.productId) ||
+              (pi.productName && item.productName && pi.productName.trim().toLowerCase() === item.productName.trim().toLowerCase())
+            );
+            if (pastItem) {
+              const hasPastDiscount = Boolean(pastInv.hasDiscount || (pastInv.discount && pastInv.discount > 0));
+              const pastGrossSubtotal = (pastInv.items || []).reduce((s, it) => s + (it.totalPrice || (it.totalPieces * (it.unitPurchasePrice || it.unitPrice || 0))), 0);
+              const pastDiscountPercent = pastInv.discountPercent || (pastGrossSubtotal > 0 && pastInv.discount ? (pastInv.discount / pastGrossSubtotal) * 100 : 0);
+              let pp = pastItem.unitPurchasePrice || (pastItem.totalPieces > 0 ? Math.round(pastItem.totalPrice / pastItem.totalPieces) : pastItem.unitPrice);
+              if (pp && pp > 0) {
+                if (hasPastDiscount && pastDiscountPercent > 0) {
+                  pp = Math.round(pp * (1 - (pastDiscountPercent / 100)));
+                }
+                unitPurchasePrice = pp;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      const prodSelling = prod?.sellingPrice || item.unitSellingPrice || (item as any).sellingPrice || 0;
+      let resolvedSelling = prodSelling;
+
+      // Fallback: search past sales invoices if selling price is 0
+      if (resolvedSelling <= 0 && invoices && invoices.length > 0) {
+        for (const pastInv of invoices) {
+          if (pastInv.type !== 'purchase' && pastInv.items) {
+            const pastItem = pastInv.items.find(pi =>
+              (pi.productId && pi.productId === item.productId) ||
+              (pi.productName && item.productName && pi.productName.trim().toLowerCase() === item.productName.trim().toLowerCase())
+            );
+            if (pastItem) {
+              const sp = pastItem.unitSellingPrice || (pastItem.totalPieces > 0 ? Math.round(pastItem.totalPrice / pastItem.totalPieces) : pastItem.unitPrice);
+              if (sp && sp > 0) {
+                resolvedSelling = sp;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      const unitSellingPrice = isPurchase
+        ? (isPresentationModeActive ? displayUnitPrice : (resolvedSelling > 0 ? resolvedSelling : displayUnitPrice))
+        : (discountedUnitPrice || displayUnitPrice);
+
+      let unitProfit = 0;
+      let totalProfit = 0;
+      let profitMarginPercent = 0;
+
+      if (isPurchase) {
+        // In purchase (ورود) invoice: profit is the expected margin between warehouse selling price and effective discounted purchase cost
+        const purchaseCost = discountedUnitPrice || displayUnitPrice || unitPurchasePrice;
+        if (unitSellingPrice > 0 && purchaseCost > 0) {
+          unitProfit = unitSellingPrice - purchaseCost;
+          totalProfit = unitProfit * item.totalPieces;
+          profitMarginPercent = Math.round((unitProfit / purchaseCost) * 100 * 10) / 10;
+        }
+      } else {
+        // In sales (فروش) invoice: profit is effective selling price minus purchase cost (which accounts for supplier discount)
+        const effectiveSellingUnitPrice = discountedUnitPrice || displayUnitPrice;
+        const effectiveSellingLineTotal = discountedLineTotal || displayLineTotal;
+        unitProfit = effectiveSellingUnitPrice - unitPurchasePrice;
+        const totalCostForLine = unitPurchasePrice * item.totalPieces;
+        totalProfit = effectiveSellingLineTotal - totalCostForLine;
+        profitMarginPercent = totalCostForLine > 0 
+          ? Math.round((totalProfit / totalCostForLine) * 100 * 10) / 10 
+          : 0;
+      }
+
       const isProfit = totalProfit > 0;
       const isLoss = totalProfit < 0;
 
@@ -609,6 +681,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         discountedUnitPrice,
         discountedLineTotal,
         unitPurchasePrice,
+        unitSellingPrice,
         unitProfit,
         totalProfit,
         profitMarginPercent,
@@ -616,18 +689,21 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         isLoss,
       };
     });
-  }, [invoice.items, products, matchedReturns, isPresentationModeActive, presentationModeType, markupPercent, fixedMarkupPerUnit, customItemUnitPrices, hasInvDiscount, invDiscountPercent]);
+  }, [invoice.items, products, matchedReturns, isPresentationModeActive, presentationModeType, markupPercent, fixedMarkupPerUnit, customItemUnitPrices, hasInvDiscount, invDiscountPercent, isPurchase, invoices]);
 
   const isExporting = isExportingImage || isExportingPDF || isCopyingScreenshot;
-  const shouldShowProfitUnderItems = !isSecretMode && !settings.hideConfidentialPrices && (!isExporting || includeProfitInExport);
+  const shouldShowProfitUnderItems = showProfitMode && !isPresentationModeActive && !isSecretMode && (!isExporting || includeProfitInExport);
 
   const totalInvoiceProfit = useMemo(() => {
     return processedItems.reduce((sum, item) => sum + (item.totalProfit || 0), 0);
   }, [processedItems]);
 
   const totalInvoiceCost = useMemo(() => {
-    return processedItems.reduce((sum, item) => sum + ((item.unitPurchasePrice || 0) * item.item.totalPieces), 0);
-  }, [processedItems]);
+    return processedItems.reduce((sum, item) => {
+      const lineCost = isPurchase ? (item.displayUnitPrice || item.unitPurchasePrice || 0) : (item.unitPurchasePrice || 0);
+      return sum + (lineCost * item.item.totalPieces);
+    }, 0);
+  }, [processedItems, isPurchase]);
 
   const totalInvoiceProfitMargin = useMemo(() => {
     return totalInvoiceCost > 0 ? Math.round((totalInvoiceProfit / totalInvoiceCost) * 100 * 10) / 10 : 0;
@@ -804,19 +880,37 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             </button>
           )}
 
-          {/* Export Profit/Loss Include Checkbox Toggle */}
+          {/* Profit / Loss Display Mode Toggle Button */}
           {!isSecretMode && (
+            <button
+              type="button"
+              id="invoice-toggle-profit-mode-btn"
+              onClick={() => setShowProfitMode(!showProfitMode)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                showProfitMode
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`}
+              title="نمایش یا عدم نمایش سود و حاشیه سود اقلام و کل فاکتور"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>{showProfitMode ? 'نمایش سود: فعال' : 'نمایش سود'}</span>
+            </button>
+          )}
+
+          {/* Export Profit/Loss Include Checkbox Toggle */}
+          {showProfitMode && !isSecretMode && (
             <label 
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer select-none transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer select-none transition-colors"
               title="در صورت فعال بودن، سود و زیان اقلام و جمع کل سود در چاپ، عکس و خروجی PDF نیز نمایش داده می‌شود"
             >
               <input
                 type="checkbox"
                 checked={includeProfitInExport}
                 onChange={(e) => setIncludeProfitInExport(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
-              <span>نمایش سود/زیان در چاپ و عکس</span>
+              <span>در چاپ و عکس</span>
             </label>
           )}
 
@@ -1387,15 +1481,11 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
       {/* ========================================================================= */}
       <div 
         id="invoice-paper"
-        className={`invoice-paper-container invoice-scalable-view relative rounded-xl border p-6 sm:p-10 overflow-hidden transition-colors ${
-          templateMode === 'print_mono'
-            ? 'bg-white text-black border-slate-300 shadow-none'
-            : isDarkCanvas 
-            ? 'bg-[#0b0f19] text-slate-100 border-slate-800/90 shadow-none' 
-            : 'bg-white text-slate-900 border-slate-200 shadow-none'
-        } print:p-0 print:border-none print:shadow-none ${
-          templateMode === 'print_mono' ? 'print:bg-white print:text-black' : ''
-        }`}
+        className={`invoice-paper-container invoice-scalable-view relative rounded-3xl border p-6 sm:p-10 overflow-hidden transition-colors ${
+          isDarkCanvas 
+            ? 'bg-[#0b0f19] text-slate-100 border-slate-800 shadow-sm' 
+            : 'bg-white text-slate-900 border-slate-200/90 shadow-sm'
+        } print:p-0 print:border-none print:shadow-none print:bg-white print:text-slate-900`}
         style={{ minHeight: '297mm', fontFamily: "var(--app-font-family)" }}
       >
         {/* Subtle Watermark */}
@@ -1409,7 +1499,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
           >
             <span 
               className={`font-black tracking-widest text-center whitespace-normal max-w-2xl block leading-snug ${
-                templateMode === 'print_mono' ? 'text-black' : (isDarkCanvas ? 'text-slate-100' : 'text-slate-900')
+                isDarkCanvas ? 'text-slate-100' : 'text-slate-900'
               } print:text-slate-900`}
               style={{ fontSize: `${settings.watermarkFontSize || 54}px` }}
             >
@@ -1424,16 +1514,15 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.06] -rotate-45"
             style={{ zIndex: 1 }}
           >
-            <span className={`text-[100px] font-black ${templateMode === 'print_mono' ? 'text-black' : 'text-amber-500'} tracking-widest whitespace-nowrap`}>
+            <span className="text-[100px] font-black text-amber-500 tracking-widest whitespace-nowrap">
               پیش‌نویس
             </span>
           </div>
         )}
 
         <div className="relative z-10">
-          {templateMode === 'print_mono' && <PrintModernMonoTemplate {...templateProps} />}
-          {(templateMode === 'graphic_swiss' || templateMode === 'graphic_minimal') && (
-            <GraphicSwissTemplate {...templateProps} />
+          {(templateMode === 'print_mono' || templateMode === 'graphic_swiss' || templateMode === 'graphic_minimal') && (
+            <UnifiedMasterCommercialTemplate {...templateProps} />
           )}
           {(templateMode === 'graphic_fintech' || templateMode === 'graphic_nordic') && (
             <GraphicFintechTemplate {...templateProps} />

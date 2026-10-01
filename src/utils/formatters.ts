@@ -227,9 +227,9 @@ const tens = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'ه�
 const hundreds = ['', 'یکصد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
 const thousands = ['', 'هزار', 'میلیون', 'میلیارد', 'تریلیون'];
 
-export function numberToPersianWords(num: number): string {
-  if (num === 0) return 'صفر';
-  if (num < 0) return 'منفی ' + numberToPersianWords(Math.abs(num));
+export function numberToPersianWords(num: number, includeCurrency: boolean = true): string {
+  if (num === 0 || isNaN(num)) return includeCurrency ? 'صفر تومان' : 'صفر';
+  if (num < 0) return 'منفی ' + numberToPersianWords(Math.abs(num), includeCurrency);
 
   function processGroup(n: number): string {
     const parts: string[] = [];
@@ -262,7 +262,8 @@ export function numberToPersianWords(num: number): string {
     groupIndex++;
   }
 
-  return groups.join(' و ') + ' تومان';
+  const words = groups.join(' و ');
+  return includeCurrency ? `${words} تومان` : words;
 }
 
 /**
