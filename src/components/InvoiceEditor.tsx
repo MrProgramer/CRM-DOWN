@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Invoice, 
   InvoiceItem, 
@@ -112,6 +112,7 @@ interface InvoiceEditorProps {
   invoices?: Invoice[];
   payments?: CustomerPayment[];
   productReturns?: ProductReturn[];
+  isSidebarCollapsed?: boolean;
 }
 
 export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
@@ -130,6 +131,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   invoices = [],
   payments = [],
   productReturns = [],
+  isSidebarCollapsed = false,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
 
@@ -1344,6 +1346,46 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     onSave(newInvoice, pendingNewProducts);
   };
 
+  // Smart scroll detection for floating action dock
+  const topHeaderRef = useRef<HTMLDivElement>(null);
+  const bottomBarRef = useRef<HTMLDivElement>(null);
+  const [showFloatingDock, setShowFloatingDock] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      let isTopOut = false;
+      let isBottomIn = false;
+
+      if (topHeaderRef.current) {
+        const topRect = topHeaderRef.current.getBoundingClientRect();
+        isTopOut = topRect.bottom < 80 || window.scrollY > 100;
+      } else {
+        isTopOut = window.scrollY > 100;
+      }
+
+      if (bottomBarRef.current) {
+        const bottomRect = bottomBarRef.current.getBoundingClientRect();
+        isBottomIn = bottomRect.top < window.innerHeight - 30;
+      }
+
+      setShowFloatingDock(isTopOut && !isBottomIn);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    
+    // Also listen to any scrollable parent elements
+    const scrollContainers = document.querySelectorAll('.overflow-y-auto, main, #app');
+    scrollContainers.forEach(el => el.addEventListener('scroll', handleScroll, { passive: true, capture: true }));
+
+    handleScroll();
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+      document.removeEventListener('scroll', handleScroll, { capture: true });
+      scrollContainers.forEach(el => el.removeEventListener('scroll', handleScroll, { capture: true }));
+    };
+  }, []);
+
   // Filter products in picker
   const filteredProducts = currentProductsList.filter(p => {
     if (hideZeroStock && p.stockPieces <= 0) return false;
@@ -1353,9 +1395,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   });
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-36 space-y-6">
+    <div className="w-full max-w-6xl mx-auto pb-10 space-y-6">
       {/* Header bar */}
-      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-5 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
+      <div ref={topHeaderRef} className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-5 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
           <button
             id="editor-cancel-back-btn"
@@ -5234,9 +5276,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 🚀 FIXED FLOATING ACTION DOCK FOR INVOICE SUBMISSION & INSTANT CONTROLS (CENTERED IN VIEWPORT) */}
-      <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl transition-all">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.18)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.7)] flex flex-wrap items-center justify-between gap-3">
+      {/* Natural Bottom Action Bar at end of form */}
+      <div ref={bottomBarRef} className="w-full mt-6">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/50 flex flex-wrap items-center justify-between gap-3 transition-all">
           {/* Summary & Live KPIs */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Items count badge */}
@@ -5298,7 +5340,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
             {/* Draft Button */}
             <button
-              id="floating-save-draft-btn"
+              id="save-draft-btn-bottom"
               type="button"
               onClick={() => handleSaveInvoice(true)}
               className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
@@ -5308,9 +5350,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               <span>پیش‌نویس</span>
             </button>
 
-            {/* Final Submit Button (Prominent Floating Primary) */}
+            {/* Final Submit Button */}
             <button
-              id="floating-save-final-btn"
+              id="save-final-btn-bottom"
               type="button"
               onClick={() => handleSaveInvoice(false)}
               className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
@@ -5322,6 +5364,103 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 🚀 SMART SCROLL FLOATING ACTION DOCK (APPEARS ONLY WHEN TOP HEADER BUTTONS ARE SCROLLED PAST) */}
+      <AnimatePresence>
+        {showFloatingDock && (
+          <div className={`fixed bottom-4 left-0 ${isSidebarCollapsed ? 'lg:right-20' : 'lg:right-64'} z-50 pointer-events-none px-3 sm:px-6 transition-all duration-300`}>
+            <div className="max-w-6xl mx-auto pointer-events-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 25, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 25, scale: 0.96 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] flex flex-wrap items-center justify-between gap-3"
+              >
+                {/* Summary & Live KPIs */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Items count badge */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <Package className={`w-4 h-4 ${theme.activeIcon}`} />
+                    <span className="font-black text-slate-900 dark:text-white">{toPersianDigits(items.length)}</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">قلم کالا</span>
+                  </div>
+
+                  {/* Invoice Type Badge */}
+                  <div className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs font-black text-white ${
+                    invoiceType === 'purchase' ? 'bg-indigo-600' : theme.primary
+                  }`}>
+                    {invoiceType === 'purchase' ? '📦 ورود کالا (خرید)' : '🧾 مشتری (فروش)'}
+                  </div>
+
+                  {/* Customer Pill */}
+                  {customerName && (
+                    <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
+                      <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{customerName}</span>
+                    </div>
+                  )}
+
+                  {/* Final Payable Amount */}
+                  <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
+                    <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
+                      {formatPrice(finalAmount, false)}
+                    </span>
+                    <span className="text-[10px] text-slate-400">تومان</span>
+                  </div>
+                </div>
+
+                {/* Quick Action Buttons */}
+                <div className="flex items-center gap-2 mr-auto flex-wrap">
+                  {/* Scroll to Top */}
+                  <button
+                    type="button"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                    title="بازگشت به ابتدای فرم"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+
+                  {/* Cancel Button */}
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                  >
+                    انصراف
+                  </button>
+
+                  {/* Draft Button */}
+                  <button
+                    id="floating-dock-save-draft-btn"
+                    type="button"
+                    onClick={() => handleSaveInvoice(true)}
+                    className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
+                    title="ذخیره پیش‌نویس بدون کسر انبار"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>پیش‌نویس</span>
+                  </button>
+
+                  {/* Final Submit Button */}
+                  <button
+                    id="floating-dock-save-final-btn"
+                    type="button"
+                    onClick={() => handleSaveInvoice(false)}
+                    className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
+                    title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>ثبت نهایی فاکتور</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

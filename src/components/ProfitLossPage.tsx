@@ -1628,18 +1628,18 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
         {/* TAB 2: PURCHASE INVOICES PROFITABILITY (INWARD GOODS COMPACT & CLEAN) */}
         {activeTab === 'purchases' && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11px] select-none">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-right text-[11px] border-collapse table-auto">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[10.5px] select-none">
                 <tr>
                   <SortableTableHeader
                     field="invoiceNumber"
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    className="py-2.5 px-3 w-28"
+                    className="py-2 px-1.5 whitespace-nowrap"
                   >
-                    سند و تاریخ
+                    سند / تاریخ
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1647,7 +1647,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    className="py-2.5 px-3 min-w-[120px]"
+                    className="py-2 px-1.5"
                   >
                     تأمین‌کننده
                   </SortableTableHeader>
@@ -1658,9 +1658,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="py-2.5 px-3 text-left min-w-[130px]"
+                    className="py-2 px-1.5 text-left whitespace-nowrap"
                   >
-                    بهای تمام‌شده خرید
+                    بهای خرید
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1669,7 +1669,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="py-2.5 px-3 text-left min-w-[110px]"
+                    className="py-2 px-1.5 text-left whitespace-nowrap"
                   >
                     ارزش فروش
                   </SortableTableHeader>
@@ -1680,7 +1680,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="left"
-                    className="py-2.5 px-3 text-left min-w-[110px]"
+                    className="py-2 px-1.5 text-left whitespace-nowrap"
                   >
                     سود برآوردی
                   </SortableTableHeader>
@@ -1691,18 +1691,18 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="center"
-                    className="py-2.5 px-2 text-center w-24"
+                    className="py-2 px-1 text-center whitespace-nowrap"
                   >
                     مارک‌آپ
                   </SortableTableHeader>
 
-                  <th className="py-2.5 px-3 text-center w-36">عملیات</th>
+                  <th className="py-2 px-1.5 text-center whitespace-nowrap">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedPurchaseInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="p-6 text-center text-slate-400 font-medium">
                       هیچ فاکتور ورودی کالا در این بازه یافت نشد.
                     </td>
                   </tr>
@@ -1710,78 +1710,77 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   paginatedPurchaseInvoices.map((inv, idx) => (
                     <tr key={`profit-pur-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors">
                       {/* 1. Number & Date */}
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs text-amber-900 dark:text-amber-200 font-black px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800">
-                            #{toPersianDigits(inv.invoiceNumber)}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                      <td className="py-2 px-1.5 whitespace-nowrap">
+                        <span className="font-mono text-[10.5px] text-amber-900 dark:text-amber-200 font-black px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 inline-block">
+                          #{toPersianDigits(inv.invoiceNumber)}
+                        </span>
+                        <div className="text-[9.5px] text-slate-400 font-mono">
                           {toPersianDigits(inv.date)}
                         </div>
                       </td>
 
                       {/* 2. Supplier */}
-                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
-                        <div className="truncate max-w-[140px]" title={inv.customerName}>
+                      <td className="py-2 px-1.5 font-bold text-slate-900 dark:text-white">
+                        <div className="truncate max-w-[110px]" title={inv.customerName}>
                           {inv.customerName}
                         </div>
-                        <span className="text-[9.5px] text-slate-400 font-normal">ورود به انبار</span>
                       </td>
 
                       {/* 3. Cost (with compact freight & discount info) */}
-                      <td className="py-2.5 px-3 text-left dir-ltr">
-                        <div className="font-black text-slate-900 dark:text-white text-xs">
+                      <td className="py-2 px-1.5 text-left dir-ltr whitespace-nowrap">
+                        <div className="font-black text-slate-900 dark:text-white text-[11px]">
                           {isSecretMode ? '••••••' : formatPrice(inv.netPurchaseCost)}
                         </div>
-                        <div className="flex items-center gap-1 mt-0.5 dir-rtl flex-wrap">
-                          {inv.totalExpensesAmount > 0 && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold border border-teal-200 dark:border-teal-800">
-                              +کرایه {formatPrice(inv.totalExpensesAmount)}
-                            </span>
-                          )}
-                          {inv.hasDiscount && inv.discountAmount > 0 && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
-                              تخفیف {toPersianDigits(inv.discountPercent.toFixed(0))}٪
-                            </span>
-                          )}
-                        </div>
+                        {(inv.totalExpensesAmount > 0 || (inv.hasDiscount && inv.discountAmount > 0)) && (
+                          <div className="flex items-center gap-1 mt-0.2 dir-rtl flex-wrap">
+                            {inv.totalExpensesAmount > 0 && (
+                              <span className="text-[8.5px] px-0.8 py-0.1 rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold border border-teal-200 dark:border-teal-800">
+                                +حمل
+                              </span>
+                            )}
+                            {inv.hasDiscount && inv.discountAmount > 0 && (
+                              <span className="text-[8.5px] px-0.8 py-0.1 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
+                                -تخفیف
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* 4. Projected Sales */}
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr text-xs">
+                      <td className="py-2 px-1.5 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr text-[11px] whitespace-nowrap">
                         {isSecretMode ? '••••••' : formatPrice(inv.totalProjectedSalesValue)}
                       </td>
 
                       {/* 5. Projected Profit */}
-                      <td className="py-2.5 px-3 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr text-xs">
+                      <td className="py-2 px-1.5 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr text-[11px] whitespace-nowrap">
                         {isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}
                       </td>
 
                       {/* 6. Markup */}
-                      <td className="py-2.5 px-2 text-center">
-                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10.5px] border border-emerald-200 dark:border-emerald-800 font-mono">
-                          {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(1))}٪`}
+                      <td className="py-2 px-1 text-center whitespace-nowrap">
+                        <span className="px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800 font-mono">
+                          {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(0))}٪`}
                         </span>
                       </td>
 
                       {/* 7. Actions */}
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2 px-1.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setSelectedInvoiceForDetail(inv)}
-                            className="px-2 py-1 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200 hover:opacity-85 rounded-lg text-[11px] font-bold transition-all cursor-pointer border border-amber-300 dark:border-amber-800 shadow-2xs flex items-center gap-1"
+                            className="px-1.5 py-0.5 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200 hover:opacity-85 rounded-md text-[10px] font-bold transition-all cursor-pointer border border-amber-300 dark:border-amber-800 shadow-2xs flex items-center gap-0.5"
                             title="محاسبه دقیق اقلام در همین صفحه"
                           >
-                            <Calculator className="w-3 h-3" />
+                            <Calculator className="w-2.5 h-2.5" />
                             <span>اقلام</span>
                           </button>
                           <button
                             onClick={() => onViewInvoice(inv)}
-                            className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+                            className="p-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
                             title="مشاهده فاکتور خرید"
                           >
-                            <ArrowUpRight className="w-3.5 h-3.5" />
+                            <ArrowUpRight className="w-3 h-3" />
                           </button>
                         </div>
                       </td>

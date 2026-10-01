@@ -2914,6 +2914,7 @@ export default function App() {
                 payments={payments}
                 productReturns={productReturns}
                 onCancel={handleInvoiceEditorCancel}
+                isSidebarCollapsed={isSidebarCollapsed}
               />
             </motion.div>
           )}
