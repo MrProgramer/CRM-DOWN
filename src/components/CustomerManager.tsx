@@ -1088,7 +1088,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
         
         {/* Stat 1: کل مشتریان */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-blue-700 dark:text-blue-400">تعداد کل طرف‌حساب‌ها</span>
             <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
@@ -1107,7 +1107,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
         </div>
 
         {/* Stat 2: مطالبات (بدهکاران) */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-rose-700 dark:text-rose-400">کل مطالبات بازرگانی (نسیه)</span>
             <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
@@ -1126,7 +1126,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
         </div>
 
         {/* Stat 3: مجموع دریافتی‌ها */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">مجموع واریزی‌های ثبت‌شده</span>
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
@@ -1145,7 +1145,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
         </div>
 
         {/* Stat 4: بستانکاران */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-amber-200/70 dark:border-amber-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-amber-200/70 dark:border-amber-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-700 dark:text-amber-400">پیش‌پرداخت (بستانکاران)</span>
             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800">
@@ -1166,7 +1166,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3.5 transition-colors no-print">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3.5 transition-colors no-print">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3.5">
           <div className="relative w-full md:w-96">
             <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
@@ -1316,7 +1316,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
 
       {/* 4. Customer Cards Grid */}
       {sortedCustomers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3 no-print">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3 no-print">
           <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-950 text-slate-400 mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-800">
             <Users className="w-6 h-6" />
           </div>
@@ -1798,7 +1798,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
             >
               {/* Header */}
               <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
@@ -2003,7 +2003,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5"
+                    className={`px-5 py-2 rounded-xl ${theme.primary} ${theme.primaryHover} text-white text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5`}
                   >
                     <Check className="w-4 h-4" />
                     <span>تایید و ثبت دریافتی</span>
@@ -2026,7 +2026,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
             >
               {/* Header */}
               <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
@@ -2314,7 +2314,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
             >
               <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
                 <div className="flex items-center gap-2.5">
@@ -2507,7 +2507,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
+              className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
             >
               <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center border border-rose-100 dark:border-rose-900">
                 <Trash2 className="w-6 h-6" />
@@ -2550,7 +2550,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
+              className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4"
             >
               <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center border border-rose-100 dark:border-rose-900">
                 <Trash2 className="w-6 h-6" />
@@ -2593,7 +2593,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
+              className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
             >
               {/* Modal Header Bar */}
               <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60 shrink-0">
@@ -2746,7 +2746,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                 {/* Printable / Capturable Shot Card Container */}
                 <div 
                   id="customer-statement-shot-card"
-                  className={`p-6 sm:p-7 rounded-3xl border space-y-4 w-full max-w-md mx-auto relative overflow-hidden transition-all duration-200 ${
+                  className={`p-6 sm:p-7 rounded-xl border space-y-4 w-full max-w-md mx-auto relative overflow-hidden transition-all duration-200 ${
                     shotThemeMode === 'day'
                       ? 'bg-white text-slate-900 border-slate-200/90 shadow-xl shadow-slate-100/80'
                       : 'bg-slate-950 text-slate-100 border-slate-800 shadow-2xl shadow-black/80'
@@ -3220,7 +3220,7 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
                           setTimeout(() => setCopiedText(false), 2500);
                         }
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xs transition-all cursor-pointer"
+                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs shadow-xs transition-all cursor-pointer`}
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span>اشتراک‌گذاری</span>
@@ -3253,7 +3253,7 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 text-right max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white dark:bg-slate-900 rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 text-right max-h-[90vh] flex flex-col overflow-hidden"
                 dir="rtl"
               >
                 {/* Header */}
@@ -3462,12 +3462,12 @@ ${shotFilterType === 'invoices' ? `🔍 فقط فاکتورها` : shotFilterTyp
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
+                className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
               >
                 {/* Modal Header Bar */}
-                <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-emerald-50/80 dark:bg-emerald-950/40 shrink-0">
+                <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/80 shrink-0">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-xs">
+                    <div className={`p-2.5 rounded-2xl ${theme.primary} text-white shadow-xs`}>
                       <CheckCheck className="w-5 h-5" />
                     </div>
                     <div>

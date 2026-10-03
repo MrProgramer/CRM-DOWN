@@ -240,7 +240,7 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
       {/* Stat Cards Row - Rounded-3xl Style like ReturnsManager */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Total Logs */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-blue-700 dark:text-blue-400">کل رویدادهای سیستم</span>
             <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
@@ -259,7 +259,7 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
         </div>
 
         {/* Today's Logs */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">رویدادهای امروز</span>
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
@@ -278,7 +278,7 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
         </div>
 
         {/* Exports & Downloads */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-indigo-200/70 dark:border-indigo-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-indigo-200/70 dark:border-indigo-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400">خروجی و PDF فاکتورها</span>
             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800">
@@ -297,7 +297,7 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
         </div>
 
         {/* Warnings & Deletions */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-rose-700 dark:text-rose-400">هشدارها و حذفیات</span>
             <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
@@ -317,7 +317,7 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
       </div>
 
       {/* Filter, Search & Category Navigation Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -377,10 +377,10 @@ export const ActivityLogPage: React.FC<ActivityLogPageProps> = ({
       </div>
 
       {/* Activity Logs Timeline Feed */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden p-4 sm:p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden p-4 sm:p-6">
         {paginatedLogs.length === 0 ? (
           <div className="py-16 text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto shadow-inner">
+            <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto shadow-inner">
               <Bell className="w-8 h-8" />
             </div>
             <div>

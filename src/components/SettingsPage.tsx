@@ -122,6 +122,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     const updated = { ...formData, ...updates };
     setFormData(updated);
     applyTypographyToDOM(updated);
+    onSaveSettings(updated);
   };
 
   const handleSave = (e?: React.FormEvent) => {
@@ -173,6 +174,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     'gradient-ocean',
     'gradient-cyber',
     'gradient-aurora',
+    'gradient-royal',
+    'gradient-emerald-gold',
+    'gradient-titanium',
+    'gradient-crimson-dusk',
+    'gradient-midnight-cyan',
+    'gradient-nordic-frost',
   ];
 
   const allThemeKeys: ThemeColor[] = [...solidThemeKeys, ...gradientThemeKeys];
@@ -193,7 +200,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="w-full space-y-6 pb-20 no-print transition-colors text-right font-sans">
       {/* Top Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div 
             className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs"
@@ -257,7 +264,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Navigation Tabs Sidebar */}
         <div className="lg:col-span-3 space-y-2">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3 shadow-sm space-y-1.5">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm space-y-1.5">
             {mode === 'system' && (
               <>
                 <button
@@ -375,7 +382,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
         {/* Tab Content Panel */}
         <div className="lg:col-span-9">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-sm">
             
             {/* 1. THEME & DESIGN SYSTEMS TAB */}
             {activeTab === 'theme' && (
@@ -576,7 +583,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   </div>
 
                   {/* 1. SOLID DISTINCT COLORS (14 DISTINCT COLORS) */}
-                  <div className="bg-slate-50/80 dark:bg-slate-950/60 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                  <div className="bg-slate-50/80 dark:bg-slate-950/60 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-slate-700 dark:text-slate-300">
                         طیف رنگ‌های خالص و تفکیک‌شده (۱۴ رنگ)
@@ -631,19 +638,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. SPECIAL THEME PALETTES (4 RICH PALETTES) */}
-                  <div className="bg-slate-50/80 dark:bg-slate-950/60 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                  {/* 2. SPECIAL GRADIENT THEME PALETTES (10 RICH PALETTES) */}
+                  <div className="bg-slate-50/80 dark:bg-slate-950/60 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                        پالت‌های ویژه و ترکیبی رنگی (۴ تم انتخابی)
+                        پالت‌های ویژه و گرادیان ترکیبی (۱۰ تم لوکس تجاری)
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        تک‌رنگ حرفه‌ای
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        گرادیان‌های مدرن فین‌تک
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {gradientThemeKeys.map((key, kIdx) => {
                         const th = themes[key];
                         const isSelected = formData.themeColor === key;
@@ -663,13 +670,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                               }
                             }}
                             title={`${th.nameFa}: ${th.descFa}`}
-                            className={`group relative h-14 sm:h-16 rounded-2xl flex items-center justify-center transition-all cursor-pointer overflow-hidden shadow-sm ${
+                            className={`group relative h-14 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden shadow-sm p-2 text-white ${
                               isSelected
                                 ? 'ring-4 ring-offset-2 ring-slate-900 dark:ring-white ring-offset-white dark:ring-offset-slate-900 shadow-xl z-10'
                                 : 'hover:shadow-lg hover:ring-2 hover:ring-slate-400/40'
                             }`}
                             style={{
-                              backgroundColor: th.hex,
+                              background: `linear-gradient(135deg, ${th.hex}, ${th.secondaryHex || th.hex})`,
                             }}
                           >
                             <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/20 pointer-events-none" />
@@ -678,13 +685,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="px-3 py-1 rounded-full bg-white/95 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-black flex items-center gap-1.5 shadow-md z-10 backdrop-blur-xs"
+                                className="px-2.5 py-1 rounded-full bg-white/95 dark:bg-slate-900/90 text-slate-900 dark:text-white text-[11px] font-black flex items-center gap-1 shadow-md z-10 backdrop-blur-xs"
                               >
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <Check className="w-3 h-3 stroke-[3]" />
                                 <span>فعال</span>
                               </motion.div>
                             ) : (
-                              <div className="w-3 h-3 rounded-full bg-white/40 group-hover:bg-white/70 transition-all shadow-2xs" />
+                              <div className="flex flex-col items-center gap-0.5 z-10 text-center">
+                                <span className="text-[11px] font-black drop-shadow-xs truncate max-w-full px-1">{th.nameFa.split(' ')[0]}</span>
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/50 group-hover:bg-white/80 transition-all shadow-2xs" />
+                              </div>
                             )}
                           </motion.button>
                         );
@@ -766,7 +776,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 </div>
 
                 {/* LIVE INTERACTIVE PREVIEW CARD */}
-                <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                <div className="p-5 sm:p-6 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -1033,17 +1043,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                       </div>
                       <input 
                         type="range"
-                        min="85"
-                        max="125"
+                        min="80"
+                        max="145"
                         step="1"
                         value={formData.customFontScalePercent || appFontSizes[formData.fontSizeScale || 'standard']?.percentage || 100}
                         onChange={(e) => {
                           const val = Number(e.target.value);
                           let matchedScale: AppFontSizeScale = 'standard';
                           if (val <= 90) matchedScale = 'compact';
-                          else if (val <= 104) matchedScale = 'standard';
-                          else if (val <= 114) matchedScale = 'comfortable';
-                          else matchedScale = 'large';
+                          else if (val <= 106) matchedScale = 'standard';
+                          else if (val <= 118) matchedScale = 'comfortable';
+                          else if (val <= 132) matchedScale = 'large';
+                          else matchedScale = 'extra-large';
 
                           updateTypography({
                             customFontScalePercent: val,
@@ -1679,7 +1690,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 </div>
 
                 {/* Realistic Iranian Bank Card Visualizer */}
-                <div className="p-6 rounded-3xl bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl border border-slate-800 space-y-4 max-w-lg mx-auto">
+                <div className="p-6 rounded-xl bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl border border-slate-800 space-y-4 max-w-lg mx-auto">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-amber-400 text-xs font-black">

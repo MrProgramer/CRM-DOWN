@@ -18,7 +18,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { SecurityAuthModal } from './components/SecurityAuthModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { ToastContainer, ConfirmModal, ToastItem, ConfirmModalOptions } from './components/CustomNotificationModal';
-import { themes, designModes } from './components/ThemeConfig';
+import { themes, designModes, ThemeColor } from './components/ThemeConfig';
 import { applyTypographyToDOM } from './components/TypographyConfig';
 import { ReturnsManager } from './components/ReturnsManager';
 import { LiquidityManager, TreasuryTransaction } from './components/LiquidityManager';
@@ -149,7 +149,9 @@ export default function App() {
     settings.numberFontFamily, 
     settings.headerFontFamily, 
     settings.fontSizeScale, 
-    settings.invoiceFontSizeScale
+    settings.customFontScalePercent,
+    settings.invoiceFontSizeScale,
+    settings.numberFormat
   ]);
 
   const [isSecretMode, setIsSecretMode] = useState<boolean>(() => {
@@ -659,6 +661,12 @@ export default function App() {
     const theme = themes[settings.themeColor] || themes.teal;
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.style.setProperty('--primary-color', theme.hex);
+
+    const hexClean = (theme.hex || '#0d9488').replace('#', '');
+    const r = parseInt(hexClean.substring(0, 2), 16) || 13;
+    const g = parseInt(hexClean.substring(2, 4), 16) || 148;
+    const b = parseInt(hexClean.substring(4, 6), 16) || 136;
+    document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
   }, [settings.themeColor]);
 
   // Synchronize global [data-design-mode] attribute with active design mode
@@ -684,6 +692,26 @@ export default function App() {
       `سبک طراحی سامانه با موفقیت به «${modeConfig?.nameFa || newMode}» تغییر یافت.`,
       'success',
       'تغییر سبک برنامه'
+    );
+  };
+
+  const handleThemeColorChange = (newColor: ThemeColor) => {
+    const updatedSettings: StoreSettings = {
+      ...settings,
+      themeColor: newColor,
+    };
+    setSettings(updatedSettings);
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updatedSettings));
+    const th = themes[newColor] || themes.teal;
+    addActivityLog(
+      'تغییر پالت رنگی سامانه',
+      `پالت رنگی سامانه به «${th.nameFa}» به‌روزرسانی شد.`,
+      'theme'
+    );
+    showAlert(
+      `پالت رنگی سامانه با موفقیت به «${th.nameFa}» تغییر یافت.`,
+      'success',
+      'تغییر پالت رنگی'
     );
   };
 
@@ -2781,6 +2809,13 @@ export default function App() {
         isSecurityLocked={isSecurityLocked}
         onToggleSecurityMode={handleToggleSecurityMode}
         onDesignModeChange={handleDesignModeChange}
+        onThemeColorChange={handleThemeColorChange}
+        onQuickUpdateSettings={(updates) => {
+          const updated = { ...settings, ...updates };
+          setSettings(updated);
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+          applyTypographyToDOM(updated);
+        }}
       />
 
       {/* Main View Area with RTL Sidebar Container */}
@@ -3265,15 +3300,25 @@ export default function App() {
                 customers={customers}
                 payments={payments}
                 onSaveSettings={(newSettings) => {
-                  runWithSecurityCheck(
-                    'تایید پین‌کد جهت ذخیره‌سازی تنظیمات سیستم',
-                    'برای ذخیره‌سازی و اعمال تغییرات در تنظیمات برنامه، پین‌کد مدیریت را وارد کنید.',
-                    'edit',
-                    () => {
-                      setSettings(newSettings);
-                      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
-                    }
-                  );
+                  const isSecurityChange = newSettings.adminPin !== settings.adminPin ||
+                    newSettings.enableBiometrics !== settings.enableBiometrics ||
+                    newSettings.requireAuthForInvoiceActions !== settings.requireAuthForInvoiceActions ||
+                    newSettings.requirePinForEdit !== settings.requirePinForEdit;
+
+                  if (isSecurityChange) {
+                    runWithSecurityCheck(
+                      'تایید پین‌کد جهت ذخیره‌سازی تنظیمات امنیتی',
+                      'برای ذخیره‌سازی و اعمال تغییرات امنیتی برنامه، پین‌کد مدیریت را وارد کنید.',
+                      'edit',
+                      () => {
+                        setSettings(newSettings);
+                        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
+                      }
+                    );
+                  } else {
+                    setSettings(newSettings);
+                    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
+                  }
                 }}
                 onExportData={handleExportData}
                 onImportData={(fileOrEvent: any) => {

@@ -294,7 +294,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       className="w-full max-w-7xl mx-auto pb-24 space-y-6 dir-rtl"
     >
       {/* Top Header Toolbar */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-2xs border border-slate-200/90 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-2xs border border-slate-200/90 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
           <button
             id="back-to-inventory-btn"
@@ -357,7 +357,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       {/* 4 Financial & Volume KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
         {/* Card 1: Total Volume Breakdown */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">📦 موجودی کارتن‌ها و انبار</span>
             <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50">
@@ -389,7 +389,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 2: Purchase Value / Capital */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">💰 کل سرمایه خرید انبار</span>
             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/50">
@@ -421,7 +421,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 3: Potential Revenue / Sales Value */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">📈 ارزش کل فروش انبار</span>
             <div className={`p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800`}>
@@ -451,7 +451,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 4: Potential Gross Profit */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">✨ سود ناخالص بالقوه</span>
             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-900/50">
@@ -484,7 +484,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-2xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">
@@ -670,7 +670,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       </div>
 
       {/* Comprehensive Report Data Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-xs">
             <thead>

@@ -1626,7 +1626,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
       </div>
 
       {/* 2. Global Time Period & Interval Controller Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 no-print">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm space-y-4 no-print">
         {/* Top: Title & Description Header */}
         <div className="flex items-center gap-3">
           <div className={`p-2.5 rounded-2xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shrink-0`}>
@@ -1733,7 +1733,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4 border-t border-slate-100 dark:border-slate-800">
           
           {/* Card 1: ورودی نقدینگی در دوره */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">کل ورودی‌های نقدینگی دوره</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
@@ -1752,7 +1752,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           </div>
 
           {/* Card 2: مخارج و هزینه‌ها در دوره */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-rose-700 dark:text-rose-400">مخارج، کرایه بار و هزینه‌ها</span>
               <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
@@ -1771,7 +1771,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           </div>
 
           {/* Card 3: خالص جریان وجوه در دوره */}
-          <div className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border ${
+          <div className={`bg-white dark:bg-slate-900 rounded-xl p-5 border ${
             periodNetCashflow >= 0 ? 'border-teal-200/70 dark:border-teal-900/40' : 'border-amber-200/70 dark:border-amber-900/40'
           } shadow-xs relative overflow-hidden group hover:shadow-md transition-all`}>
             <div className="flex items-center justify-between">
@@ -1800,7 +1800,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           </div>
 
           {/* Card 4: فروش و سود ناخالص دوره */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-purple-200/70 dark:border-purple-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-purple-200/70 dark:border-purple-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-purple-700 dark:text-purple-400">سود ناخالص فروش در دوره</span>
               <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800">
@@ -1877,7 +1877,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         <div className="space-y-6">
 
           {/* 🌟 Executive Treasury Balance & Health Strip */}
-          <div className="bg-gradient-to-l from-slate-50 via-emerald-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs dark:shadow-lg text-slate-900 dark:text-white transition-colors">
+          <div className="bg-gradient-to-l from-slate-50 via-emerald-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs dark:shadow-lg text-slate-900 dark:text-white transition-colors">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-200/80 dark:border-emerald-500/30">
@@ -1950,7 +1950,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 1: کل نقدینگی آماده خرج */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'total_liquidity' ? null : 'total_liquidity')}
-              className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs relative overflow-hidden flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs relative overflow-hidden flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
                 selectedBreakdownType === 'total_liquidity'
                   ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-lg'
                   : 'border-emerald-200/70 dark:border-emerald-900/40 hover:border-emerald-500/60'
@@ -2000,7 +2000,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 2: صندوق نقدی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'cash' ? null : 'cash')}
-              className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
                 selectedBreakdownType === 'cash'
                   ? 'border-teal-500 ring-2 ring-teal-500/40 shadow-lg'
                   : 'border-teal-200/70 dark:border-teal-900/40 hover:border-teal-500/60'
@@ -2059,7 +2059,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 3: حساب‌های بانکی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'bank' ? null : 'bank')}
-              className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
                 selectedBreakdownType === 'bank'
                   ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg'
                   : 'border-blue-200/70 dark:border-blue-900/40 hover:border-blue-500/60'
@@ -2108,7 +2108,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 4: صندوق چک‌های صیادی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'checks' ? null : 'checks')}
-              className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
                 selectedBreakdownType === 'checks'
                   ? 'border-amber-500 ring-2 ring-amber-500/40 shadow-lg'
                   : 'border-amber-200/70 dark:border-amber-900/40 hover:border-amber-500/60'
@@ -2180,7 +2180,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Chart 1: Treasury Distribution & Account Balance with View Mode Toggle & Fullscreen */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 lg:col-span-2 flex flex-col justify-between space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 lg:col-span-2 flex flex-col justify-between space-y-4 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2299,7 +2299,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* Chart 2: Payment Methods Breakdown in Selected Period with Fullscreen */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2370,7 +2370,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* Chart 3: Cashflow Timeline Trend in Period with Area / Bar toggle & Fullscreen */}
           {cashflowTimelineData.length > 0 && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 space-y-4 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2523,7 +2523,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* Chart 4: Expenses Analysis Breakdown in Period with Fullscreen */}
           {periodExpenseByCategoryData.length > 0 && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 space-y-4 shadow-xs">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2626,7 +2626,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         <div className="space-y-6">
           
           {/* Sub Navigation Bar for Audit */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
             <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 w-full sm:w-auto overflow-x-auto">
               <button
                 onClick={() => setAuditSubTab('products')}
@@ -2699,7 +2699,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* Sub-view 1: Products & Live Prices Audit */}
           {auditSubTab === 'products' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2798,7 +2798,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* Sub-view 2: Customer Credit / Receivables Audit */}
           {auditSubTab === 'credits' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -2897,7 +2897,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* Sub-view 3: Returns Audit */}
           {auditSubTab === 'returns' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -3022,7 +3022,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           {/* Sub-view 4: Summary Balance Sheet */}
           {auditSubTab === 'summary' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-2xs space-y-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-2xs space-y-4">
                 <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <Coins className="w-4 h-4 text-emerald-600" />
                   <span>تراز نقدینگی و دارایی‌های نقدی</span>
@@ -3047,7 +3047,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-2xs space-y-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-2xs space-y-4">
                 <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <Building2 className="w-4 h-4 text-purple-600" />
                   <span>تراز کالا، مطالبات نسیه و سود در انتظار</span>
@@ -3082,7 +3082,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         <div className="space-y-6">
           
           {/* Header Action Banner */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-2xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shrink-0`}>
                 <History className="w-6 h-6" />
@@ -3126,7 +3126,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             
             {/* کارت ۱: کل ورودی پول */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4.5 border border-emerald-200/80 dark:border-emerald-900/40 shadow-2xs space-y-3">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-emerald-200/80 dark:border-emerald-900/40 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                   <ArrowDownLeft className="w-4 h-4" />
@@ -3156,7 +3156,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* کارت ۲: کل خروجی پول و مخارج */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4.5 border border-rose-200/80 dark:border-rose-900/40 shadow-2xs space-y-3">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-rose-200/80 dark:border-rose-900/40 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
                   <ArrowUpRight className="w-4 h-4" />
@@ -3186,7 +3186,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* کارت ۳: خالص جریان نقدینگی */}
-            <div className={`bg-white dark:bg-slate-900 rounded-3xl p-4.5 border shadow-2xs space-y-3 ${
+            <div className={`bg-white dark:bg-slate-900 rounded-xl p-4.5 border shadow-2xs space-y-3 ${
               allTimeInflowDetails.grandTotalInflow >= allTimeOutflowDetails.totalLiquidOutflow
                 ? 'border-teal-200/80 dark:border-teal-900/40'
                 : 'border-amber-200/80 dark:border-amber-900/40'
@@ -3235,7 +3235,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* کارت ۴: مجموع نقدینگی لحظه‌ای خزانه‌داری */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4.5 border border-blue-200/80 dark:border-blue-900/40 shadow-2xs space-y-3">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-blue-200/80 dark:border-blue-900/40 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
                   <Wallet className="w-4 h-4" />
@@ -3279,7 +3279,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             
             {/* کادر ۱: صورت ریز کل ورودی‌های پول */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
@@ -3354,7 +3354,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* کادر ۲: صورت ریز کل مصارف و خروجی‌های پول */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
@@ -3429,7 +3429,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
 
             {/* کادر ۳: ریز سرفصل‌های مخارج و هزینه‌های عملیاتی */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4 md:col-span-2 xl:col-span-1">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col justify-between space-y-4 md:col-span-2 xl:col-span-1">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
@@ -3539,7 +3539,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
           </div>
 
           {/* 🌟 بخش ۴: جدول دفتر کل و ریزتراکنش‌ها */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xs transition-colors">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs transition-colors">
             
             {/* Header & Filter Controls */}
             <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-950/50">
@@ -3891,7 +3891,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl relative z-10 shadow-2xl text-right flex flex-col max-h-[88vh] overflow-hidden my-auto"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl relative z-10 shadow-2xl text-right flex flex-col max-h-[88vh] overflow-hidden my-auto"
             >
               {/* Fixed Header */}
               <div className="p-4 sm:p-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-xs">
@@ -4614,7 +4614,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md relative z-10 shadow-xl text-right space-y-4"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-md relative z-10 shadow-xl text-right space-y-4"
             >
               <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
                 <Trash2 className="w-6 h-6" />
@@ -4693,7 +4693,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg relative z-10 shadow-xl text-right space-y-4"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-lg relative z-10 shadow-xl text-right space-y-4"
             >
               <button
                 type="button"
@@ -4834,7 +4834,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 w-full max-w-5xl my-auto relative shadow-2xl text-right space-y-5"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-7 w-full max-w-5xl my-auto relative shadow-2xl text-right space-y-5"
             >
               {/* Modal Top Navigation Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">

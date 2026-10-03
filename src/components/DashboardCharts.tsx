@@ -171,15 +171,15 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-slate-800/40 shadow-sm space-y-5 transition-colors">
+    <div className="bg-white dark:bg-[#090d16] rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-none space-y-5 transition-colors">
       {/* Chart Header & Mode Toggle */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-850">
         <div>
           <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-            <BarChart3 className={`w-5 h-5 ${activeTheme.primaryText}`} />
+            <BarChart3 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
             نمودارهای تحلیلی و آمار پیشرفته
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {isSecretMode 
               ? 'روند گردش فروش ریالی، سهم گروه‌های کالایی و تفکیک جریان نقدینگی'
               : 'روند گردش فروش، سود ناخالص ریالی، سهم گروه‌های کالایی و تفکیک جریان نقدینگی'
@@ -187,12 +187,12 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 overflow-x-auto w-full md:w-auto">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto w-full md:w-auto">
           <button
             onClick={() => setChartType('sales-profit')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'sales-profit'
-                ? `bg-white dark:bg-slate-800 ${activeTheme.primaryText} shadow-xs font-black`
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -202,9 +202,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('top-products')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'top-products'
-                ? `bg-white dark:bg-slate-800 ${activeTheme.primaryText} shadow-xs font-black`
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -214,9 +214,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('categories')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'categories'
-                ? `bg-white dark:bg-slate-800 ${activeTheme.primaryText} shadow-xs font-black`
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -226,9 +226,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('payment-methods')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'payment-methods'
-                ? `bg-white dark:bg-slate-800 ${activeTheme.primaryText} shadow-xs font-black`
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >

@@ -823,7 +823,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     return (
       <div className="w-full max-w-7xl mx-auto space-y-5 pb-20 px-2 sm:px-4">
         {/* Top Return Nav & Invoice Header */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSelectedInvoiceForDetail(null)}
@@ -876,7 +876,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
         {/* Invoice Summary 4-Cards Grid - Standard App Design */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               {isPurchase ? 'ارزش تخمینی کل فروش کالا' : 'جمع کل فروش فاکتور'}
             </span>
@@ -888,7 +888,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               {isPurchase ? 'بهای تمام‌شده خرید خالص' : 'بهای تمام‌شده خرید کالا'}
             </span>
@@ -909,7 +909,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             )}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-emerald-200/90 dark:border-emerald-900/60 shadow-sm space-y-1">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-emerald-200/90 dark:border-emerald-900/60 shadow-sm space-y-1">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
               {isPurchase ? 'سود پیش‌بینی شده فاکتور' : 'سود خالص کل اقلام'}
             </span>
@@ -921,7 +921,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-1">
             <span className={`text-xs font-bold ${theme.primaryText}`}>
               {isPurchase ? 'ضریب مارک‌آپ (سود بر خرید)' : 'حاشیه سود میانگین'}
             </span>
@@ -935,7 +935,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Filter Tier Tabs for Invoice Items */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-3 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <button
               onClick={() => setDetailItemFilter('all')}
@@ -986,7 +986,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Detailed Items Table with Standard Table Design & Footer */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
@@ -1173,7 +1173,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     <div className="w-full max-w-7xl mx-auto space-y-5 pb-20 px-2 sm:px-4">
       
       {/* 1. Header Banner & Controls - Clean Standard Design Matching App */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all no-print">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all no-print">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl ${theme.badgeBg} ${theme.badgeText} text-xs font-bold border ${theme.borderColor}`}>
@@ -1219,7 +1219,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       </div>
 
       {/* 2. Period Filter Tabs & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 no-print">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 no-print">
         {/* Search & Sort Toggle */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
           <div className="relative w-full md:w-80">
@@ -1293,7 +1293,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
         
         {/* Card 1: سود خالص بازرگانی */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">سود خالص کل بازرگانی</span>
             <div className="p-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -1313,7 +1313,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Card 2: مجموع فروش فاکتورها */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-600 dark:text-slate-400">مجموع فروش فاکتورها</span>
             <div className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
@@ -1331,7 +1331,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Card 3: سود خالص فاکتورهای ورودی خرید */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-800 dark:text-amber-300">سود خالص فاکتورهای ورودی (خرید)</span>
             <div className="p-2 rounded-2xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
@@ -1351,7 +1351,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Card 4: میانگین بازدهی و حاشیه سود */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className={`text-xs font-bold ${theme.primaryText}`}>حاشیه سود میانگین</span>
             <div className="p-2 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
@@ -1424,7 +1424,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       </div>
 
       {/* 5. Main Content Area Based on Active Tab */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         
         {/* TAB 1: SALES INVOICES PROFITABILITY */}
         {activeTab === 'invoices' && (

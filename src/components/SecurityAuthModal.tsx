@@ -135,7 +135,7 @@ export const SecurityAuthModal: React.FC<SecurityAuthModalProps> = ({
         initial={{ opacity: 0, scale: 0.94, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 10 }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden text-right"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden text-right"
       >
         {/* Ambient Top Glow */}
         <div 
@@ -328,7 +328,7 @@ export const SecurityAuthModal: React.FC<SecurityAuthModalProps> = ({
                 type="button"
                 onClick={handleFingerprintScan}
                 disabled={isScanning || scanSuccess}
-                className={`relative z-10 w-24 h-24 rounded-3xl flex flex-col items-center justify-center border-2 transition-all cursor-pointer select-none ${
+                className={`relative z-10 w-24 h-24 rounded-xl flex flex-col items-center justify-center border-2 transition-all cursor-pointer select-none ${
                   scanSuccess
                     ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30'
                     : isScanning

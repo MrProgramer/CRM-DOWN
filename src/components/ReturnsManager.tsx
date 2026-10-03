@@ -444,7 +444,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
         {/* Card 1: To Supplier Returns */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-rose-700 dark:text-rose-400">مرجوع به شرکت‌ها (خرید)</span>
             <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
@@ -463,7 +463,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
         </div>
 
         {/* Card 2: From Customer Returns */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-indigo-200/70 dark:border-indigo-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-indigo-200/70 dark:border-indigo-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400">مرجوع از مشتریان (فروش)</span>
             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800">
@@ -482,7 +482,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
         </div>
 
         {/* Card 3: Balance Impact */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-teal-200/70 dark:border-teal-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-teal-200/70 dark:border-teal-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-teal-700 dark:text-teal-400">خالص تراز مالی مرجوعی‌ها</span>
             <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border border-teal-200/80 dark:border-teal-800">
@@ -505,7 +505,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
         </div>
 
         {/* Card 4: Financial Settlement Status */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">وضعیت تسویه خزانه‌داری</span>
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
@@ -526,7 +526,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
       </div>
 
       {/* 3. Main Data Table & Filtering Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
         
         {/* Search & Filter Toolbar */}
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/40 flex flex-col md:flex-row gap-3.5 justify-between items-center">
@@ -858,7 +858,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
               initial={{ opacity: 0, scale: 0.94, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-7 w-full max-w-xl relative z-10 transition-all text-right space-y-5 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-7 w-full max-w-xl relative z-10 transition-all text-right space-y-5 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
             >
               {/* Top ambient glow */}
               <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-24 bg-gradient-to-b from-teal-500/15 to-transparent blur-2xl pointer-events-none" />
@@ -1273,7 +1273,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
               initial={{ opacity: 0, scale: 0.94, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
+              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
             >
               <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-200 dark:border-rose-800 shrink-0">
@@ -1347,7 +1347,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
               initial={{ opacity: 0, scale: 0.94, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
+              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
             >
               <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800 shrink-0">
@@ -1413,7 +1413,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
               initial={{ opacity: 0, scale: 0.94, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
+              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 w-full max-w-md relative z-10 transition-colors text-right space-y-4 shadow-2xl"
             >
               <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shrink-0">

@@ -164,21 +164,30 @@ export const appFontSizes: Record<AppFontSizeScale, FontSizeOption> = {
   },
   comfortable: {
     id: 'comfortable',
-    nameFa: 'راحت و خوانا (۱۱۰٪)',
-    percentage: 110,
-    scaleValue: '1.10',
-    basePx: 15.4,
+    nameFa: 'راحت و خوانا (۱۱۲٪)',
+    percentage: 112,
+    scaleValue: '1.12',
+    basePx: 15.6,
     description: 'کاهش چشمگیر خستگی چشم در ساعات کاری طولانی؛ خواندن سریع‌تر مبالغ و متون',
     badge: 'ارگونومیک و ضد خستگی'
   },
   large: {
     id: 'large',
-    nameFa: 'درشت و باز (۱۲۰٪)',
-    percentage: 120,
-    scaleValue: '1.20',
-    basePx: 16.8,
+    nameFa: 'درشت و باز (۱۲۵٪)',
+    percentage: 125,
+    scaleValue: '1.25',
+    basePx: 17.5,
     description: 'مناسب مانیتورهای با رزولوشن بسیار بالا (4K/2K)، کار با فاصله از مانیتور و سهولت در مشاهده',
     badge: 'وضوح حداکثری'
+  },
+  'extra-large': {
+    id: 'extra-large',
+    nameFa: 'خیلی درشت و برجسته (۱۴۰٪)',
+    percentage: 140,
+    scaleValue: '1.40',
+    basePx: 19.6,
+    description: 'بزرگ‌نمایی فوق‌العاده تمام ارقام، فاکتورها و جداول برای سهولت حداکثری چشم',
+    badge: 'دید فوق‌العاده درشت'
   }
 };
 
@@ -233,7 +242,7 @@ export function applyTypographyToDOM(settings: StoreSettings): void {
 
   // App Font Scale
   let scaleValue = '1';
-  if (settings.customFontScalePercent && settings.customFontScalePercent >= 80 && settings.customFontScalePercent <= 130) {
+  if (settings.customFontScalePercent && settings.customFontScalePercent >= 75 && settings.customFontScalePercent <= 160) {
     scaleValue = (settings.customFontScalePercent / 100).toFixed(2);
   } else if (settings.fontSizeScale && appFontSizes[settings.fontSizeScale]) {
     scaleValue = appFontSizes[settings.fontSizeScale].scaleValue;

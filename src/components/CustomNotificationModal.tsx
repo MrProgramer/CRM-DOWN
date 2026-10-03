@@ -161,7 +161,7 @@ export const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, settings
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onClick={() => onDismiss(toast.id)}
-      className={`pointer-events-auto group relative w-full max-w-sm sm:max-w-md rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border ${theme.border} ${theme.glow} overflow-hidden cursor-pointer select-none transition-all hover:scale-[1.01] active:scale-[0.99] shadow-2xl`}
+      className={`pointer-events-auto group relative w-full max-w-sm sm:max-w-md rounded-2xl sm:rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border ${theme.border} ${theme.glow} overflow-hidden cursor-pointer select-none transition-all hover:scale-[1.01] active:scale-[0.99] shadow-2xl`}
     >
       {/* Top Gradient Sheen line matching Theme Accent */}
       <div 
@@ -306,7 +306,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 14 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden"
+          className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden"
         >
           {/* Subtle Ambient Glow */}
           <div 

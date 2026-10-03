@@ -1146,7 +1146,7 @@ export const LiquidityInlineBreakdown: React.FC<LiquidityInlineBreakdownProps> =
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -16, scale: 0.99 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700/80 rounded-3xl shadow-xl overflow-hidden text-right transition-all scroll-mt-6"
+      className="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700/80 rounded-xl shadow-xl overflow-hidden text-right transition-all scroll-mt-6"
     >
       {/* 1. Header with Close Button, Title, and Actions */}
       <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

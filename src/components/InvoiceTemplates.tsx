@@ -2051,7 +2051,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
     <div className={`space-y-6 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Top Graphic Banner */}
       <div 
-        className="p-6 rounded-3xl text-white shadow-md flex items-center justify-between"
+        className="p-6 rounded-xl text-white shadow-md flex items-center justify-between"
         style={{ backgroundColor: theme.hex }}
       >
         <div className="space-y-1">

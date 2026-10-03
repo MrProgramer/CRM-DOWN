@@ -238,7 +238,13 @@ export type ThemeColor =
   | 'gradient-sunset'
   | 'gradient-ocean'
   | 'gradient-cyber'
-  | 'gradient-aurora';
+  | 'gradient-aurora'
+  | 'gradient-royal'
+  | 'gradient-emerald-gold'
+  | 'gradient-titanium'
+  | 'gradient-crimson-dusk'
+  | 'gradient-midnight-cyan'
+  | 'gradient-nordic-frost';
 
 export type AppDesignMode = 
   | 'classic'        // ۱. حالت کلاسیک اداری و دفتری سنتی (بدون انحنا، حداکثر تراکم اطلاعات، کادرهای فیزیکی حسابداری)
@@ -271,8 +277,9 @@ export type AppHeaderFontFamily = string;
 export type AppFontSizeScale = 
   | 'compact'      // فشرده حسابداری (۸۸٪ - تراکم بالای اطلاعات)
   | 'standard'     // استاندارد رسمی (۱۰۰٪ - متعادل و ارگونومیک)
-  | 'comfortable'  // راحت و خوانا (۱۱۰٪ - کاهش خستگی چشم)
-  | 'large';       // درشت و باز (۱۲۰٪ - مانیتورهای بزرگ)
+  | 'comfortable'  // راحت و خوانا (۱۱۲٪ - کاهش خستگی چشم)
+  | 'large'        // درشت و باز (۱۲۵٪ - مانیتورهای بزرگ)
+  | 'extra-large'; // خیلی درشت (۱۴۰٪ - حداکثر وضوح)
 
 // مقیاس و تراکم فونت فاکتور
 export type AppInvoiceFontSizeScale =

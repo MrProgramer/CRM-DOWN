@@ -268,12 +268,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="relative z-10 w-full max-w-md bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-slate-300/60 dark:shadow-black/60 text-right space-y-6 transition-colors"
+        className="relative z-10 w-full max-w-md bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 rounded-xl p-6 sm:p-8 shadow-2xl shadow-slate-300/60 dark:shadow-black/60 text-right space-y-6 transition-colors"
       >
         {/* Brand Logo & Header */}
         <div className="text-center space-y-3">
           <div 
-            className="w-16 h-16 mx-auto rounded-3xl flex items-center justify-center border shadow-xl shadow-slate-200/80 dark:shadow-black/40 transition-transform hover:scale-105"
+            className="w-16 h-16 mx-auto rounded-xl flex items-center justify-center border shadow-xl shadow-slate-200/80 dark:shadow-black/40 transition-transform hover:scale-105"
             style={{ 
               backgroundColor: currentTheme.hex + (isDarkMode ? '20' : '15'), 
               borderColor: currentTheme.hex + (isDarkMode ? '50' : '30'),
@@ -351,7 +351,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 type="button"
                 onClick={handleFingerprintLogin}
                 disabled={isScanning || scanSuccess}
-                className={`relative z-10 w-28 h-28 rounded-3xl flex flex-col items-center justify-center border-2 transition-all cursor-pointer select-none group shadow-2xl ${
+                className={`relative z-10 w-28 h-28 rounded-xl flex flex-col items-center justify-center border-2 transition-all cursor-pointer select-none group shadow-2xl ${
                   scanSuccess
                     ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/40'
                     : isScanning

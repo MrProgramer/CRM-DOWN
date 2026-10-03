@@ -14,13 +14,24 @@
     font-variant-numeric: tabular-nums;
   }
 
-  *, ::before, ::after {
-    font-family: var(--app-font-family) !important;
-    font-feature-settings: "ss01" 1, "cv01" 1;
+  html {
+    font-size: calc(15.5px * var(--app-font-scale, 1)) !important;
   }
 
-  body, #root, input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6, #invoice-paper, .invoice-paper-container, .printable-document {
+  *, *::before, *::after,
+  html, body, #root,
+  input, button, select, textarea, optgroup, option,
+  table, thead, tbody, tfoot, tr, td, th,
+  span, div, label, p, a, b, strong, em, i, small, sub, sup,
+  h1, h2, h3, h4, h5, h6,
+  ul, ol, li, dl, dt, dd,
+  form, fieldset, legend,
+  header, footer, nav, aside, section, article, main,
+  dialog, figure, figcaption,
+  svg text, svg tspan,
+  #invoice-paper, .invoice-paper-container, .printable-document {
     font-family: var(--app-font-family) !important;
+    font-feature-settings: "ss01" 1, "cv01" 1;
   }
 
   /* High contrast black text strictly in light mode */
@@ -50,18 +61,18 @@
     color: #4b5563;
   }
 
-  /* Robust Dark Mode typography and background */
+  /* Deep True Obsidian Dark Mode across the entire system */
   html.dark {
-    background-color: #080d1a !important;
-    color: #f8fafc !important;
+    background-color: #060913 !important;
+    color: #f1f5f9 !important;
   }
 
-  html.dark body {
-    background-color: #080d1a !important;
-    color: #f8fafc !important;
+  html.dark body, html.dark #root {
+    background-color: #060913 !important;
+    color: #f1f5f9 !important;
   }
 
-  /* Automatically ensure text in dark mode is bright and never black */
+  /* Automatically ensure text in dark mode is bright and never washed out or black */
   html.dark input,
   html.dark select,
   html.dark textarea {
@@ -86,10 +97,6 @@
 
   html.dark .text-slate-600:not([class*="dark:text-"]) {
     color: #cbd5e1;
-  }
-
-  input, button, select, textarea, table, td, th, span, div, label, p, h1, h2, h3, h4, h5, h6 {
-    font-family: var(--app-font-family);
   }
 
   /* Dedicated Number Font & Tabular Monospace for Finance, Prices and Quantities */
@@ -122,44 +129,94 @@
   }
 
   .font-display {
-    font-family: var(--app-header-font, 'Lalezar', 'Vazirmatn', sans-serif) !important;
+    font-family: var(--app-header-font, 'Vazirmatn', sans-serif) !important;
     letter-spacing: 0.02em;
   }
-
-  .dark body {
-    background-color: #080d1a;
-    color: #f8fafc;
-  }
 }
 
-/* Modern Fintech Luxury Surfaces */
-.modern-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* Dynamic Palette Theme Utilities */
+:root {
+  --primary-color: #0d9488;
+  --primary-rgb: 13, 148, 136;
+}
+
+.theme-bg-primary {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.theme-text-primary {
+  color: var(--primary-color) !important;
+}
+
+.theme-border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.theme-bg-subtle {
+  background-color: rgba(var(--primary-rgb), 0.08) !important;
+}
+
+.theme-border-subtle {
+  border-color: rgba(var(--primary-rgb), 0.25) !important;
+}
+
+/* Modern Flat Commercial & Fintech Surfaces */
+.modern-glass-card, .flat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.dark .modern-glass-card, .dark .flat-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  box-shadow: none;
+}
+
+/* Crisp Flat Surface Helper Classes */
+.flat-surface {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.dark .flat-surface {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.flat-subtle {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.dark .flat-subtle {
+  background-color: #0b1120;
+  border: 1px solid #1e293b;
+}
+
+/* Modern Flat Panel & Component Discipline */
+.flat-panel {
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.03), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  border-radius: 0.75rem;
+  box-shadow: none;
 }
 
-.dark .modern-glass-card {
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(51, 65, 85, 0.6);
-  box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.6), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+.dark .flat-panel {
+  background: #090d16;
+  border: 1px solid rgba(30, 41, 59, 0.9);
+  border-radius: 0.75rem;
+  box-shadow: none;
 }
 
-/* Ambient Subtle Dot Grid Background */
-.bg-grid-subtle {
-  background-size: 32px 32px;
-  background-image: 
-    radial-gradient(circle, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+/* Crisp 1px Hairline Borders & High-contrast Text */
+.hairline-border {
+  border: 1px solid rgba(226, 232, 240, 0.9);
 }
 
-.dark .bg-grid-subtle {
-  background-size: 32px 32px;
-  background-image: 
-    radial-gradient(circle, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+.dark .hairline-border {
+  border: 1px solid rgba(30, 41, 59, 0.9);
 }
 
 /* Enterprise Data Table Styles */
@@ -182,7 +239,7 @@
 }
 
 .table-enterprise tbody tr {
-  transition: all 0.15s ease;
+  transition: background-color 0.12s ease;
 }
 
 .table-enterprise tbody tr:hover {
@@ -193,77 +250,35 @@
   background-color: rgba(30, 41, 59, 0.5);
 }
 
-/* Card Interactive Hover Lift */
+/* Card Interactive Hover - Clean & Flat */
 .card-hover-lift {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .card-hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
 }
 
 .dark .card-hover-lift:hover {
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+  border-color: #334155;
 }
 
-/* High-Class Light & Dark Surface Elevation */
+/* High-Class Flat Commercial Surface */
 .glass-panel-light {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: none;
 }
 
 .glass-panel-dark {
   background: #0f172a;
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: none;
 }
 
-/* Micro-animations for animated icons */
-@keyframes floatSubtle {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
-}
-
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.06); }
-}
-
-@keyframes spinSlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-.animate-float {
-  animation: floatSubtle 3.5s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 2.5s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spinSlow 16s linear infinite;
-}
-
-/* Subtle glow accents */
-.glow-teal {
-  box-shadow: 0 0 35px -5px rgba(13, 148, 136, 0.3);
-}
-
-.glow-emerald {
-  box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.3);
-}
-
-.glow-blue {
-  box-shadow: 0 0 35px -5px rgba(37, 99, 235, 0.3);
+/* Pure Flat Accents - No Neon Glare */
+.glow-teal, .glow-emerald, .glow-blue {
+  box-shadow: none !important;
 }
 
 /* Peek hold animation pulse */
@@ -383,9 +398,24 @@
   border: 1px solid #1e293b !important;
 }
 
-/* 2. MODERN FINTECH PRO (مدرن هوشمند و فین‌تک) */
-[data-design-mode="modern"] {
-  /* Standard smooth modern fintech curves & subtle elevations */
+/* 2. MODERN FLAT COMMERCIAL & FINTECH PRO (فلت مدرن تجاری) */
+[data-design-mode="modern"] .rounded-3xl,
+[data-design-mode="modern"] .rounded-2xl {
+  border-radius: 0.75rem !important;
+}
+[data-design-mode="modern"] .shadow-2xl,
+[data-design-mode="modern"] .shadow-xl,
+[data-design-mode="modern"] .shadow-lg,
+[data-design-mode="modern"] .shadow-md {
+  box-shadow: none !important;
+}
+[data-design-mode="modern"] .border,
+[data-design-mode="modern"] .border-slate-200 {
+  border-color: rgba(226, 232, 240, 0.9) !important;
+}
+.dark[data-design-mode="modern"] .border,
+.dark[data-design-mode="modern"] .border-slate-800 {
+  border-color: rgba(30, 41, 59, 0.9) !important;
 }
 
 /* 3. GLASSMORPHISM & FROSTED GLASS (شیشه‌ای و گلس‌مورفیک نئو) */
@@ -603,6 +633,45 @@
     background-color: #f1f5f9 !important;
     color: #0f172a !important;
   }
+}
+
+/* Sleek Custom Scrollbar matching Theme */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.8);
+}
+
+/* Sidebar Navigation - Hide default scrollbar bar completely, scroll smoothly when needed */
+.custom-sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.custom-sidebar-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
 }
 
 

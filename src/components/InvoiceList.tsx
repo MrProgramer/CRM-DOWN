@@ -203,28 +203,25 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const paginatedInvoices = sortedInvoices.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="w-full space-y-5 pb-20 no-print transition-colors dir-rtl">
-      {/* Executive Header Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 shadow-2xs transition-colors">
-        <div className="space-y-2">
+    <div className="w-full space-y-4 pb-20 no-print transition-colors dir-rtl">
+      {/* Executive Header Bar - Flat Commercial */}
+      <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-none transition-colors">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
-              <Receipt className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700">
+              <Receipt className="w-3.5 h-3.5 text-slate-500" />
               <span>آرشیو و بایگانی اسناد مالی</span>
             </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span>{toPersianDigits(totalInvoicesCount)} فاکتور ثبت شده</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>{toPersianDigits(totalInvoicesCount)} سند ثبت شده</span>
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
-              <FileText className="w-5 h-5" />
-            </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>مدیریت و بایگانی فاکتورها</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
-            فهرست کامل فاکتورهای فروش، ورود کالا (خرید)، پیش‌نویس‌های تجاری و صدور فاکتورهای رسمی با محاسبه سود
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
+            فهرست کامل فاکتورهای فروش، ورود کالا (خرید)، پیش‌نویس‌های تجاری و صدور فاکتورهای رسمی
           </p>
         </div>
 
@@ -233,17 +230,17 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             id="invoice-list-new-purchase-btn"
             type="button"
             onClick={() => onNewInvoice('purchase')}
-            className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} hover:bg-slate-100 dark:hover:bg-slate-800 font-black text-xs shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer`}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             title="ثبت ورود کالا به انبار و صدور فاکتور خرید"
           >
-            <Package className="w-4 h-4 shrink-0" />
+            <Package className="w-4 h-4 shrink-0 text-slate-500" />
             <span>+ ورود کالا (خرید)</span>
           </button>
           <button
             id="invoice-list-new-sale-btn"
             type="button"
             onClick={() => onNewInvoice('sale')}
-            className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer`}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg ${theme.primary} ${theme.primaryHover} text-white font-bold text-xs transition-colors cursor-pointer shadow-xs`}
             title="صدور فاکتور خروج کالا و فروش به مشتری"
           >
             <Plus className="w-4 h-4 shrink-0" />
@@ -252,36 +249,36 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         </div>
       </div>
 
-      {/* Archive Statistics Summary Cards - Rounded-3xl Style like ReturnsManager */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+      {/* Archive Statistics Summary Cards - Flat Design */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
         
         {/* Total Documents */}
         <div 
           onClick={() => handleSelectFilter('all')}
-          className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs relative overflow-hidden group hover:shadow-md transition-all cursor-pointer ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
             filterType === 'all'
-              ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
-              : 'border-blue-200/70 dark:border-blue-900/40'
+              ? `${theme.borderColor} ${theme.primaryLight} ring-1 ring-current/20`
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
           title="کلیک برای نمایش تمام فاکتورها و اسناد"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
               <span>تعداد کل اسناد</span>
               {filterType === 'all' && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-blue-500 text-white">فعال</span>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${theme.primary} text-white`}>انتخاب شده</span>
               )}
             </span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
+            <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(totalInvoicesCount)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">سند</span>
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
+            {toPersianDigits(totalInvoicesCount)} <span className="text-xs text-slate-500 font-medium">سند</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>آرشیو کل اسناد سیستم:</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+            <span>آرشیو کل اسناد:</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
               {toPersianDigits(totalInvoicesCount)} سند
             </span>
           </div>
@@ -290,10 +287,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         {/* Sales Invoices */}
         <div 
           onClick={() => handleSelectFilter('sale')}
-          className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs relative overflow-hidden group hover:shadow-md transition-all cursor-pointer ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
             filterType === 'sale'
-              ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
-              : 'border-emerald-200/70 dark:border-emerald-900/40'
+              ? 'border-emerald-600 dark:border-emerald-500 ring-1 ring-emerald-500/20'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/50'
           }`}
           title="کلیک برای نمایش فاکتورهای فروش"
         >
@@ -301,18 +298,18 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <span>فاکتورهای فروش</span>
               {filterType === 'sale' && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white">فعال</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
+            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(salesInvoices.length)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">فاکتور</span>
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
+            {toPersianDigits(salesInvoices.length)} <span className="text-xs text-slate-500 font-medium">فاکتور</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>مجموع گردش فروش:</span>
+            <span>گردش فروش:</span>
             <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
               {formatPrice(totalSalesRevenue)}
             </span>
@@ -322,31 +319,31 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         {/* Purchase Invoices / Goods Entry */}
         <div 
           onClick={() => handleSelectFilter('purchase')}
-          className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs relative overflow-hidden group hover:shadow-md transition-all cursor-pointer ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
             filterType === 'purchase'
-              ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-sm'
-              : 'border-purple-200/70 dark:border-purple-900/40'
+              ? 'border-blue-600 dark:border-blue-500 ring-1 ring-blue-500/20'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50'
           }`}
           title="کلیک برای نمایش اسناد ورود کالا و خرید"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
               <span>ورود کالا (خرید)</span>
               {filterType === 'purchase' && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-purple-500 text-white">فعال</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800">
+            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(purchaseInvoices.length)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">فاکتور</span>
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
+            {toPersianDigits(purchaseInvoices.length)} <span className="text-xs text-slate-500 font-medium">فاکتور</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>{!isSecretMode ? 'جمع بهای تأمین:' : 'وضعیت تأمین:'}</span>
-            <span className="font-bold text-purple-600 dark:text-purple-400 font-mono">
-              {!isSecretMode ? formatPrice(totalPurchaseValue) : 'اسناد تأیید شده'}
+            <span>{!isSecretMode ? 'بهای تأمین:' : 'وضعیت:'}</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+              {!isSecretMode ? formatPrice(totalPurchaseValue) : 'تأیید شده'}
             </span>
           </div>
         </div>
@@ -354,10 +351,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         {/* Draft Invoices */}
         <div 
           onClick={() => handleSelectFilter('drafts')}
-          className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-xs relative overflow-hidden group hover:shadow-md transition-all cursor-pointer ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
             filterType === 'drafts'
-              ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-sm'
-              : 'border-amber-200/70 dark:border-amber-900/40'
+              ? 'border-amber-600 dark:border-amber-500 ring-1 ring-amber-500/20'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/50'
           }`}
           title="کلیک برای نمایش فاکتورهای پیش‌نویس بلاتکلیف"
         >
@@ -365,90 +362,90 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
               <span>پیش‌نویس‌ها و موقت</span>
               {filterType === 'drafts' && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-500 text-white">فعال</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800">
+            <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
               <FileClock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(draftInvoicesCount)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">پیش‌نویس</span>
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
+            {toPersianDigits(draftInvoicesCount)} <span className="text-xs text-slate-500 font-medium">پیش‌نویس</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>در انتظار نهایی‌سازی:</span>
             <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
-              {toPersianDigits(draftInvoicesCount)} سند موقت
+              {toPersianDigits(draftInvoicesCount)} سند
             </span>
           </div>
         </div>
 
       </div>
 
-      {/* Filter & Search Toolbar - Unified Theme */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
+      {/* Filter & Search Toolbar - Flat Segmented Style */}
+      <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-3 sm:p-4 shadow-none flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative w-full lg:w-96">
-          <Search className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="جستجوی شماره فاکتور، مشتری، شهر یا کالا..."
-            className="w-full pr-10 pl-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-black dark:text-white placeholder-slate-500 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 shadow-2xs transition-colors"
+            className="w-full pr-9 pl-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs font-bold focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors"
           />
         </div>
 
-        {/* Filter Type Tabs - Unified Theme Palette */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
+        {/* Filter Type Tabs - Clean Segmented Control */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-lg border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
             <button
               onClick={() => handleSelectFilter('all')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 filterType === 'all'
-                  ? `${theme.primary} text-white shadow-xs`
+                  ? `bg-white dark:bg-slate-800 ${theme.primaryText} shadow-xs font-black`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>همه</span>
-              <span className="text-[10px] opacity-90">({toPersianDigits(invoices.length)})</span>
+              <span className="text-[10px] opacity-75 font-mono">({toPersianDigits(invoices.length)})</span>
             </button>
             <button
               onClick={() => handleSelectFilter('sale')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 filterType === 'sale'
-                  ? `${theme.primary} text-white shadow-xs`
+                  ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-xs font-black'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
               <span>فروش</span>
-              <span className="text-[10px] opacity-90">({toPersianDigits(invoices.filter(i => i.type === 'sale').length)})</span>
+              <span className="text-[10px] opacity-75 font-mono">({toPersianDigits(invoices.filter(i => i.type === 'sale').length)})</span>
             </button>
             <button
               onClick={() => handleSelectFilter('purchase')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 filterType === 'purchase'
-                  ? `${theme.primary} text-white shadow-xs`
+                  ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-xs font-black'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Package className="w-3.5 h-3.5" />
               <span>ورود کالا</span>
-              <span className="text-[10px] opacity-90">({toPersianDigits(invoices.filter(i => i.type === 'purchase').length)})</span>
+              <span className="text-[10px] opacity-75 font-mono">({toPersianDigits(invoices.filter(i => i.type === 'purchase').length)})</span>
             </button>
             <button
               onClick={() => handleSelectFilter('drafts')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 filterType === 'drafts'
-                  ? `${theme.primary} text-white shadow-xs`
+                  ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 shadow-xs font-black'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <FileClock className="w-3.5 h-3.5" />
               <span>پیش‌نویس‌ها</span>
-              <span className="text-[10px] opacity-90">({toPersianDigits(invoices.filter(i => i.isDraft).length)})</span>
+              <span className="text-[10px] opacity-75 font-mono">({toPersianDigits(invoices.filter(i => i.isDraft).length)})</span>
             </button>
           </div>
 
@@ -456,21 +453,21 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           <button
             type="button"
             onClick={() => handleSort('date')}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0 shadow-2xs whitespace-nowrap"
-            title={sortDirection === 'desc' ? 'مرتب‌سازی: جدیدترین در ابتدا (کلیک برای صعودی/قدیمی‌ترین)' : 'مرتب‌سازی: قدیمی‌ترین در ابتدا (کلیک برای نزولی/جدیدترین)'}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0 whitespace-nowrap"
+            title={sortDirection === 'desc' ? 'مرتب‌سازی: جدیدترین در ابتدا' : 'مرتب‌سازی: قدیمی‌ترین در ابتدا'}
           >
             {sortDirection === 'desc' ? (
-              <ArrowDownWideNarrow className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
+              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             ) : (
-              <ArrowUpNarrowWide className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
+              <ArrowUpNarrowWide className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             )}
             <span>{sortDirection === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین'}</span>
           </button>
         </div>
       </div>
 
-      {/* Invoices Data Grid - Streamlined Professional Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden transition-colors">
+      {/* Invoices Data Grid - Streamlined Professional Flat Table */}
+      <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-none overflow-hidden transition-colors">
         {sortedInvoices.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-xs space-y-2">
             <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />

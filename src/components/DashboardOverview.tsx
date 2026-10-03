@@ -266,244 +266,109 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   return (
     <div className="w-full space-y-5 pb-20 no-print transition-colors dir-rtl">
       
-      {/* 1. EXECUTIVE HERO BANNER - THEME-HARMONIZED FOR DAY & NIGHT */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10, scale: 0.99 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 border ${heroStyle.borderColor} ${heroStyle.containerBg} ${heroStyle.gradientOverlay} ${heroStyle.glowShadow} transition-all duration-500`}
-      >
-        {/* Animated Ambient Backlight Elements - Subtle watercolor sheen in light mode & atmospheric glow in dark mode */}
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            x: [0, 15, 0],
-            y: [0, -10, 0],
-            opacity: [0.08, 0.16, 0.08]
-          }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-24 -left-20 w-80 h-80 rounded-full blur-3xl pointer-events-none dark:opacity-30" 
-          style={{ backgroundColor: heroStyle.orbHex1 }}
-        />
-        <motion.div 
-          animate={{ 
-            scale: [1.1, 0.95, 1.1],
-            x: [0, -20, 0],
-            y: [0, 15, 0],
-            opacity: [0.06, 0.14, 0.06]
-          }}
-          transition={{ duration: 8.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute -bottom-24 -right-20 w-80 h-80 rounded-full blur-3xl pointer-events-none dark:opacity-25" 
-          style={{ backgroundColor: heroStyle.orbHex2 }}
-        />
-
-        {/* Subtle Geometric Grid Background */}
-        <div 
-          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1.5px 1.5px, currentColor 1.2px, transparent 0)`,
-            backgroundSize: '28px 28px'
-          }}
-        />
-
-        <div className="relative z-10 space-y-6">
-          {/* Top Row: Live Status Badges & Quick Meta */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Online Live Status */}
-              <span className="inline-flex items-center gap-2 text-[11px] font-black px-3.5 py-1.5 rounded-full border shadow-2xs transition-colors bg-emerald-50 text-emerald-800 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <span>سامانه هوشمند مالی و بازرگانی</span>
-              </span>
-
-              {/* Date & Time Capsule */}
-              <span className="inline-flex items-center gap-2 text-[11px] font-bold px-3.5 py-1.5 rounded-full border shadow-2xs transition-colors bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700">
-                <Calendar className={`w-3.5 h-3.5 ${heroStyle.iconColor}`} />
-                <span>{getCurrentPersianDate()}</span>
-                <span className="text-slate-400 dark:text-slate-600">•</span>
-                <Clock className={`w-3.5 h-3.5 ${heroStyle.iconColor}`} />
-                <span className="font-mono font-bold">{getCurrentPersianTime()}</span>
-              </span>
-
-              {/* Security/Backup Badge */}
-              <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full border bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                <span>پایگاه داده پایدار و امن</span>
-              </span>
-            </div>
-
-            {/* Store Name Badge */}
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className={`text-[11px] font-black px-3 py-1 rounded-xl border ${heroStyle.accentPillBg} flex items-center gap-1.5 shadow-2xs`}>
-                <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '8s' }} />
-                <span>{settings.storeNameFa || 'فروشگاه بازرگانی'}</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Middle Row: Title, Subtitle, & Quick Interactive Action Bar */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-snug flex items-center gap-3 flex-wrap text-slate-900 dark:text-white">
-                <span>
-                  مرکز مدیریت و ارزیابی مالی هوشمند
-                </span>
-                <motion.div 
-                  whileHover={{ rotate: 15, scale: 1.12 }}
-                  className="inline-flex items-center justify-center p-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/90 shadow-2xs cursor-pointer"
-                >
-                  <Zap className={`w-4 h-4 ${heroStyle.iconColor} animate-pulse`} />
-                </motion.div>
+      {/* 1. EXECUTIVE COMMAND HEADER - PURE FLAT BESPOKE COMMERCIAL DESIGN */}
+      <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 space-y-5 transition-colors">
+        {/* Top Row: Title, Subtitle, and Integrated Period Segmented Control */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                پیشخوان مدیریت مالی و بازرگانی
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                نظارت یکپارچه بر جریان نقدینگی، سودآوری خالص، موجودی کالای انبار، اسناد فاکتور و تراز حساب مشتریان در پالت تم انتخابی شما.
-              </p>
-            </div>
-
-            {/* Action Buttons Cluster */}
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              <motion.button
-                whileHover={{ scale: 1.03, y: -1 }}
-                whileTap={{ scale: 0.97 }}
-                id="hero-create-invoice-btn"
-                onClick={onNewInvoice}
-                className={`px-5 py-3 rounded-2xl ${heroStyle.primaryBtn} ${heroStyle.primaryBtnHover} ${heroStyle.primaryBtnText} font-black text-xs transition-all cursor-pointer flex items-center gap-2 ${heroStyle.primaryBtnShadow}`}
-              >
-                <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-                <span>صدور فاکتور جدید +</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigateToTab('inventory')}
-                className="px-3.5 py-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
-              >
-                <Layers className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                <span>مدیریت انبار</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigateToTab('customers')}
-                className="px-3.5 py-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
-              >
-                <Users className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                <span>مشتریان</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigateToTab('liquidity')}
-                className="px-3.5 py-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
-              >
-                <Wallet className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                <span>خزانه‌داری</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigateToTab('returns')}
-                className="px-3.5 py-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
-              >
-                <RotateCcw className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                <span>مرجوعی ({toPersianDigits(productReturns.length)})</span>
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Bottom Interactive Mini-Insights Strip */}
-          <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-2xl bg-white/95 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-2xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">فروش کل دوره</span>
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-mono">{formatPrice(totalSalesRevenue)}</span>
-              </div>
-              <div className={`p-2 rounded-xl ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor} shrink-0`}>
-                <DollarSign className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-white/95 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-2xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">فاکتورهای نهایی</span>
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-mono">{toPersianDigits(salesInvoices.length)} سند صادرشده</span>
-              </div>
-              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0">
-                <FileText className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-white/95 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-2xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">ارزش ریالی انبار</span>
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-mono">{formatPrice(totalWarehouseSalesValue)}</span>
-              </div>
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
-                <Package className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-white/95 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-2xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">تراز نقدی و بانک</span>
-                <span className={`text-xs sm:text-sm font-black font-mono ${treasuryNet >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
-                  {formatPrice(treasuryNet)}
+              {settings.brandName && (
+                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 mr-2">
+                  · {settings.brandName}
                 </span>
-              </div>
-              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 shrink-0">
-                <Activity className="w-4 h-4" />
-              </div>
+              )}
             </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              نظارت یکپارچه بر گردش نقدینگی، سودآوری، اسناد فاکتور، وضعیت انبار و تراز مشتریان
+            </p>
+          </div>
+
+          {/* Clean Segmented Time Period Filter */}
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto gap-0.5">
+            {(['today', 'week', 'month', '3months', '1year', 'all'] as const).map((periodKey) => {
+              const labels: Record<string, string> = {
+                today: 'امروز',
+                week: '۷ روز',
+                month: 'ماه جاری',
+                '3months': '۳ ماهه',
+                '1year': '۱ ساله',
+                all: 'کل دوره'
+              };
+              const isActive = timePeriod === periodKey;
+              return (
+                <button
+                  key={periodKey}
+                  type="button"
+                  onClick={() => handleSelectTimePeriod(periodKey)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white font-black shadow-xs`
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {labels[periodKey]}
+                </button>
+              );
+            })}
           </div>
         </div>
-      </motion.div>
 
-      {/* 1.5 PERIOD FILTER SELECTOR - FLAT BAR */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 w-full">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 shrink-0">
-          <Filter className={`w-4 h-4 ${currentTheme.primaryText}`} />
-          <span>بازه زمانی تحلیل داده‌های داشبورد:</span>
-        </div>
+        {/* Quick Action Command Toolbar */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="hero-create-invoice-btn"
+              onClick={onNewInvoice}
+              className={`px-4 py-2 rounded-lg ${currentTheme.primary} ${currentTheme.primaryHover} text-white font-black text-xs transition-colors cursor-pointer flex items-center gap-2 shadow-xs`}
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>صدور فاکتور جدید</span>
+            </button>
 
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto max-w-full">
-          {(['today', 'week', 'month', '3months', '6months', '1year', 'all'] as const).map((periodKey) => {
-            const labels: Record<string, string> = {
-              today: 'امروز',
-              week: 'هفتگی (۷ روزه)',
-              month: '۳۰ روزه (ماهیانه)',
-              '3months': '۳ ماهه',
-              '6months': '۶ ماهه',
-              '1year': '۱ ساله',
-              all: 'کل دوره'
-            };
-            const isActive = timePeriod === periodKey;
-            return (
-              <button
-                key={periodKey}
-                type="button"
-                onClick={() => handleSelectTimePeriod(periodKey)}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {labels[periodKey]}
-              </button>
-            );
-          })}
-        </div>
+            <button
+              onClick={() => onNavigateToTab('inventory')}
+              className="px-3.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Boxes className="w-3.5 h-3.5 text-slate-500" />
+              <span>موجودی انبار</span>
+            </button>
 
-        <div className="hidden md:flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span>پردازش زنده آمار و اطلاعات</span>
+            <button
+              onClick={() => onNavigateToTab('customers')}
+              className="px-3.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5 text-slate-500" />
+              <span>حساب مشتریان</span>
+            </button>
+
+            <button
+              onClick={() => onNavigateToTab('liquidity')}
+              className="px-3.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Wallet className="w-3.5 h-3.5 text-slate-500" />
+              <span>خزانه‌داری</span>
+            </button>
+
+            <button
+              onClick={() => onNavigateToTab('returns')}
+              className="px-3.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+              <span>مرجوعی ({toPersianDigits(productReturns.length)})</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{toPersianDigits(getCurrentPersianDate())}</span>
+            <span>·</span>
+            <Clock className="w-3.5 h-3.5" />
+            <span>{toPersianDigits(getCurrentPersianTime())}</span>
+          </div>
         </div>
       </div>
 
@@ -748,23 +613,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </motion.div>
 
       {/* 3. EXECUTIVE COMPREHENSIVE TRANSACTIONS & INVOICES TABLE (مستقیماً زیر نمودار تحلیل و آمار پیشرفته) */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.1 }}
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden transition-all hover:shadow-md"
+      <div 
+        className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-none overflow-hidden transition-colors"
       >
         {/* Table Header & Controls */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-950/60 backdrop-blur-sm">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-950/60">
           <div>
             <div className="flex items-center gap-2">
-              <span className={`p-2 rounded-xl ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor} shadow-2xs`}>
+              <span className={`p-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
                 <Receipt className="w-4 h-4" />
               </span>
               <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                 دفتر اسناد و فهرست ریز فاکتورهای بازرگانی
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-black border border-slate-300/60 dark:border-slate-700/60">
+              <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold border border-slate-300/60 dark:border-slate-700/60">
                 {toPersianDigits(filteredTableInvoices.length)} سند
               </span>
             </div>
@@ -785,7 +647,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   setTableSearchQuery(e.target.value);
                   setTableCurrentPage(1);
                 }}
-                className="w-full pr-8 pl-7 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all shadow-2xs"
+                className="w-full pr-8 pl-7 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors shadow-none"
               />
               {tableSearchQuery && (
                 <button
@@ -798,12 +660,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
 
             {/* Quick Filter Pills */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto shadow-2xs">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto">
               <button
                 onClick={() => { setTableFilterType('all'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'all'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                    ? `${currentTheme.primary} text-white shadow-xs font-black`
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
@@ -811,9 +673,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </button>
               <button
                 onClick={() => { setTableFilterType('sale'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'sale'
-                    ? `${currentTheme.primary} text-white shadow-xs`
+                    ? 'bg-emerald-600 text-white shadow-xs font-black'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
@@ -821,9 +683,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </button>
               <button
                 onClick={() => { setTableFilterType('purchase'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'purchase'
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
@@ -831,9 +693,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </button>
               <button
                 onClick={() => { setTableFilterType('credit'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'credit'
-                    ? 'bg-amber-600 text-white shadow-xs'
+                    ? 'bg-amber-600 text-white shadow-xs font-black'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
@@ -841,9 +703,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </button>
               <button
                 onClick={() => { setTableFilterType('cash'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'cash'
-                    ? 'bg-emerald-600 text-white shadow-xs'
+                    ? 'bg-emerald-700 text-white shadow-xs font-black'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
@@ -1034,7 +896,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           itemName="سند"
           themeColor={settings.themeColor}
         />
-      </motion.div>
+      </div>
 
       {/* 4. MAIN OPERATIONAL & ANALYTICS DASHBOARD GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -1042,13 +904,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* Left 2 Columns: Category Distribution & Performance */}
         <div className="lg:col-span-2 space-y-5">
           {/* Category Distribution Meters */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-2xs hover:shadow-md transition-all"
+          <div 
+            className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 space-y-4 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
               <div className="flex items-center gap-2">
                 <span className={`p-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
                   <Layers className="w-4 h-4" />
@@ -1058,7 +917,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   <p className="text-xs text-slate-400 mt-0.5">سهم ریالی هر دسته از کل سرمایه موجود در انبار</p>
                 </div>
               </div>
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                 {toPersianDigits(categories.length)} گروه کالایی
               </span>
             </div>
@@ -1067,16 +926,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               {categories.map(([catName, data], cIdx) => {
                 const percentage = totalWarehouseSalesValue > 0 ? (data.value / totalWarehouseSalesValue) * 100 : 0;
                 return (
-                  <div key={`dash-cat-${catName || 'uncat'}-${cIdx}`} className={`p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2 ${currentTheme.accentHoverBorder} transition-colors`}>
+                  <div key={`dash-cat-${catName || 'uncat'}-${cIdx}`} className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 dark:text-white text-xs">{catName}</span>
                       <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                         {toPersianDigits(data.count)} کالا ({toPersianDigits(data.stockCartons)} کارتن)
                       </span>
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                       <div 
-                        className="h-full rounded-full transition-all duration-500"
+                        className="h-full rounded-full transition-all duration-300"
                         style={{ 
                           width: `${Math.min(100, Math.max(8, percentage))}%`,
                           backgroundColor: currentTheme.hex
@@ -1085,26 +944,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                       <span>ارزش: {formatPrice(data.value)}</span>
-                      <span className={`font-bold ${currentTheme.primaryText}`}>{toPersianDigits(percentage.toFixed(0))}٪</span>
+                      <span className="font-bold text-slate-900 dark:text-white font-mono">{toPersianDigits(percentage.toFixed(0))}٪</span>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Right 1 Column: Low Stock Alerts, Bank Card & Activity Logs */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           
           {/* Low Stock Alerts */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-2xs hover:shadow-md transition-all"
+          <div 
+            className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-4 space-y-3 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-amber-500" />
                 <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">هشدار موجودی بحرانی انبار</h3>
@@ -1115,8 +971,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
 
             {lowStockProducts.length === 0 ? (
-              <div className="py-4 text-center text-emerald-600 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
+              <div className="py-4 text-center text-emerald-600 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
                 موجودی انبار در وضعیت مطلوب است.
               </div>
             ) : (
@@ -1127,7 +983,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   return (
                     <div 
                       key={`low-stock-${prod.id || pIdx}-${pIdx}`} 
-                      className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-center justify-between text-xs hover:border-amber-300 transition-colors"
+                      className="p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-center justify-between text-xs"
                     >
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white text-xs">{prod.name}</div>
@@ -1148,20 +1004,17 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             <button
               onClick={() => onNavigateToTab('inventory')}
-              className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-colors text-center block cursor-pointer border border-slate-200 dark:border-slate-700"
+              className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-lg text-xs font-bold transition-colors text-center block cursor-pointer border border-slate-200 dark:border-slate-700"
             >
               مدیریت موجودی و ورود کالا
             </button>
-          </motion.div>
+          </div>
 
           {/* Bank Card Widget */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.25 }}
-            className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-2xl p-4 space-y-3 border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all"
+          <div 
+            className="bg-white dark:bg-[#090d16] text-slate-900 dark:text-white rounded-xl p-4 space-y-3 border border-slate-200/90 dark:border-slate-800 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span className="font-bold text-xs text-slate-900 dark:text-white">حساب بانکی و تسویه</span>
@@ -1181,13 +1034,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             {/* Card Number */}
             <div className="space-y-1">
               <span className="text-[10px] text-slate-500 dark:text-slate-400">شماره کارت جهت تسویه:</span>
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                 <span className="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-900 dark:text-white dir-ltr">
                   {toPersianDigits(settings.cardNumber)}
                 </span>
                 <button
                   onClick={handleCopyCard}
-                  className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                  className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                   title="کپی کارت"
                 >
                   {copiedCard ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1198,13 +1051,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             {/* IBAN */}
             <div className="space-y-1">
               <span className="text-[10px] text-slate-500 dark:text-slate-400">شماره شبا (IBAN):</span>
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px]">
-                <span className="font-mono text-amber-700 dark:text-amber-300 font-bold dir-ltr truncate max-w-[180px]">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px]">
+                <span className="font-mono text-slate-800 dark:text-slate-200 font-bold dir-ltr truncate max-w-[180px]">
                   {settings.iban}
                 </span>
                 <button
                   onClick={handleCopyIban}
-                  className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                  className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                   title="کپی شبا"
                 >
                   {copiedIban ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1212,25 +1065,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-2 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-850">
               📍 {settings.address}
             </div>
-          </motion.div>
+          </div>
 
           {/* Recent Activity & Notification Widget */}
           {activityLogs && activityLogs.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-2xs hover:shadow-md transition-all"
+            <div 
+              className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-4 space-y-3 shadow-none transition-colors"
             >
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-blue-500" />
                   <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">رویدادها و اعلان‌های اخیر</h3>
                 </div>
-                <span className="text-[10px] text-slate-400 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
+                <span className="text-[10px] text-slate-400 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                   {toPersianDigits(activityLogs.length)} رویداد
                 </span>
               </div>
@@ -1292,7 +1142,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
 
         </div>

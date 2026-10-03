@@ -737,7 +737,7 @@ export const TreasuryBreakdownModal: React.FC<TreasuryBreakdownModalProps> = ({
           initial={{ opacity: 0, scale: 0.96, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative text-right"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative text-right"
         >
           {/* 1. Modal Header */}
           <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-slate-800 flex items-start sm:items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-950/50">

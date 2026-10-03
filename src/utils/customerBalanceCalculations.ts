@@ -19,7 +19,14 @@ export function getInvoiceCreditDebtAmount(inv: Invoice): number {
         return s + (uPrice > 0 ? uPrice * it.totalPieces : (it.totalPrice || 0));
       }, 0)
     : (inv.subtotal || 0);
-  const computedFinal = Math.max(0, computedSubtotal - (inv.discount || 0) + (inv.tax || 0) - (inv.offsetReturnsTotal || 0));
+  
+  const returnOffset = Number(inv.offsetReturnsTotal) || 0;
+  const expenseDeductions = Number(inv.expensesTotalDeduction) || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+  const expenseAdditions = Number(inv.expensesTotalAddition) || (inv.expenses || []).filter(e => e.action === 'add').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+  const discount = Number(inv.discount) || 0;
+  const tax = Number(inv.tax) || 0;
+
+  const computedFinal = Math.max(0, computedSubtotal - discount + tax - returnOffset - expenseDeductions + expenseAdditions);
   const finalAmt = computedFinal > 0 ? computedFinal : (Number(inv.finalAmount) || 0);
 
   if (finalAmt <= 0) return 0;
@@ -77,12 +84,30 @@ export function getCustomerPurchaseInvoices(customer: Customer, invoices: Invoic
 
 /**
  * Calculates total credit debt to supplier from purchase invoices
- * (unpaid portion of goods purchased from supplier)
+ * (unpaid portion of goods purchased from supplier, subtracting returned goods and freight/cost deductions)
  */
 export function getCustomerCreditPurchasesTotal(customer: Customer, invoices: Invoice[] = []): number {
   const purchaseInvoices = getCustomerPurchaseInvoices(customer, invoices);
   return purchaseInvoices.reduce((sum, inv) => {
-    const finalAmt = Number(inv.finalAmount) || 0;
+    const computedSubtotal = (inv.items && inv.items.length > 0)
+      ? inv.items.reduce((s, it) => {
+          const uPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
+            ? it.unitPurchasePrice
+            : (it.unitSellingPrice || (it.totalPieces > 0 ? Math.round((it.totalPrice || 0) / it.totalPieces) : 0));
+          return s + (uPrice > 0 ? uPrice * it.totalPieces : (it.totalPrice || 0));
+        }, 0)
+      : (inv.subtotal || 0);
+
+    const returnOffset = Number(inv.offsetReturnsTotal) || 0;
+    const expenseDeductions = Number(inv.expensesTotalDeduction) || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const expenseAdditions = Number(inv.expensesTotalAddition) || (inv.expenses || []).filter(e => e.action === 'add').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const discount = Number(inv.discount) || 0;
+    const tax = Number(inv.tax) || 0;
+
+    // Exact net final amount deducting returns and expense/freight deductions
+    const netCalculated = Math.max(0, computedSubtotal - discount + tax - returnOffset - expenseDeductions + expenseAdditions);
+    const finalAmt = netCalculated > 0 ? netCalculated : (Number(inv.finalAmount) || 0);
+
     if (finalAmt <= 0) return sum;
     if (inv.paymentStatus === 'cash') return sum;
     if (inv.paymentStatus === 'partial' || (inv.paidAmount !== undefined && inv.paidAmount > 0)) {

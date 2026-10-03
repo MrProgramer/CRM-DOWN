@@ -781,7 +781,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
         initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto transition-colors"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto transition-colors"
       >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-950/60">
@@ -875,7 +875,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
         {/* Modal Scrollable Body */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
           {/* EXECUTIVE FINANCIAL & PURCHASING POWER INTELLIGENCE BANNER */}
-          <div className="bg-gradient-to-b from-slate-50 to-white dark:from-slate-950/80 dark:to-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-4.5 space-y-3.5 shadow-2xs">
+          <div className="bg-gradient-to-b from-slate-50 to-white dark:from-slate-950/80 dark:to-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-4.5 space-y-3.5 shadow-2xs">
             {/* Top Metric Cards - 4 Column Modern Analytical Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {/* Card 1: نقدینگی حاضر (صندوق + بانک) */}

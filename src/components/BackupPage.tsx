@@ -315,7 +315,7 @@ export const BackupPage: React.FC<BackupPageProps> = ({
   return (
     <div className="space-y-6 pb-20 dir-rtl text-slate-800 dark:text-slate-100">
       {/* Top Banner Card - Executive Control Room */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-all no-print">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-all no-print">
         <div className="space-y-2.5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
@@ -990,7 +990,7 @@ export const BackupPage: React.FC<BackupPageProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white dark:bg-slate-900 rounded-xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
               {/* Modal Header */}
               <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">

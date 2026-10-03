@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StoreSettings, ActivityLog, AppDesignMode } from '../types';
-import { themes, designModes, getDesignModeConfig } from './ThemeConfig';
+import { themes, designModes, getDesignModeConfig, ThemeColor } from './ThemeConfig';
 import { SecurityAuthModal } from './SecurityAuthModal';
 import { 
   FileText, 
@@ -75,6 +75,8 @@ interface HeaderNavProps {
   isSecurityLocked?: boolean;
   onToggleSecurityMode?: () => void;
   onDesignModeChange?: (mode: AppDesignMode) => void;
+  onThemeColorChange?: (color: ThemeColor) => void;
+  onQuickUpdateSettings?: (updates: Partial<StoreSettings>) => void;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -98,10 +100,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   isSecurityLocked = true,
   onToggleSecurityMode,
   onDesignModeChange,
+  onThemeColorChange,
+  onQuickUpdateSettings,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isDesignModeMenuOpen, setIsDesignModeMenuOpen] = useState(false);
+  const [isThemeColorMenuOpen, setIsThemeColorMenuOpen] = useState(false);
   const [isSecretAuthModalOpen, setIsSecretAuthModalOpen] = useState(false);
   const theme = themes[settings.themeColor] || themes.teal;
 
@@ -248,64 +253,59 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   return (
     <>
       {/* ALWAYS OPEN RIGHT SIDEBAR NAVIGATION (RTL Desktop) */}
-      <aside className={`hidden lg:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} fixed top-0 right-0 bottom-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-40 p-3 justify-between no-print transition-all duration-300 select-none shadow-xl dark:shadow-slate-950/60`}>
-        <div className="space-y-3">
+      <aside className={`hidden lg:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} fixed top-0 right-0 bottom-0 bg-white dark:bg-[#090d16] border-l border-slate-200/90 dark:border-slate-800/90 z-40 p-3.5 justify-between no-print transition-all duration-200 select-none`}>
+        <div className="space-y-4">
           {/* Brand & Logo Header & Sidebar Collapse Toggle Button */}
           <div className={`flex items-center ${isSidebarCollapsed ? 'flex-col gap-2.5' : 'justify-between'} px-1 pt-1`}>
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-2.5 min-w-0">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-9 h-9 rounded-xl ${theme.primary} text-white flex items-center justify-center shadow-xs shrink-0 cursor-pointer overflow-hidden`}
+                <div 
+                  className={`w-9 h-9 rounded-lg ${theme.primary} text-white flex items-center justify-center font-black text-sm shrink-0 cursor-pointer overflow-hidden shadow-xs`}
                 >
                   {settings.appLogo ? (
                     settings.appLogo.startsWith('data:image') ? (
                       <img src={settings.appLogo} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                     ) : (
-                      <span className="text-xl select-none">{settings.appLogo}</span>
+                      <span className="text-lg select-none">{settings.appLogo}</span>
                     )
                   ) : (
-                    <Sparkles className="w-4 h-4 text-white" />
+                    <span>{(settings.brandName || 'ب')[0]}</span>
                   )}
-                </motion.div>
+                </div>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-display text-slate-900 dark:text-white text-base font-black tracking-tight truncate whitespace-nowrap">
+                    <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight truncate whitespace-nowrap">
                       {settings.brandName || 'سامانه بازرگانی'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[10px] text-slate-400 font-bold truncate whitespace-nowrap">
-                      مدیریت بازرگانی هوشمند
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400 font-medium truncate whitespace-nowrap">
+                      نرم‌افزار حسابداری و بازرگانی
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-xl ${theme.primary} text-white flex items-center justify-center shadow-xs shrink-0 cursor-pointer overflow-hidden`}
+              <div 
+                className={`w-9 h-9 rounded-lg ${theme.primary} text-white flex items-center justify-center font-black text-sm shrink-0 cursor-pointer overflow-hidden shadow-xs`}
                 title={settings.brandName || 'سامانه بازرگانی'}
               >
                 {settings.appLogo ? (
                   settings.appLogo.startsWith('data:image') ? (
                     <img src={settings.appLogo} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                   ) : (
-                    <span className="text-xl select-none">{settings.appLogo}</span>
+                    <span className="text-lg select-none">{settings.appLogo}</span>
                   )
                 ) : (
-                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>{(settings.brandName || 'ب')[0]}</span>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {onToggleSidebar && (
               <button
                 onClick={onToggleSidebar}
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer shrink-0 border border-slate-200/50 dark:border-slate-700/50"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 title={isSidebarCollapsed ? 'گسترش منو' : 'جمع کردن منو'}
               >
                 {isSidebarCollapsed ? <PanelRightOpen className="w-4 h-4" /> : <PanelRightClose className="w-4 h-4" />}
@@ -315,37 +315,34 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
           {/* Quick Primary Action: New Invoice CTA Button */}
           <div className="pt-0.5">
-            <motion.button
+            <button
               id="sidebar-new-invoice-btn"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
               onClick={() => onTabChange('new-invoice')}
               title={isSidebarCollapsed ? 'صدور فاکتور جدید' : undefined}
               className={`w-full flex items-center ${
                 isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-center gap-2 py-2 px-3'
-              } rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs shadow-xs transition-all cursor-pointer select-none group border border-white/20`}
+              } rounded-lg ${theme.primary} ${theme.primaryHover} text-white font-bold text-xs transition-colors cursor-pointer select-none shadow-xs`}
             >
-              <PlusCircle className="w-4 h-4 shrink-0 transition-transform group-hover:rotate-90 duration-300" />
+              <PlusCircle className="w-4 h-4 shrink-0" />
               {!isSidebarCollapsed && (
                 <span className="truncate whitespace-nowrap tracking-tight font-black">صدور فاکتور جدید</span>
               )}
-            </motion.button>
+            </button>
           </div>
 
           {/* Categorized Professional Navigation Menu */}
-          <nav className="space-y-3.5 overflow-y-auto max-h-[calc(100vh-210px)] pr-0.5 pl-0.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+          <nav className="space-y-2.5 overflow-y-auto max-h-[calc(100vh-170px)] pr-0.5 pl-0.5 custom-sidebar-scroll">
             {navSections.map((section, sIdx) => {
               const visibleItems = section.items.filter(it => !(it.hideInSecretMode && isSecretMode));
               if (visibleItems.length === 0) return null;
 
               return (
-                <div key={`nav-sec-${section.id}-${sIdx}`} className="space-y-1">
+                <div key={`nav-sec-${section.id}-${sIdx}`} className="space-y-0.5">
                   {!isSidebarCollapsed ? (
                     <div className="px-2 py-1 flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                      <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 select-none">
                         {section.title}
                       </span>
-                      <span className="w-8 h-px bg-slate-200/80 dark:bg-slate-800"></span>
                     </div>
                   ) : (
                     <div className="w-6 h-px bg-slate-200 dark:bg-slate-800 mx-auto my-1" />
@@ -363,32 +360,37 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                           onClick={() => onTabChange(item.id)}
                           title={isSidebarCollapsed ? `${item.label} (${item.subtitle})` : undefined}
                           className={`w-full flex items-center ${
-                            isSidebarCollapsed ? 'justify-center py-2 px-1.5' : 'justify-between px-2.5 py-2'
-                          } rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer text-right group relative ${
+                            isSidebarCollapsed ? 'justify-center py-2.5 px-2' : 'justify-between px-3 py-2.5'
+                          } text-sm font-bold transition-all cursor-pointer text-right group relative ${
                             isActive
-                              ? `${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shadow-xs font-black`
-                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/90 dark:hover:bg-slate-800/80 border border-transparent'
+                              ? `${theme.activeTab} rounded-r-none rounded-l-xl font-black shadow-xs`
+                              : 'text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl'
                           }`}
                         >
-                          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0`}>
-                            <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-105 ${
-                              isActive ? theme.activeIcon : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} min-w-0`}>
+                            <Icon className={`w-4.5 h-4.5 shrink-0 transition-colors ${
+                              isActive ? (theme.activeIcon || 'text-slate-900 dark:text-white') : 'text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'
                             }`} />
                             {!isSidebarCollapsed && (
-                              <span className="truncate whitespace-nowrap tracking-tight">{item.label}</span>
+                              <span className="truncate whitespace-nowrap tracking-tight font-bold">{item.label}</span>
                             )}
                           </div>
 
                           {!isSidebarCollapsed && item.count !== null && (
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-black shrink-0 ${
-                              isActive ? `${theme.badgeBg} ${theme.badgeText}` : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            <span className={`text-xs font-mono font-black px-2 py-0.5 rounded-lg ${
+                              isActive
+                                ? `${theme.badgeBg} ${theme.badgeText}`
+                                : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800'
                             }`}>
                               {toPersianDigits(item.count)}
                             </span>
                           )}
 
-                          {isSidebarCollapsed && item.count !== null && (
-                            <span className={`w-2 h-2 rounded-full absolute top-2 right-2 ${theme.primary}`} />
+                          {isSidebarCollapsed && isActive && (
+                            <span 
+                              className="w-1.5 h-1.5 rounded-full absolute top-2 right-2 ring-1 ring-white/50" 
+                              style={{ backgroundColor: theme.hex }}
+                            />
                           )}
                         </button>
                       );
@@ -401,21 +403,21 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         </div>
 
         {/* Footer Actions & Manager Profile Card */}
-        <div className="space-y-2 pt-2.5 border-t border-slate-200/80 dark:border-slate-800">
+        <div className="space-y-2 pt-2 border-t border-slate-200/90 dark:border-slate-800">
           {/* User Profile Footer Card */}
-          <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className={`p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             <div className="flex items-center gap-2 min-w-0">
               <div 
-                className={`w-7 h-7 rounded-lg ${theme.primary} text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0`}
+                className="w-7 h-7 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0"
                 title={isSidebarCollapsed ? 'مدیریت بازرگانی' : undefined}
               >
                 م
               </div>
               {!isSidebarCollapsed && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-black text-slate-900 dark:text-white truncate whitespace-nowrap">مدیریت بازرگانی</span>
-                  <span className="text-[10px] text-slate-400 font-bold truncate whitespace-nowrap">
-                    {isSecurityLocked ? 'قفل امنیتی فعال' : 'دسترسی مدیر ارشد'}
+                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate whitespace-nowrap">مدیریت بازرگانی</span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate whitespace-nowrap">
+                    {isSecurityLocked ? 'قفل امنیتی فعال' : 'دسترسی مدیریت'}
                   </span>
                 </div>
               )}
@@ -425,13 +427,12 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 {onLockApp && (
                   <button
                     onClick={onLockApp}
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                    className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                     title="قفل فوری صفحه و سامانه"
                   >
                     <Lock className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <UserCheck className={`w-3.5 h-3.5 ${theme.primaryText} shrink-0`} />
               </div>
             )}
           </div>
@@ -439,8 +440,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       </aside>
 
       {/* TOP HEADER COMMAND BAR (Inside Main Container Header) */}
-      <header className={`sticky top-0 z-30 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white transition-all duration-300 no-print shadow-xs`}>
-        <div className="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-4 max-w-7xl mx-auto">
+      <header className={`sticky top-0 z-30 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full bg-white dark:bg-[#090d16] border-b border-slate-200/90 dark:border-slate-800/90 text-slate-900 dark:text-white transition-all duration-200 no-print`}>
+        <div className="px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 max-w-7xl mx-auto">
           
           {/* Mobile Menu Toggle, Brand Logo (if exists) & Page Title */}
           <div className="flex items-center gap-2.5 sm:gap-3.5">
@@ -491,92 +492,272 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
           {/* Quick Global Search Bar */}
           <div className="hidden md:flex flex-1 max-w-xs lg:max-w-sm">
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={onOpenGlobalSearch}
-              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-100/70 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all text-xs cursor-pointer shadow-2xs group"
+              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all text-xs cursor-pointer group"
             >
               <div className="flex items-center gap-2">
-                <Search className={`w-3.5 h-3.5 text-slate-400 group-hover:${theme.primaryText} transition-colors`} />
+                <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors" />
                 <span className="text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 font-medium">
-                  جستجوی سریع در فاکتور، کالا، مشتری...
+                  جستجو در فاکتور، کالا، مشتری...
                 </span>
               </div>
-              <div className="flex items-center gap-1 font-mono text-[9px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md text-slate-500 dark:text-slate-400 shadow-2xs">
+              <div className="flex items-center gap-1 font-mono text-[9px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-slate-400 dark:text-slate-400">
                 <Command className="w-2.5 h-2.5" />
                 <span>K</span>
               </div>
-            </motion.button>
+            </button>
           </div>
 
           {/* Unified Professional Status & Quick Action Center */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             
             {/* Quick Search on Mobile */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={onOpenGlobalSearch}
-              className="md:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-750 transition-all cursor-pointer shadow-2xs"
+              className="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-750 transition-colors cursor-pointer"
               title="جستجوی سریع"
             >
               <Search className="w-4 h-4" />
-            </motion.button>
+            </button>
 
-            {/* CLUSTER 1: Appearance & Notification Center (تم، سبک طراحی ۸‌گانه، اعلان‌ها) */}
-            <div className="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs gap-0.5 sm:gap-1">
+            {/* Appearance & Quick Actions Cluster */}
+            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 gap-0.5">
               
+              {/* Quick Font Scaling Buttons (A- / A+) */}
+              <div className="flex items-center bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-700/80 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cur = settings.customFontScalePercent || 100;
+                    const next = Math.max(80, cur - 5);
+                    onQuickUpdateSettings?.({ customFontScalePercent: next });
+                  }}
+                  className="px-1.5 py-1 text-[10px] font-black text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="کوچک‌تر کردن متن‌های برنامه (A-)"
+                >
+                  A-
+                </button>
+                <div className="w-px h-3 bg-slate-200 dark:bg-slate-700" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cur = settings.customFontScalePercent || 100;
+                    const next = Math.min(145, cur + 5);
+                    onQuickUpdateSettings?.({ customFontScalePercent: next });
+                  }}
+                  className="px-1.5 py-1 text-[11px] font-black text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="بزرگ‌تر کردن متن‌های برنامه (A+)"
+                >
+                  A+
+                </button>
+              </div>
+
+              <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
               {/* Dark/Light Mode Switcher */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={onToggleDarkMode}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+                className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 title={isDarkMode ? 'تم روز (روشن)' : 'تم شب (تاریک)'}
               >
-                {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-600 dark:text-slate-300" />}
-              </motion.button>
+                {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />}
+              </button>
 
-              <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+              <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-              {/* Design Mode Quick Switcher Dropdown (8 Professional Styles - Pure Icon Only, Placed Right Before Notifications) */}
+              {/* Theme Color Quick Swatch Switcher */}
               <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsDesignModeMenuOpen(!isDesignModeMenuOpen)}
-                  className="p-1.5 sm:p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer relative"
-                  title={`سبک و معماری برنامه: ${designModes[settings.designMode || 'modern']?.nameFa || 'مدرن'} (۸ سبک حرفه‌ای)`}
+                <button
+                  onClick={() => {
+                    setIsThemeColorMenuOpen(!isThemeColorMenuOpen);
+                    setIsDesignModeMenuOpen(false);
+                  }}
+                  className="p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors cursor-pointer relative flex items-center justify-center"
+                  title={`پالت رنگی سامانه: ${theme.nameFa}`}
                 >
-                  <Palette className="w-4 h-4 text-sky-500" />
-                </motion.button>
+                  <span 
+                    className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/30 shrink-0 shadow-2xs" 
+                    style={{ 
+                      background: theme.isGradient 
+                        ? `linear-gradient(135deg, ${theme.hex}, ${theme.secondaryHex || theme.hex})` 
+                        : theme.hex 
+                    }}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {isThemeColorMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsThemeColorMenuOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute left-0 sm:left-0 right-auto mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-right"
+                      >
+                        <div className="p-3 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span 
+                              className="w-3.5 h-3.5 rounded-full shadow-2xs" 
+                              style={{ 
+                                background: theme.isGradient 
+                                  ? `linear-gradient(135deg, ${theme.hex}, ${theme.secondaryHex || theme.hex})` 
+                                  : theme.hex 
+                              }} 
+                            />
+                            <span className="font-bold text-xs text-slate-900 dark:text-white">
+                              پالت‌های رنگی و گرادیان‌های سازمانی
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            ۲۴ تم انتخابی
+                          </span>
+                        </div>
+
+                        <div className="p-2 max-h-96 overflow-y-auto space-y-3">
+                          {/* 1. Gradient Rich Themes */}
+                          <div>
+                            <div className="px-1 mb-1.5 text-[10.5px] font-black text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-amber-500" />
+                              <span>پالت‌های ویژه گرادیان لوکس (۱۰ مورد)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {[
+                                { id: 'gradient-sunset' as ThemeColor, name: 'شفق خورشیدی', hex1: '#f59e0b', hex2: '#e11d48' },
+                                { id: 'gradient-ocean' as ThemeColor, name: 'اقیانوس نئون', hex1: '#06b6d4', hex2: '#4f46e5' },
+                                { id: 'gradient-cyber' as ThemeColor, name: 'سایبرپانک', hex1: '#d946ef', hex2: '#06b6d4' },
+                                { id: 'gradient-aurora' as ThemeColor, name: 'شفق قطبی', hex1: '#10b981', hex2: '#2563eb' },
+                                { id: 'gradient-royal' as ThemeColor, name: 'رویال VIP', hex1: '#7c3aed', hex2: '#c026d3' },
+                                { id: 'gradient-emerald-gold' as ThemeColor, name: 'زمرد و طلا', hex1: '#059669', hex2: '#d97706' },
+                                { id: 'gradient-titanium' as ThemeColor, name: 'کربن پلاتین', hex1: '#0f172a', hex2: '#52525b' },
+                                { id: 'gradient-crimson-dusk' as ThemeColor, name: 'یاقوت آتشین', hex1: '#e11d48', hex2: '#ea580c' },
+                                { id: 'gradient-midnight-cyan' as ThemeColor, name: 'سرمه‌ای فیروزه', hex1: '#1e3a8a', hex2: '#06b6d4' },
+                                { id: 'gradient-nordic-frost' as ThemeColor, name: 'یخ نوردیک', hex1: '#2563eb', hex2: '#64748b' },
+                              ].map((g, gIdx) => {
+                                const isCur = settings.themeColor === g.id;
+                                return (
+                                  <button
+                                    key={`quick-grad-${g.id}-${gIdx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      onThemeColorChange?.(g.id);
+                                      setIsThemeColorMenuOpen(false);
+                                    }}
+                                    className={`flex items-center gap-2 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                      isCur
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white ring-1 ring-slate-300 dark:ring-slate-700'
+                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                  >
+                                    <span 
+                                      className="w-4 h-4 rounded-full shrink-0 shadow-2xs border border-black/10 dark:border-white/20" 
+                                      style={{ background: `linear-gradient(135deg, ${g.hex1}, ${g.hex2})` }} 
+                                    />
+                                    <span className="truncate">{g.name}</span>
+                                    {isCur && <Check className="w-3.5 h-3.5 mr-auto stroke-[2.5]" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* 2. Solid Commercial Themes */}
+                          <div>
+                            <div className="px-1 mb-1.5 text-[10.5px] font-black text-slate-500 dark:text-slate-400">
+                              <span>رنگ‌های استاندارد و تک‌رنگ (۱۴ مورد)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {[
+                                { id: 'teal' as ThemeColor, name: 'کله‌غازی سازمانی', hex: '#0d9488' },
+                                { id: 'blue' as ThemeColor, name: 'آبی کبالت بانکی', hex: '#2563eb' },
+                                { id: 'emerald' as ThemeColor, name: 'سبز زمردی بازار', hex: '#059669' },
+                                { id: 'indigo' as ThemeColor, name: 'نیلی تکنولوژی', hex: '#4f46e5' },
+                                { id: 'cyan' as ThemeColor, name: 'فیروزه‌ای مدرن', hex: '#06b6d4' },
+                                { id: 'amber' as ThemeColor, name: 'کهربایی زرین', hex: '#d97706' },
+                                { id: 'rose' as ThemeColor, name: 'رز سرخ تجاری', hex: '#e11d48' },
+                                { id: 'ruby' as ThemeColor, name: 'یاقوتی عمیق', hex: '#991b1b' },
+                                { id: 'violet' as ThemeColor, name: 'بنفش رویال', hex: '#7c3aed' },
+                                { id: 'navy' as ThemeColor, name: 'سرمه‌ای اقیانوسی', hex: '#1e3a8a' },
+                                { id: 'orange' as ThemeColor, name: 'نارنجی پویا', hex: '#ea580c' },
+                                { id: 'lime' as ThemeColor, name: 'سبز لیمویی', hex: '#65a30d' },
+                                { id: 'fuchsia' as ThemeColor, name: 'سرخابی نوین', hex: '#c026d3' },
+                                { id: 'black' as ThemeColor, name: 'کربن و تیتانیوم', hex: '#0f172a' },
+                              ].map((c, cIdx) => {
+                                const isCur = settings.themeColor === c.id;
+                                return (
+                                  <button
+                                    key={`quick-color-${c.id}-${cIdx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      onThemeColorChange?.(c.id);
+                                      setIsThemeColorMenuOpen(false);
+                                    }}
+                                    className={`flex items-center gap-2 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                      isCur
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white ring-1 ring-slate-300 dark:ring-slate-700'
+                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                  >
+                                    <span 
+                                      className="w-4 h-4 rounded-full shrink-0 shadow-2xs border border-black/10 dark:border-white/20" 
+                                      style={{ backgroundColor: c.hex }} 
+                                    />
+                                    <span className="truncate">{c.name}</span>
+                                    {isCur && <Check className="w-3.5 h-3.5 mr-auto stroke-[2.5]" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+              {/* Design Mode Quick Switcher Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsDesignModeMenuOpen(!isDesignModeMenuOpen);
+                    setIsThemeColorMenuOpen(false);
+                  }}
+                  className="p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors cursor-pointer relative"
+                  title={`سبک و معماری برنامه: ${designModes[settings.designMode || 'modern']?.nameFa || 'مدرن'}`}
+                >
+                  <Palette className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                </button>
 
               <AnimatePresence>
                 {isDesignModeMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsDesignModeMenuOpen(false)} />
-                    <motion.div
+                      <motion.div
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 sm:left-0 right-auto mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-right"
+                      className="absolute left-0 sm:left-0 right-auto mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-right"
                     >
-                      <div className="p-3.5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Palette className="w-4 h-4 text-sky-500" />
-                          <span className="font-black text-xs text-slate-900 dark:text-white">
-                            سبک و معماری برنامه (۸ حالت)
+                          <Palette className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                          <span className="font-bold text-xs text-slate-900 dark:text-white">
+                            سبک بصری سامانه
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold">
-                          سوئیچ سریع
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          انتخاب سبک
                         </span>
                       </div>
 
-                      <div className="p-2 max-h-80 overflow-y-auto space-y-1">
+                      <div className="p-1.5 max-h-80 overflow-y-auto space-y-0.5">
                         {[
                           { id: 'classic' as AppDesignMode, name: 'کلاسیک اداری و دفتری سنتی', icon: FileSpreadsheet, badge: 'سنتی و دفتری', color: '#475569' },
-                          { id: 'modern' as AppDesignMode, name: 'مدرن هوشمند و فین‌تک', icon: Sparkles, badge: 'پیش‌فرض و روان', color: '#0ea5e9' },
+                          { id: 'modern' as AppDesignMode, name: 'فلت مدرن تجاری (سوئیس و فین‌تک)', icon: Sparkles, badge: 'تخت و خلوت', color: '#0ea5e9' },
                           { id: 'glassmorphism' as AppDesignMode, name: 'گلس‌مورفیک شیشه‌ای کریستال', icon: Gem, badge: 'شیشه‌ای لوکس', color: '#8b5cf6' },
                           { id: 'luxury-gold' as AppDesignMode, name: 'لوکس ابسیدین و زرین شاهانه', icon: Crown, badge: 'VIP شاهانه', color: '#d4af37' },
                           { id: 'neobrutalism' as AppDesignMode, name: 'نئوبروتالیسم نرم گرافیکی', icon: Shapes, badge: 'شارپ و زنده', color: '#f43f5e' },
@@ -596,16 +777,15 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                 }
                                 setIsDesignModeMenuOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between p-2.5 rounded-xl text-right transition-all cursor-pointer ${
+                              className={`w-full flex items-center justify-between p-2 rounded-lg text-right transition-colors cursor-pointer ${
                                 isCur
-                                  ? 'bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 text-sky-950 dark:text-sky-200'
-                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent'
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white font-bold'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                               }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <div 
-                                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                                  style={{ backgroundColor: m.color + '20', color: m.color }}
+                                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                                 >
                                   <MIcon className="w-3.5 h-3.5" />
                                 </div>
@@ -619,7 +799,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                 </div>
                               </div>
                               {isCur ? (
-                                <Check className="w-4 h-4 text-sky-500 shrink-0 stroke-[3]" />
+                                <Check className="w-3.5 h-3.5 text-slate-900 dark:text-white shrink-0 stroke-[2.5]" />
                               ) : null}
                             </button>
                           );
@@ -639,12 +819,12 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer relative"
+                className="p-1.5 sm:p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors cursor-pointer relative"
                 title="اعلا‌ن‌ها و رویدادهای اخیر"
               >
                 <Bell className="w-4 h-4" />
                 {activityLogs.length > 0 && (
-                  <span className={`min-w-[16px] h-4 px-1 rounded-full ${theme.primary} text-white text-[9px] font-black flex items-center justify-center absolute -top-1 -right-1 ring-2 ring-white dark:ring-slate-900 shadow-xs`}>
+                  <span className={`min-w-[16px] h-4 px-1 rounded-full ${theme.primary} text-white text-[9px] font-bold flex items-center justify-center absolute -top-1 -right-1 ring-2 ring-white dark:ring-slate-900`}>
                     {toPersianDigits(activityLogs.length)}
                   </span>
                 )}
@@ -660,18 +840,18 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 sm:left-0 right-auto mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-right"
+                      className="absolute left-0 sm:left-0 right-auto mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-right"
                     >
                       {/* Dropdown Header */}
-                      <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                      <div className="p-3.5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-xl ${theme.primaryLight} ${theme.primaryText} flex items-center justify-center font-bold`}>
+                          <div className="w-6 h-6 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold">
                             <Bell className="w-3.5 h-3.5" />
                           </div>
-                          <span className="font-black text-slate-900 dark:text-white text-xs">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">
                             اعلان‌ها و رویدادهای اخیر
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${theme.badgeBg} ${theme.badgeText}`}>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                             {toPersianDigits(activityLogs.length)}
                           </span>
                         </div>
@@ -679,7 +859,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                         {activityLogs.length > 0 && onClearActivityLogs && (
                           <button
                             onClick={onClearActivityLogs}
-                            className="text-[11px] font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
+                            className="text-[11px] font-medium text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                             <span>پاک‌سازی</span>
@@ -702,7 +882,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                 case 'product': return <Boxes className="w-4 h-4 text-blue-500" />;
                                 case 'customer': return <Users className="w-4 h-4 text-purple-500" />;
                                 case 'payment': return <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
-                                case 'warning': return <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />;
+                                case 'warning': return <AlertTriangle className="w-4 h-4 text-rose-500" />;
                                 default: return <Sparkles className="w-4 h-4 text-teal-500" />;
                               }
                             };
@@ -718,13 +898,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                     setIsNotificationsOpen(false);
                                   }
                                 }}
-                                className={`p-3 rounded-2xl transition-colors flex items-start gap-3 ${
+                                className={`p-2.5 rounded-lg transition-colors flex items-start gap-2.5 ${
                                   isWarning 
                                     ? 'bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100/70 dark:hover:bg-rose-900/40' 
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                                 } ${log.tabTarget ? 'cursor-pointer' : ''}`}
                               >
-                                <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                                <div className={`p-1.5 rounded-md shrink-0 mt-0.5 ${
                                   isWarning 
                                     ? 'bg-rose-100 dark:bg-rose-900/60' 
                                     : 'bg-slate-100 dark:bg-slate-800'
@@ -733,7 +913,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                 </div>
                                 <div className="flex-1 space-y-0.5 min-w-0">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className={`font-black text-xs truncate ${
+                                    <span className={`font-bold text-xs truncate ${
                                       isWarning ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'
                                     }`}>
                                       {log.title}
@@ -743,11 +923,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                                     </span>
                                   </div>
                                   <p className={`text-[11px] line-clamp-2 leading-relaxed ${
-                                    isWarning ? 'text-rose-600 dark:text-rose-300 font-bold' : 'text-slate-600 dark:text-slate-300'
+                                    isWarning ? 'text-rose-600 dark:text-rose-300 font-medium' : 'text-slate-600 dark:text-slate-300'
                                   }`}>
                                     {log.description}
                                   </p>
-                                  <span className="text-[9px] text-slate-400 font-bold block pt-1">
+                                  <span className="text-[9px] text-slate-400 font-medium block pt-0.5">
                                     {toPersianDigits(log.date)}
                                   </span>
                                 </div>
@@ -758,13 +938,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       </div>
 
                       {/* Dropdown Footer Link */}
-                      <div className="p-3 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200/80 dark:border-slate-800 text-center">
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200/80 dark:border-slate-800 text-center">
                         <button
                           onClick={() => {
                             onTabChange('activity-logs');
                             setIsNotificationsOpen(false);
                           }}
-                          className={`w-full py-2 rounded-xl text-xs font-black ${theme.primaryText} hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer flex items-center justify-center gap-1.5`}
+                          className="w-full py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Bell className="w-3.5 h-3.5" />
                           <span>مشاهده همه اعلان‌ها و گزارش کامل فعالیت‌ها</span>
@@ -778,42 +958,38 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           </div>
 
           {/* CLUSTER 2: Privacy & Security Center (حالت محرمانه، وضعیت امنیتی، قفل فوری) */}
-          <div className="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs gap-1">
+          <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 gap-0.5">
             
-            {/* Secret Mode Toggle Button (Reflects active theme palette when activated) */}
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
+            {/* Secret Mode Toggle Button */}
+            <button
               onClick={handleSecretModeToggleClick}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer select-none ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer select-none ${
                 isSecretMode 
-                  ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs border ${theme.borderColor}` 
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black' 
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700'
               }`}
               title={isSecretMode ? 'حالت محرمانه فعال (سود و قیمت‌های انبار مخفی هستند)' : 'حالت عادی (قیمت‌ها نمایان هستند)'}
             >
               {isSecretMode ? (
                 <>
-                  <EyeOff className="w-3.5 h-3.5 shrink-0 text-white animate-pulse" />
-                  <span className="hidden xl:inline text-[11px] font-black">محرمانه</span>
+                  <EyeOff className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xl:inline text-[11px]">محرمانه</span>
                 </>
               ) : (
                 <>
                   <Eye className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xl:inline text-[11px] font-black">عادی</span>
+                  <span className="hidden xl:inline text-[11px]">عادی</span>
                 </>
               )}
-            </motion.button>
+            </button>
 
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+            <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
             {/* Master Security Guard / Manager Mode Toggle Button */}
             {onToggleSecurityMode && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.96 }}
+              <button
                 onClick={handleAdminModeToggle}
-                className={`relative group overflow-hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer select-none ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-bold text-xs transition-colors cursor-pointer select-none ${
                   isSecurityLocked
                     ? 'bg-slate-900 dark:bg-slate-950 text-white hover:bg-slate-800'
                     : `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
@@ -826,43 +1002,33 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               >
                 {isSecurityLocked ? (
                   <>
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
-                    </span>
                     <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="hidden sm:inline font-black text-[11px]">امنیت</span>
-                    <span className="px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[9px] font-black">
+                    <span className="hidden sm:inline font-bold text-[11px]">امنیت</span>
+                    <span className="px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[9px] font-bold">
                       قفل
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                    </span>
                     <ShieldCheck className="w-3.5 h-3.5 text-white shrink-0" />
-                    <span className="hidden sm:inline font-black text-[11px]">مدیر</span>
-                    <span className="px-1 py-0.2 rounded bg-white/25 text-white text-[9px] font-black">
+                    <span className="hidden sm:inline font-bold text-[11px]">مدیر</span>
+                    <span className="px-1 py-0.2 rounded bg-white/20 text-white text-[9px] font-bold">
                       آزاد
                     </span>
                   </>
                 )}
-              </motion.button>
+              </button>
             )}
 
             {/* Instant Screen Lock Button */}
             {onLockApp && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={onLockApp}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+                className="p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                 title="قفل فوری صفحه و سامانه"
               >
                 <Lock className="w-3.5 h-3.5" />
-              </motion.button>
+              </button>
             )}
           </div>
           </div>

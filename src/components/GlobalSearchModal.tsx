@@ -94,7 +94,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: -10 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] z-10 transition-colors"
+        className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] z-10 transition-colors"
       >
         {/* Input Command Header */}
         <div className={`p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center gap-3 transition-colors`}>
@@ -181,7 +181,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1">
           {!trimmed && (
             <div className="py-16 text-center space-y-3">
-              <div className={`w-14 h-14 rounded-3xl ${theme.primaryLight} ${theme.primaryText} mx-auto flex items-center justify-center border ${theme.borderColor}`}>
+              <div className={`w-14 h-14 rounded-xl ${theme.primaryLight} ${theme.primaryText} mx-auto flex items-center justify-center border ${theme.borderColor}`}>
                 <Search className="w-7 h-7" />
               </div>
               <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm sm:text-base">

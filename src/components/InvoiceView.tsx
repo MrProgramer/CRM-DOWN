@@ -1481,7 +1481,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
       {/* ========================================================================= */}
       <div 
         id="invoice-paper"
-        className={`invoice-paper-container invoice-scalable-view relative rounded-3xl border p-6 sm:p-10 overflow-hidden transition-colors ${
+        className={`invoice-paper-container invoice-scalable-view relative rounded-xl border p-6 sm:p-10 overflow-hidden transition-colors ${
           isDarkCanvas 
             ? 'bg-[#0b0f19] text-slate-100 border-slate-800 shadow-sm' 
             : 'bg-white text-slate-900 border-slate-200/90 shadow-sm'

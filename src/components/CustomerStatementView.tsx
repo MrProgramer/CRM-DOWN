@@ -12,7 +12,9 @@ import {
 } from '../utils/formatters';
 import {
   getCustomerSalesInvoices,
+  getCustomerPurchaseInvoices,
   getCustomerCreditSalesTotal,
+  getCustomerCreditPurchasesTotal,
   getCustomerPayments,
   calculateCustomerLiveBalance
 } from '../utils/customerBalanceCalculations';
@@ -158,10 +160,12 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
 
   // Core Financial Data Calculations
   const custInvoices = getCustomerSalesInvoices(currentCustomer, invoices);
+  const custPurchaseInvoices = getCustomerPurchaseInvoices(currentCustomer, invoices);
   const custPayments = getCustomerPayments(currentCustomer, payments);
   const liveBal = calculateCustomerLiveBalance(currentCustomer, invoices, payments, productReturns);
   
   const totalCreditInvoices = getCustomerCreditSalesTotal(currentCustomer, invoices);
+  const totalCreditPurchases = getCustomerCreditPurchasesTotal(currentCustomer, invoices);
   const manualDebtsTotal = custPayments.filter(p => (Number(p.amount) || 0) < 0).reduce((sum, p) => sum + Math.abs(Number(p.amount) || 0), 0);
   const totalCreditSalesAndDebts = totalCreditInvoices + manualDebtsTotal;
   const totalPaidDeposits = custPayments.filter(p => (Number(p.amount) || 0) > 0).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
@@ -202,6 +206,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
 
   const rows: LedgerRow[] = [];
 
+  // 1. Sales Invoices
   custInvoices.forEach((inv) => {
     const isCredit = inv.paymentStatus === 'credit' || inv.paymentMethod?.includes('نسیه') || inv.paymentMethod?.includes('غیر');
     const computedSubtotal = (inv.items && inv.items.length > 0)
@@ -212,10 +217,21 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
           return s + (uPrice > 0 ? uPrice * it.totalPieces : (it.totalPrice || 0));
         }, 0)
       : (inv.subtotal || 0);
-    const computedFinal = Math.max(0, computedSubtotal - (inv.discount || 0) + (inv.tax || 0) - (inv.offsetReturnsTotal || 0));
+
+    const returnOffset = Number(inv.offsetReturnsTotal) || 0;
+    const expenseDeductions = Number(inv.expensesTotalDeduction) || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const expenseAdditions = Number(inv.expensesTotalAddition) || (inv.expenses || []).filter(e => e.action === 'add').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const discount = Number(inv.discount) || 0;
+    const tax = Number(inv.tax) || 0;
+
+    const computedFinal = Math.max(0, computedSubtotal - discount + tax - returnOffset - expenseDeductions + expenseAdditions);
     const effectiveFinal = (computedFinal > 0) ? computedFinal : (Number(inv.finalAmount) || 0);
 
     const isPartial = inv.paymentStatus === 'partial' || (inv.paidAmount !== undefined && inv.paidAmount > 0 && inv.paidAmount < effectiveFinal);
+
+    const deductionNote = (returnOffset > 0 || expenseDeductions > 0)
+      ? ` (کسر ${formatPrice(returnOffset + expenseDeductions)} بابت مرجوعی/کرایه)`
+      : '';
 
     if (isPartial) {
       const paid = inv.paidAmount || 0;
@@ -228,7 +244,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
         time: inv.time || '12:00',
         type: 'invoice_credit',
         title: `فاکتور با پرداخت بخشی #${toPersianDigits(inv.invoiceNumber)}`,
-        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${formatPrice(paid)} نقد + ${formatPrice(unpaid)} مانده نسیه)`,
+        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${formatPrice(paid)} نقد + ${formatPrice(unpaid)} مانده نسیه)${deductionNote}`,
         code: inv.invoiceNumber,
         methodText: inv.paymentMethod || 'پرداخت بخشی (نقد و نسیه)',
         debit: unpaid,
@@ -243,11 +259,75 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
         time: inv.time || '12:00',
         type: isCredit ? 'invoice_credit' : 'invoice_cash',
         title: isCredit ? `فاکتور نسیه #${toPersianDigits(inv.invoiceNumber)}` : `فاکتور نقدی #${toPersianDigits(inv.invoiceNumber)}`,
-        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${inv.paymentMethod || (isCredit ? 'نسیه' : 'نقدی')})`,
+        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${inv.paymentMethod || (isCredit ? 'نسیه' : 'نقدی')})${deductionNote}`,
         code: inv.invoiceNumber,
         methodText: inv.paymentMethod,
         debit: isCredit ? effectiveFinal : 0,
         credit: 0,
+        rawObj: inv,
+        timestamp: inv.createdAt || Date.now(),
+      });
+    }
+  });
+
+  // 2. Purchase / Inward Invoices (From Supplier / Partner)
+  custPurchaseInvoices.forEach((inv) => {
+    const isCredit = inv.paymentStatus === 'credit' || inv.paymentMethod?.includes('نسیه') || inv.paymentMethod?.includes('غیر');
+    const computedSubtotal = (inv.items && inv.items.length > 0)
+      ? inv.items.reduce((s, it) => {
+          const uPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
+            ? it.unitPurchasePrice
+            : (it.unitSellingPrice || 0);
+          return s + (uPrice > 0 ? uPrice * it.totalPieces : (it.totalPrice || 0));
+        }, 0)
+      : (inv.subtotal || 0);
+
+    const returnOffset = Number(inv.offsetReturnsTotal) || 0;
+    const expenseDeductions = Number(inv.expensesTotalDeduction) || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const expenseAdditions = Number(inv.expensesTotalAddition) || (inv.expenses || []).filter(e => e.action === 'add').reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const discount = Number(inv.discount) || 0;
+    const tax = Number(inv.tax) || 0;
+
+    const computedFinal = Math.max(0, computedSubtotal - discount + tax - returnOffset - expenseDeductions + expenseAdditions);
+    const effectiveFinal = (computedFinal > 0) ? computedFinal : (Number(inv.finalAmount) || 0);
+
+    const isPartial = inv.paymentStatus === 'partial' || (inv.paidAmount !== undefined && inv.paidAmount > 0 && inv.paidAmount < effectiveFinal);
+
+    const deductionNote = (returnOffset > 0 || expenseDeductions > 0)
+      ? ` (کسر ${formatPrice(returnOffset + expenseDeductions)} بابت مرجوعی/کرایه)`
+      : '';
+
+    if (isPartial) {
+      const paid = inv.paidAmount || 0;
+      const unpaid = (inv.remainingAmount !== undefined && inv.finalAmount === effectiveFinal)
+        ? inv.remainingAmount
+        : Math.max(0, effectiveFinal - paid);
+      rows.push({
+        id: `purch-${inv.id}`,
+        date: inv.date,
+        time: inv.time || '12:00',
+        type: 'invoice_credit',
+        title: `فاکتور خرید با پرداخت بخشی #${toPersianDigits(inv.invoiceNumber)}`,
+        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${formatPrice(paid)} نقد + ${formatPrice(unpaid)} بستانکاری مانده)${deductionNote}`,
+        code: inv.invoiceNumber,
+        methodText: inv.paymentMethod || 'پرداخت بخشی (نقد و نسیه)',
+        debit: 0,
+        credit: unpaid,
+        rawObj: inv,
+        timestamp: inv.createdAt || Date.now(),
+      });
+    } else {
+      rows.push({
+        id: `purch-${inv.id}`,
+        date: inv.date,
+        time: inv.time || '12:00',
+        type: isCredit ? 'invoice_credit' : 'invoice_cash',
+        title: isCredit ? `فاکتور خرید نسیه #${toPersianDigits(inv.invoiceNumber)}` : `فاکتور خرید نقدی #${toPersianDigits(inv.invoiceNumber)}`,
+        subtitle: `${toPersianDigits(inv.items.length)} قلم کالا (${inv.paymentMethod || (isCredit ? 'نسیه' : 'نقدی')})${deductionNote}`,
+        code: inv.invoiceNumber,
+        methodText: inv.paymentMethod,
+        debit: 0,
+        credit: isCredit ? effectiveFinal : 0,
         rawObj: inv,
         timestamp: inv.createdAt || Date.now(),
       });
@@ -758,7 +838,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
       </div>
 
       {/* 2. EXECUTIVE CUSTOMER DETAILS & CREDIT GAUGE BANNER */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           
           {/* Left Customer Info & Avatar */}
@@ -1093,7 +1173,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
 
       {/* 5. TAB 1: STATEMENT & LEDGER TABLE (دفتر معین) */}
       {activeTab === 'ledger' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
           
           {/* Header Controls: Search & Date Filters */}
           <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
@@ -1510,7 +1590,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
           {/* Invoices List / Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedInvoices.length === 0 ? (
-              <div className="col-span-full bg-white dark:bg-slate-900 rounded-3xl p-12 text-center text-slate-400 border border-slate-200 dark:border-slate-800 font-bold">
+              <div className="col-span-full bg-white dark:bg-slate-900 rounded-xl p-12 text-center text-slate-400 border border-slate-200 dark:border-slate-800 font-bold">
                 فاکتوری برای این مشتری ثبت نشده است.
               </div>
             ) : (
@@ -1605,7 +1685,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
 
       {/* 7. TAB 3: PAYMENTS TAB (اسناد واریز) */}
       {activeTab === 'payments' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
           
           <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -1734,7 +1814,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
 
       {/* 8. TAB 4: RETURNS TAB (مرجوعی‌ها) */}
       {activeTab === 'returns' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
           
           <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -1897,7 +1977,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold">
@@ -1963,7 +2043,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           
           {/* Column 1: Identity & Full Meta Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
                 <Building className="w-4 h-4 text-slate-400" />
@@ -2025,7 +2105,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
           </div>
 
           {/* Column 2: Credit & Financial Limits */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -2096,7 +2176,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
           </div>
 
           {/* Column 3: Customer Notes & Memo */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
@@ -2136,7 +2216,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
