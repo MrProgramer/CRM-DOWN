@@ -360,19 +360,19 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                           onClick={() => onTabChange(item.id)}
                           title={isSidebarCollapsed ? `${item.label} (${item.subtitle})` : undefined}
                           className={`w-full flex items-center ${
-                            isSidebarCollapsed ? 'justify-center py-2.5 px-2' : 'justify-between px-3 py-2.5'
-                          } text-sm font-bold transition-all cursor-pointer text-right group relative ${
+                            isSidebarCollapsed ? 'justify-center py-2 px-1.5' : 'justify-between px-2.5 py-2'
+                          } text-xs font-bold transition-all cursor-pointer text-right group relative ${
                             isActive
                               ? `${theme.activeTab} rounded-r-none rounded-l-xl font-black shadow-xs`
                               : 'text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl'
                           }`}
                         >
-                          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} min-w-0`}>
-                            <Icon className={`w-4.5 h-4.5 shrink-0 transition-colors ${
+                          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0`}>
+                            <Icon className={`w-4 h-4 shrink-0 transition-colors ${
                               isActive ? (theme.activeIcon || 'text-slate-900 dark:text-white') : 'text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'
                             }`} />
                             {!isSidebarCollapsed && (
-                              <span className="truncate whitespace-nowrap tracking-tight font-bold">{item.label}</span>
+                              <span className="truncate whitespace-nowrap tracking-tight font-bold text-xs">{item.label}</span>
                             )}
                           </div>
 

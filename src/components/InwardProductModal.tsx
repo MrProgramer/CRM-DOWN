@@ -786,16 +786,13 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-2xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} flex items-center justify-center shrink-0`}>
-              <PackagePlus className="w-5 h-5" />
-            </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-slate-900 dark:text-white text-base sm:text-lg">
-                  ورود کالا به انبار
+                  ویرایش و تامین کالا
                 </h3>
                 <span className={`px-2.5 py-0.5 rounded-lg ${theme.badgeBg} ${theme.badgeText} text-[10px] font-black border ${theme.borderColor}`}>
-                  فاکتور خرید
+                  فاکتور خرید و شارژ انبار
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">

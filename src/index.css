@@ -15,7 +15,9 @@
   }
 
   html {
-    font-size: calc(15.5px * var(--app-font-scale, 1)) !important;
+    font-size: calc(16px * var(--app-font-scale, 1));
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   *, *::before, *::after,
@@ -474,7 +476,7 @@
 .dark[data-design-mode="neobrutalism"] .border,
 .dark[data-design-mode="neobrutalism"] .border-slate-700,
 .dark[data-design-mode="neobrutalism"] .border-slate-800 {
-  border: 2px solid #f1f5f9 !important;
+  border: 1.5px solid #334155 !important;
 }
 [data-design-mode="neobrutalism"] .shadow-sm,
 [data-design-mode="neobrutalism"] .shadow-md,
@@ -486,7 +488,7 @@
 .dark[data-design-mode="neobrutalism"] .shadow-md,
 .dark[data-design-mode="neobrutalism"] .shadow-lg,
 .dark[data-design-mode="neobrutalism"] .shadow-xl {
-  box-shadow: 3px 3px 0px 0px #f8fafc !important;
+  box-shadow: 3px 3px 0px 0px #090d16 !important;
 }
 
 /* 6. CYBER TECH & DIGITAL COCKPIT (سایبرتک نئون و دیجیتال ترمینال) */

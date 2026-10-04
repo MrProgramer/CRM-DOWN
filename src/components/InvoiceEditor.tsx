@@ -24,7 +24,7 @@ import {
   numberToPersianWords,
   formatProductPackagingSpec
 } from '../utils/formatters';
-import { themes } from './ThemeConfig';
+import { themes, getThemeBadges } from './ThemeConfig';
 import { PricePeekButton } from './PricePeekButton';
 import { ProductFormModal } from './ProductFormModal';
 import { InwardProductModal } from './InwardProductModal';
@@ -134,6 +134,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   isSidebarCollapsed = false,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
+  const badges = getThemeBadges(settings.themeColor);
 
   // Pending new products defined in this invoice session (buffered locally - NOT saved to warehouse until final invoice registration)
   const [pendingNewProducts, setPendingNewProducts] = useState<Product[]>([]);
@@ -5336,57 +5337,61 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       {/* 🚀 SMART SCROLL FLOATING ACTION DOCK (APPEARS ONLY WHEN TOP HEADER BUTTONS ARE SCROLLED PAST) */}
       <AnimatePresence>
         {showFloatingDock && (
-          <div className={`fixed bottom-4 left-0 ${isSidebarCollapsed ? 'lg:right-20' : 'lg:right-64'} z-50 pointer-events-none px-3 sm:px-6 transition-all duration-300`}>
-            <div className="max-w-6xl mx-auto pointer-events-auto">
+          <div className={`fixed bottom-2 sm:bottom-4 left-0 ${isSidebarCollapsed ? 'lg:right-20' : 'lg:right-64'} z-50 pointer-events-none px-2 sm:px-4 md:px-6 transition-all duration-300`}>
+            <div className="max-w-5xl mx-auto pointer-events-auto">
               <motion.div
-                initial={{ opacity: 0, y: 25, scale: 0.96 }}
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 25, scale: 0.96 }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] flex flex-wrap items-center justify-between gap-3"
+                className="bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-xl p-2 sm:p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 sm:gap-3"
+                style={{ borderTop: `2.5px solid var(--primary-color, #0d9488)` }}
               >
-                {/* Summary & Live KPIs */}
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Items count badge */}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <Package className={`w-4 h-4 ${theme.activeIcon}`} />
-                    <span className="font-black text-slate-900 dark:text-white">{toPersianDigits(items.length)}</span>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">قلم کالا</span>
-                  </div>
-
-                  {/* Invoice Type Badge */}
-                  <div className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs font-black text-white ${
-                    invoiceType === 'purchase' ? 'bg-indigo-600' : theme.primary
-                  }`}>
-                    {invoiceType === 'purchase' ? '📦 ورود کالا (خرید)' : '🧾 مشتری (فروش)'}
-                  </div>
-
-                  {/* Customer Pill */}
-                  {customerName && (
-                    <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
-                      <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{customerName}</span>
+                {/* Context & Financial Summary Bar */}
+                <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    {/* Invoice Type Badge (Fully matched to active theme palette without any icons) */}
+                    <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black shadow-2xs shrink-0 border ${
+                      invoiceType === 'purchase' ? badges.purchase : badges.sale
+                    }`}>
+                      <span className="truncate whitespace-nowrap">
+                        {invoiceType === 'purchase' ? 'ورود کالا (خرید)' : 'فاکتور فروش کالا'}
+                      </span>
                     </div>
-                  )}
 
-                  {/* Final Payable Amount */}
-                  <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
-                    <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
+                    {/* Items count badge */}
+                    <div className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-800 dark:text-slate-200 shrink-0">
+                      <span className="font-mono font-black text-slate-900 dark:text-white tabular-nums">{toPersianDigits(items.length)}</span>
+                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400">قلم</span>
+                    </div>
+
+                    {/* Customer Name (Visible when set) */}
+                    {customerName && (
+                      <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-700 dark:text-slate-300 max-w-[140px] truncate">
+                        <span className="truncate">{customerName}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Final Net Amount */}
+                  <div className="flex items-center gap-1.5 shrink-0 bg-slate-100/90 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent px-2.5 py-1 md:py-0 rounded-xl border border-slate-200/60 dark:border-slate-700/60 md:border-0">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">خالص:</span>
+                    <span className={`font-black text-xs sm:text-sm md:text-base ${theme.primaryText} font-mono tabular-nums dir-ltr`}>
                       {formatPrice(finalAmount, false)}
                     </span>
-                    <span className="text-[10px] text-slate-400">تومان</span>
+                    <span className="text-[10px] text-slate-400 font-medium">تومان</span>
                   </div>
                 </div>
 
                 {/* Quick Action Buttons */}
-                <div className="flex items-center gap-2 mr-auto flex-wrap">
+                <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
                   {/* Scroll to Top */}
                   <button
                     type="button"
                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                    title="بازگشت به ابتدای فرم"
+                    className="hidden sm:flex p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shrink-0 items-center justify-center"
+                    title="بازگشت به ابتدای فاکتور"
+                    aria-label="بازگشت به بالا"
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
@@ -5395,7 +5400,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   <button
                     type="button"
                     onClick={onCancel}
-                    className="px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/80 shrink-0"
                   >
                     انصراف
                   </button>
@@ -5405,10 +5410,10 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     id="floating-dock-save-draft-btn"
                     type="button"
                     onClick={() => handleSaveInvoice(true)}
-                    className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
+                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 shrink-0"
                     title="ذخیره پیش‌نویس بدون کسر انبار"
                   >
-                    <FileText className="w-3.5 h-3.5" />
+                    <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                     <span>پیش‌نویس</span>
                   </button>
 
@@ -5417,11 +5422,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     id="floating-dock-save-final-btn"
                     type="button"
                     onClick={() => handleSaveInvoice(false)}
-                    className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
+                    className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black text-white shadow-md transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover} shrink-0`}
                     title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
                   >
                     <Save className="w-4 h-4" />
-                    <span>ثبت نهایی فاکتور</span>
+                    <span>ثبت نهایی</span>
                   </button>
                 </div>
               </motion.div>

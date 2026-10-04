@@ -1565,22 +1565,6 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               پایش برخط موجودی صندوق و بانک، ثبت منعطف هزینه‌ها و کرایه بار، ارزیابی مطالبات بازار و سود ناخالص کالاها
             </p>
           </div>
-
-          {/* Quick Metrics Bar in Header */}
-          <div className="flex flex-wrap items-center gap-2 pt-0.5">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-bold">نقدینگی در دسترس:</span>
-              <span className="font-black text-slate-900 dark:text-white dir-ltr">{formatPrice(totalLiquidity)}</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-bold">ارزش کل دارایی‌ها:</span>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 dir-ltr">{formatPrice(totalCurrentNetAssets)}</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-bold">سود انتظاری موجودی:</span>
-              <span className="font-black text-purple-600 dark:text-purple-400 dir-ltr">+{formatPrice(potentialStockProfit)}</span>
-            </div>
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -1626,32 +1610,29 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
       </div>
 
       {/* 2. Global Time Period & Interval Controller Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm space-y-4 no-print">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4 no-print">
         {/* Top: Title & Description Header */}
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-2xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shrink-0`}>
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">بازه زمانی و دوره تحلیلی گزارش‌ها</span>
-              <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black ${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor}`}>
-                فیلتر هوشمند دوره‌ای
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shrink-0`}>
+              <Calendar className="w-4 h-4" />
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              انتخاب دوره زمانی جهت محاسبه دقیق جریان ورودی، مخارج، تراز عملیاتی و فیلتر خودکار اسناد
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-slate-900 dark:text-white">بازه زمانی گزارش‌ها</span>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor}`}>
+                  فیلتر دوره‌ای
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Bottom: Dedicated Spacious Period Filter Buttons Row */}
-        <div className="pt-2">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 p-1.5 bg-slate-100/90 dark:bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          {/* Quick Period Filter Buttons */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('all')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === 'all'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
@@ -1662,7 +1643,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('today')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === 'today'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
@@ -1673,7 +1654,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('week')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === 'week'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
@@ -1684,47 +1665,47 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('month')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                 timePeriod === 'month'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>۳۰ روزه (ماهیانه)</span>
+              <Sparkles className="w-3 h-3" />
+              <span>ماهیانه (۳۰ روز)</span>
             </button>
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('3months')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === '3months'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              ۳ ماهه (۹۰ روز)
+              ۳ ماهه
             </button>
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('6months')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === '6months'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              ۶ ماهه (۱۸۰ روز)
+              ۶ ماهه
             </button>
             <button
               type="button"
               onClick={() => handleSelectTimePeriod('1year')}
-              className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 timePeriod === '1year'
                   ? `${theme.primary} text-white shadow-xs`
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              سالیانه (۳۶۵ روز)
+              سالیانه
             </button>
           </div>
         </div>
@@ -1878,7 +1859,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
           {/* 🌟 Executive Treasury Balance & Health Strip */}
           <div className="bg-gradient-to-l from-slate-50 via-emerald-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs dark:shadow-lg text-slate-900 dark:text-white transition-colors">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-200/80 dark:border-emerald-500/30">
                   <ShieldCheck className="w-6 h-6" />
@@ -1898,48 +1879,22 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
 
               {/* Instant Health Metrics */}
               <div className="flex items-center flex-wrap gap-2 text-xs">
-                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-200/80 dark:border-white/10 flex items-center gap-2 shadow-2xs dark:shadow-none">
+                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center gap-2 shadow-2xs dark:shadow-none">
                   <span className="text-slate-500 dark:text-slate-300 font-bold">سهم نقدشوندگی سریع:</span>
                   <span className="font-black text-emerald-600 dark:text-emerald-300 dir-ltr">{toPersianDigits(treasuryHealth.instantLiquidPct.toFixed(1))}٪</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-200/80 dark:border-white/10 flex items-center gap-2 shadow-2xs dark:shadow-none">
+                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center gap-2 shadow-2xs dark:shadow-none">
                   <span className="text-slate-500 dark:text-slate-300 font-bold">ضریب پوشش مخارج:</span>
                   <span className={`font-black dir-ltr ${treasuryHealth.coverageRatio >= 1 ? 'text-emerald-600 dark:text-emerald-300' : 'text-amber-600 dark:text-amber-300'}`}>
                     {toPersianDigits(treasuryHealth.coverageRatio.toFixed(1))}x
                   </span>
                 </div>
-                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-200/80 dark:border-white/10 flex items-center gap-2 shadow-2xs dark:shadow-none">
+                <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center gap-2 shadow-2xs dark:shadow-none">
                   <span className="text-slate-500 dark:text-slate-300 font-bold">پایداری ذخیره نقدینگی:</span>
                   <span className="font-black text-blue-600 dark:text-blue-300 dir-ltr">
                     {treasuryHealth.runwayDays >= 365 ? 'بیش از ۱ سال' : `${toPersianDigits(treasuryHealth.runwayDays)} روز`}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            {/* Quick KPI Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4">
-              <div className="bg-white dark:bg-slate-900/80 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-2xs dark:shadow-none space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold">مجموع دارایی‌های خزانه</span>
-                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white dir-ltr block mt-0.5">{formatPrice(totalTreasuryAssets)}</span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 block font-medium">شامل نقد، بانک و چک‌ها</span>
-              </div>
-              <div className="bg-white dark:bg-slate-900/80 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-2xs dark:shadow-none space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold">نقدینگی در دسترس (صندوق+بانک)</span>
-                <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 dir-ltr block mt-0.5">{formatPrice(totalLiquidity)}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">{toPersianDigits(treasuryHealth.instantLiquidPct.toFixed(0))}٪ از کل دارایی‌ها</span>
-              </div>
-              <div className="bg-white dark:bg-slate-900/80 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-2xs dark:shadow-none space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold">تراز خالص نقدینگی دوره</span>
-                <span className={`text-sm sm:text-base font-black dir-ltr block mt-0.5 ${treasuryHealth.isNetPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {treasuryHealth.isNetPositive ? '+' : ''}{formatPrice(periodNetCashflow)}
-                </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">{treasuryHealth.isNetPositive ? 'مازاد عملیاتی' : 'کسری در دوره'}</span>
-              </div>
-              <div className="bg-white dark:bg-slate-900/80 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-2xs dark:shadow-none space-y-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold">اسناد تجاری و چک‌های نزد صندوق</span>
-                <span className="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400 dir-ltr block mt-0.5">{formatPrice(netChecksBalance)}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">{toPersianDigits(treasuryChartData[2].share)}٪ از کل دارایی‌ها</span>
               </div>
             </div>
           </div>
@@ -2455,6 +2410,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                         tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} 
                         axisLine={false} 
                         tickLine={false} 
+                        interval="preserveStartEnd"
+                        minTickGap={24}
                       />
                       <YAxis hide />
                       <Tooltip 
@@ -2476,6 +2433,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                         tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} 
                         axisLine={false} 
                         tickLine={false} 
+                        interval="preserveStartEnd"
+                        minTickGap={24}
                       />
                       <YAxis hide />
                       <Tooltip 
@@ -5018,6 +4977,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                           tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} 
                           axisLine={false} 
                           tickLine={false} 
+                          interval="preserveStartEnd"
+                          minTickGap={24}
                         />
                         <YAxis 
                           tickFormatter={(val) => formatPrice(val)}
@@ -5045,6 +5006,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                           tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} 
                           axisLine={false} 
                           tickLine={false} 
+                          interval="preserveStartEnd"
+                          minTickGap={24}
                         />
                         <YAxis 
                           tickFormatter={(val) => formatPrice(val)}

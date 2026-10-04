@@ -663,50 +663,50 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto">
               <button
                 onClick={() => { setTableFilterType('all'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'all'
-                    ? `${currentTheme.primary} text-white shadow-xs font-black`
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white shadow-xs font-black`
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 همه ({toPersianDigits(finalInvoices.length)})
               </button>
               <button
                 onClick={() => { setTableFilterType('sale'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'sale'
-                    ? 'bg-emerald-600 text-white shadow-xs font-black'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white shadow-xs font-black`
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 فروش ({toPersianDigits(salesInvoices.length)})
               </button>
               <button
                 onClick={() => { setTableFilterType('purchase'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'purchase'
-                    ? 'bg-blue-600 text-white shadow-xs font-black'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white shadow-xs font-black`
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 خرید / ورود
               </button>
               <button
                 onClick={() => { setTableFilterType('credit'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'credit'
-                    ? 'bg-amber-600 text-white shadow-xs font-black'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white shadow-xs font-black`
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 نسیه ({toPersianDigits(creditSales.length)})
               </button>
               <button
                 onClick={() => { setTableFilterType('cash'); setTableCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tableFilterType === 'cash'
-                    ? 'bg-emerald-700 text-white shadow-xs font-black'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    ? `${currentTheme.primary} ${currentTheme.primaryHover} text-white shadow-xs font-black`
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 نقدی / بانکی

@@ -190,10 +190,10 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto w-full md:w-auto">
           <button
             onClick={() => setChartType('sales-profit')}
-            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'sales-profit'
-                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                ? `${activeTheme.primary} ${activeTheme.primaryHover} text-white shadow-xs font-black`
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -202,10 +202,10 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('top-products')}
-            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'top-products'
-                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                ? `${activeTheme.primary} ${activeTheme.primaryHover} text-white shadow-xs font-black`
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <Boxes className="w-3.5 h-3.5" />
@@ -214,10 +214,10 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('categories')}
-            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'categories'
-                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                ? `${activeTheme.primary} ${activeTheme.primaryHover} text-white shadow-xs font-black`
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <PieIcon className="w-3.5 h-3.5" />
@@ -226,10 +226,10 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
           <button
             onClick={() => setChartType('payment-methods')}
-            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               chartType === 'payment-methods'
-                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs font-black'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                ? `${activeTheme.primary} ${activeTheme.primaryHover} text-white shadow-xs font-black`
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -272,6 +272,8 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 11, fill: '#94a3b8' }} 
+                  interval="preserveStartEnd"
+                  minTickGap={20}
                   tickLine={false}
                   axisLine={{ stroke: '#cbd5e1' }}
                 />
@@ -314,11 +316,15 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         {chartType === 'top-products' && (
           topProductsData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topProductsData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+              <BarChart data={topProductsData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} opacity={0.5} />
                 <XAxis 
                   dataKey="shortName" 
                   tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                  interval="preserveStartEnd"
+                  minTickGap={16}
+                  angle={-15}
+                  textAnchor="end"
                   tickLine={false}
                   axisLine={{ stroke: '#cbd5e1' }}
                 />

@@ -645,9 +645,17 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
 
   // Stock summary totals
-  const totalStockPieces = products.reduce((acc, p) => acc + p.stockPieces, 0);
-  const totalInventoryValue = products.reduce((acc, p) => acc + (p.stockPieces * p.purchasePrice), 0);
-  const totalPotentialRevenue = products.reduce((acc, p) => acc + (p.stockPieces * p.sellingPrice), 0);
+  const totalStockPieces = useMemo(() => {
+    return products.reduce((acc, p) => acc + Math.max(0, Number(p.stockPieces) || 0), 0);
+  }, [products]);
+
+  const totalInventoryValue = useMemo(() => {
+    return products.reduce((acc, p) => acc + (Math.max(0, Number(p.stockPieces) || 0) * (Number(p.purchasePrice) || 0)), 0);
+  }, [products]);
+
+  const totalPotentialRevenue = useMemo(() => {
+    return products.reduce((acc, p) => acc + (Math.max(0, Number(p.stockPieces) || 0) * (Number(p.sellingPrice) || 0)), 0);
+  }, [products]);
 
   // If user requested full inventory audit report, render inline view!
   if (isAuditView) {

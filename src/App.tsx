@@ -3183,6 +3183,11 @@ export default function App() {
                 invoices={invoices}
                 products={products}
                 settings={settings}
+                customers={customers}
+                payments={payments}
+                productReturns={productReturns}
+                treasuryTransactions={treasuryTransactions}
+                liquidityBalances={liveLiquidity}
                 isSecretMode={isSecretMode}
                 onToggleSecretMode={handleToggleSecretMode}
                 onViewInvoice={handleViewInvoice}
