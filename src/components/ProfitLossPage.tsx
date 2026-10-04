@@ -1715,22 +1715,22 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       {/* 3. Executive Metric Cards - Clean, Standard, Matching the entire application */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
         
-        {/* Card 1: سود خالص بازرگانی */}
+        {/* Card 1: سود کل فاکتورهای فروش (مجموع سود فاکتورهای موجود در جدول) */}
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">سود خالص کل بازرگانی</span>
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">سود کل فاکتورهای فروش</span>
             <div className="p-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
 
-          <div className={`text-xl sm:text-2xl font-black ${summaryMetrics.netOperatingProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} dir-ltr text-right font-mono`}>
-            {isSecretMode ? '••••••' : (summaryMetrics.netOperatingProfit >= 0 ? `+${formatPrice(summaryMetrics.netOperatingProfit)}` : formatPrice(summaryMetrics.netOperatingProfit))}
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-right font-mono">
+            {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-            <span>سود ناخالص فروش ({toPersianDigits(summaryMetrics.invoicesCount)} فاکتور):</span>
+            <span>تعداد فاکتورهای صادرشده:</span>
             <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
-              {isSecretMode ? '••••••' : formatPrice(summaryMetrics.effectiveGrossProfit)}
+              {toPersianDigits(summaryMetrics.invoicesCount)} فاکتور
             </span>
           </div>
         </div>
