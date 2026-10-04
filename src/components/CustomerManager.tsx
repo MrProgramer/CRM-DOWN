@@ -1537,7 +1537,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden no-print">
                     <div className="overflow-x-auto">
                       <table className="w-full text-right text-xs">
-                        <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800">
+                        <thead className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] border-b border-slate-200/80 dark:border-slate-800 select-none">
                           <tr>
                             <SortableTableHeader
                               field="index"
@@ -1555,6 +1555,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                               currentField={custSortField}
                               currentDirection={custSortDirection}
                               onSort={handleCustomerSort}
+                              align="right"
                             >
                               طرف‌حساب
                             </SortableTableHeader>
@@ -1574,15 +1575,16 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                               currentField={custSortField}
                               currentDirection={custSortDirection}
                               onSort={handleCustomerSort}
+                              align="right"
                             >
                               تلفن / شهر
                             </SortableTableHeader>
 
-                            <th className="p-3.5 text-left">مانده اول دوره</th>
-                            <th className="p-3.5 text-left">خرید نسیه</th>
-                            <th className="p-3.5 text-left">بدهی دستی</th>
-                            <th className="p-3.5 text-left">کل دریافتی</th>
-                            <th className="p-3.5 text-left">گردش مرجوعی</th>
+                            <th className="p-3.5 text-left font-black">مانده اول دوره</th>
+                            <th className="p-3.5 text-left font-black">خرید نسیه</th>
+                            <th className="p-3.5 text-left font-black">بدهی دستی</th>
+                            <th className="p-3.5 text-left font-black">کل دریافتی</th>
+                            <th className="p-3.5 text-left font-black">گردش مرجوعی</th>
 
                             <SortableTableHeader
                               field="balance"
@@ -1594,8 +1596,8 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                               مانده خالص
                             </SortableTableHeader>
 
-                            <th className="p-3.5 text-center">وضعیت</th>
-                            <th className="p-3.5 text-center">عملیات حسابداری</th>
+                            <th className="p-3.5 text-center font-black">وضعیت</th>
+                            <th className="p-3.5 text-center font-black">عملیات حسابداری</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">

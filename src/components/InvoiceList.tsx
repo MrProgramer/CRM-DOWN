@@ -476,7 +476,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
                   {/* Column 1: Customer / Party */}
                   <SortableTableHeader
@@ -484,6 +484,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     currentField={sortField}
                     currentDirection={sortDirection}
                     onSort={handleSort}
+                    align="right"
                     className="min-w-[200px]"
                   >
                     طرف‌حساب / مشتری
@@ -495,6 +496,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     currentField={sortField}
                     currentDirection={sortDirection}
                     onSort={handleSort}
+                    align="right"
                     className="min-w-[170px]"
                   >
                     تاریخ و شماره سند
@@ -506,6 +508,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     currentField={sortField}
                     currentDirection={sortDirection}
                     onSort={handleSort}
+                    align="right"
                     className="min-w-[180px]"
                   >
                     نحوه و وضعیت تسویه
@@ -524,7 +527,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   </SortableTableHeader>
 
                   {/* Column 5: Actions */}
-                  <th className="p-3.5 text-center whitespace-nowrap min-w-[140px]">عملیات</th>
+                  <th className="p-3.5 text-center whitespace-nowrap min-w-[140px] font-black">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">

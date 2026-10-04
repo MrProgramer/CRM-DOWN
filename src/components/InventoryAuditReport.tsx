@@ -672,16 +672,16 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       {/* Comprehensive Report Data Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse text-xs">
+          <table className="w-full text-right border-collapse text-xs sm:text-[13px]">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-[11px] select-none">
-                <th className="py-2.5 px-2 text-center w-10">ردیف</th>
-                <th className="py-2.5 px-2.5 min-w-[150px]">شرح و نام کالا</th>
-                <th className="py-2.5 px-2 text-center min-w-[130px]">موجودی، کارتن و بسته‌بندی</th>
-                <th className="py-2.5 px-2 text-center min-w-[120px]">نرخ خرید و فروش</th>
-                <th className="py-2.5 px-2 text-center min-w-[140px]">سود و زیان هر قلم</th>
-                <th className="py-2.5 px-2 text-center min-w-[130px]">ارزش کل موجودی</th>
-                <th className="py-2.5 px-2 text-center w-20">وضعیت</th>
+              <tr className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-xs sm:text-[13px] select-none">
+                <th className="py-3 px-2 text-center w-12 font-black">ردیف</th>
+                <th className="py-3 px-3 min-w-[160px] font-black text-right">شرح و نام کالا</th>
+                <th className="py-3 px-3 text-center min-w-[140px] font-black">موجودی، کارتن و بسته‌بندی</th>
+                <th className="py-3 px-3 text-center min-w-[130px] font-black">نرخ خرید و فروش</th>
+                <th className="py-3 px-3 text-center min-w-[140px] font-black">سود و زیان هر قلم</th>
+                <th className="py-3 px-3 text-center min-w-[140px] font-black">ارزش کل موجودی</th>
+                <th className="py-3 px-3 text-center w-24 font-black">وضعیت</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

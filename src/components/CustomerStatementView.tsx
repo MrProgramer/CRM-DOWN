@@ -1304,9 +1304,9 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-extrabold">
+              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
-                  <th className="p-3.5 w-12 text-center">#</th>
+                  <th className="p-3.5 w-12 text-center font-black">#</th>
                   <th 
                     className="p-3.5 w-36 cursor-pointer select-none hover:text-black dark:hover:text-white"
                     onClick={() => setLedgerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
@@ -1324,11 +1324,11 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
                       </span>
                     </div>
                   </th>
-                  <th className="p-3.5">عنوان و نوع سند</th>
-                  <th className="p-3.5 text-left w-36">بدهکار (+) نسیه</th>
-                  <th className="p-3.5 text-left w-36">واریزی و تسویه (-)</th>
-                  <th className="p-3.5 text-left w-36">مانده در گردش</th>
-                  <th className="p-3.5 text-center w-28 no-print">عملیات</th>
+                  <th className="p-3.5 font-black text-right">عنوان و نوع سند</th>
+                  <th className="p-3.5 text-left w-36 font-black">بدهکار (+) نسیه</th>
+                  <th className="p-3.5 text-left w-36 font-black">واریزی و تسویه (-)</th>
+                  <th className="p-3.5 text-left w-36 font-black">مانده در گردش</th>
+                  <th className="p-3.5 text-center w-28 no-print font-black">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">

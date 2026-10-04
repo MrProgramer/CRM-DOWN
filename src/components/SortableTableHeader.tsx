@@ -37,8 +37,13 @@ export function SortableTableHeader<T extends string>({
 
   const alignClass = 
     align === 'center' ? 'justify-center text-center' :
-    align === 'left' ? 'justify-start text-left' :
-    'justify-start text-right';
+    align === 'left' ? 'justify-end text-left flex-row-reverse' :
+    'justify-start text-right flex-row';
+
+  const thAlignClass =
+    align === 'center' ? 'text-center' :
+    align === 'left' ? 'text-left' :
+    'text-right';
 
   return (
     <th
@@ -46,18 +51,18 @@ export function SortableTableHeader<T extends string>({
       aria-sort={getAriaSort()}
       title={title || defaultTitle}
       onClick={() => onSort(field)}
-      className={`p-3.5 select-none cursor-pointer group transition-all duration-150 ${
+      className={`p-3 sm:p-3.5 select-none cursor-pointer group transition-all duration-150 text-xs sm:text-[13px] ${thAlignClass} ${
         isActive 
           ? 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-900 dark:text-white font-black' 
-          : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white font-bold'
       } ${className}`}
     >
       <div className={`flex items-center gap-1.5 ${alignClass}`}>
         <span className="truncate">{children}</span>
         
-        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md transition-all shrink-0 ${
+        <span className={`inline-flex items-center justify-center w-4.5 h-4.5 rounded-md transition-all shrink-0 ${
           isActive 
-            ? 'bg-slate-200/80 dark:bg-slate-700/80 text-teal-600 dark:text-teal-400 shadow-2xs' 
+            ? 'bg-slate-200/90 dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-black' 
             : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 opacity-60 group-hover:opacity-100'
         }`}>
           {isActive ? (
@@ -74,3 +79,4 @@ export function SortableTableHeader<T extends string>({
     </th>
   );
 }
+

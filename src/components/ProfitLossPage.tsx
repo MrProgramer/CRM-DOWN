@@ -1337,19 +1337,19 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
-                  <th className="p-3.5 text-center w-12">ردیف</th>
-                  <th className="p-3.5">شرح کالا و مشخصات کارتن</th>
-                  <th className="p-3.5 text-center">تعداد کل</th>
-                  <th className="p-3.5 text-left">فی خرید</th>
-                  <th className="p-3.5 text-left">{isPurchase ? 'فی فروش مصوب' : 'فی فروش واحد'}</th>
-                  <th className="p-3.5 text-left">{isPurchase ? 'جمع بهای خرید' : 'بهای کل خرید'}</th>
-                  <th className="p-3.5 text-left">{isPurchase ? 'جمع ارزش فروش' : 'مبلغ کل فروش'}</th>
-                  <th className="p-3.5 text-left">سود هر عدد</th>
-                  <th className="p-3.5 text-left">{isPurchase ? 'سود ناخالص سطر' : 'سود کل سطر'}</th>
-                  <th className="p-3.5 text-center">{isPurchase ? 'مارک‌آپ' : 'حاشیه سود'}</th>
-                  <th className="p-3.5 text-center">وضعیت</th>
+                  <th className="p-3.5 text-center w-12 font-black">ردیف</th>
+                  <th className="p-3.5 font-black text-right">شرح کالا و مشخصات کارتن</th>
+                  <th className="p-3.5 text-center font-black">تعداد کل</th>
+                  <th className="p-3.5 text-left font-black">فی خرید</th>
+                  <th className="p-3.5 text-left font-black">{isPurchase ? 'فی فروش مصوب' : 'فی فروش واحد'}</th>
+                  <th className="p-3.5 text-left font-black">{isPurchase ? 'جمع بهای خرید' : 'بهای کل خرید'}</th>
+                  <th className="p-3.5 text-left font-black">{isPurchase ? 'جمع ارزش فروش' : 'مبلغ کل فروش'}</th>
+                  <th className="p-3.5 text-left font-black">سود هر عدد</th>
+                  <th className="p-3.5 text-left font-black">{isPurchase ? 'سود ناخالص سطر' : 'سود کل سطر'}</th>
+                  <th className="p-3.5 text-center font-black">{isPurchase ? 'مارک‌آپ' : 'حاشیه سود'}</th>
+                  <th className="p-3.5 text-center font-black">وضعیت</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1790,13 +1790,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         {activeTab === 'invoices' && (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
                   <SortableTableHeader
                     field="invoiceNumber"
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
+                    align="right"
                     className="p-3.5"
                   >
                     شماره سند
@@ -1807,6 +1808,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
+                    align="right"
                     className="p-3.5"
                   >
                     تاریخ صدور
@@ -1817,6 +1819,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
+                    align="right"
                     className="p-3.5"
                   >
                     خریدار / مشتری
@@ -1866,7 +1869,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     حاشیه سود
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center">عملیات</th>
+                  <th className="p-3.5 text-center font-black text-xs sm:text-[13px]">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1990,13 +1993,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         {activeTab === 'purchases' && (
           <div className="overflow-x-auto w-full">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
                   <SortableTableHeader
                     field="invoiceNumber"
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
+                    align="right"
                     className="p-3.5 whitespace-nowrap"
                   >
                     شماره و تاریخ
@@ -2007,12 +2011,13 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
+                    align="right"
                     className="p-3.5"
                   >
                     تأمین‌کننده
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center">اقلام و کارتن</th>
+                  <th className="p-3.5 text-center font-black">اقلام و کارتن</th>
 
                   <SortableTableHeader
                     field="cost"
@@ -2069,7 +2074,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     مارک‌آپ
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center whitespace-nowrap w-24">عملیات</th>
+                  <th className="p-3.5 text-center whitespace-nowrap w-24 font-black">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -2571,20 +2576,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs border-collapse">
-                  <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+                  <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                     <tr>
-                      <th className="p-3.5 text-center w-10">انتخاب</th>
-                      <th className="p-3.5 text-center w-14">ردیف</th>
-                      <th className="p-3.5">شماره و تاریخ</th>
-                      <th className="p-3.5">تأمین‌کننده</th>
-                      <th className="p-3.5 text-center">اقلام و کارتن</th>
-                      <th className="p-3.5 text-left">مایه اصلی خرید</th>
-                      <th className="p-3.5 text-left">کرایه بار</th>
-                      <th className="p-3.5 text-left">بهای تمام‌شده (Landed)</th>
-                      <th className="p-3.5 text-left">ارزش فروش اقلام</th>
-                      <th className="p-3.5 text-left">سود ناخالص فاکتور</th>
-                      <th className="p-3.5 text-center">مارک‌آپ</th>
-                      <th className="p-3.5 text-center w-24">عملیات</th>
+                      <th className="p-3.5 text-center w-10 font-black">انتخاب</th>
+                      <th className="p-3.5 text-center w-14 font-black">ردیف</th>
+                      <th className="p-3.5 font-black text-right">شماره و تاریخ</th>
+                      <th className="p-3.5 font-black text-right">تأمین‌کننده</th>
+                      <th className="p-3.5 text-center font-black">اقلام و کارتن</th>
+                      <th className="p-3.5 text-left font-black">مایه اصلی خرید</th>
+                      <th className="p-3.5 text-left font-black">کرایه بار</th>
+                      <th className="p-3.5 text-left font-black">بهای تمام‌شده (Landed)</th>
+                      <th className="p-3.5 text-left font-black">ارزش فروش اقلام</th>
+                      <th className="p-3.5 text-left font-black">سود ناخالص فاکتور</th>
+                      <th className="p-3.5 text-center font-black">مارک‌آپ</th>
+                      <th className="p-3.5 text-center w-24 font-black">عملیات</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -2887,14 +2892,15 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         {activeTab === 'products' && (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
-                  <th className="p-3.5 w-12 text-center">رتبه</th>
+                  <th className="p-3.5 w-12 text-center font-black">رتبه</th>
                   <SortableTableHeader
                     field="name"
                     currentField={productSortField}
                     currentDirection={productSortDirection}
                     onSort={handleProductSort}
+                    align="right"
                     className="p-3.5"
                   >
                     نام محصول / کالا
@@ -2905,6 +2911,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={productSortField}
                     currentDirection={productSortDirection}
                     onSort={handleProductSort}
+                    align="right"
                     className="p-3.5"
                   >
                     دسته‌بندی
@@ -3044,14 +3051,15 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         {activeTab === 'customers' && (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11.5px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
-                  <th className="p-3.5 w-12 text-center">رتبه</th>
+                  <th className="p-3.5 w-12 text-center font-black">رتبه</th>
                   <SortableTableHeader
                     field="name"
                     currentField={customerSortField}
                     currentDirection={customerSortDirection}
                     onSort={handleCustomerSort}
+                    align="right"
                     className="p-3.5"
                   >
                     نام طرف‌حساب / خریدار
@@ -3062,6 +3070,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={customerSortField}
                     currentDirection={customerSortDirection}
                     onSort={handleCustomerSort}
+                    align="right"
                     className="p-3.5"
                   >
                     شهر / منطقه

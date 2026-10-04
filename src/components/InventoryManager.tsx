@@ -927,14 +927,14 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 text-black dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-[11px]">
+              <tr className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-xs sm:text-[13px]">
                 <SortableTableHeader
                   field="index"
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
                   align="center"
-                  className="w-20"
+                  className="w-16 sm:w-20"
                 >
                   ردیف
                 </SortableTableHeader>
@@ -944,6 +944,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
+                  align="right"
                   className="min-w-[220px]"
                 >
                   شرح کالا و دسته‌بندی
@@ -955,7 +956,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   currentDirection={sortDirection}
                   onSort={handleSort}
                   align="left"
-                  className="min-w-[150px] text-left"
+                  className="min-w-[160px]"
                 >
                   {!isSecretMode || showPurchasePricePeek ? 'قیمت (فروش / خرید)' : 'قیمت فروش'}
                 </SortableTableHeader>
@@ -971,13 +972,13 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   موجودی کالا
                 </SortableTableHeader>
 
-                <th className="py-3.5 px-3 text-center w-28">عملیات</th>
+                <th className="py-3.5 px-3 text-center w-28 text-xs sm:text-[13px] font-bold text-slate-700 dark:text-slate-300">عملیات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-[13px]">
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs sm:text-sm">
                     <Boxes className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
                     <span>کالایی با فیلترها و معیارهای انتخاب‌شده یافت نشد.</span>
                     {hideZeroStock && (
@@ -1005,22 +1006,22 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 return (
                   <tr key={`inv-prod-${prod.id || idx}-${idx}`} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     {/* Index */}
-                    <td className="py-3.5 px-3 text-center font-bold text-slate-500 dark:text-slate-500">
+                    <td className="py-3.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
                       {toPersianDigits(startIndex + idx + 1)}
                     </td>
 
                     {/* Name, Category & Notes */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-black dark:text-white text-sm">{prod.name}</span>
+                        <span className="font-black text-black dark:text-white text-xs sm:text-sm">{prod.name}</span>
                         {/* Category badge inside product description column */}
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md font-bold text-[10px] border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md font-bold text-[11px] border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
                           <Tag className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" />
                           <span>{prod.category || 'بدون دسته'}</span>
                         </span>
                       </div>
 
-                      <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 flex-wrap">
+                      <div className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 flex-wrap">
                         <span className={`${theme.primaryLight} ${theme.primaryText} px-2 py-0.5 rounded-md font-black border ${theme.borderColor} whitespace-nowrap shrink-0`}>
                           {getProductSmartLabel(prod)}
                         </span>
@@ -1032,33 +1033,33 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       </div>
                     </td>
 
-                    {/* Prices: Professional SaaS Typography without clashing pill boxes */}
-                    <td className="py-3 px-3.5 text-left dir-ltr whitespace-nowrap">
+                    {/* Prices: Perfectly aligned to left matching the table header */}
+                    <td className="py-3.5 px-4 text-left whitespace-nowrap">
                       {!isSecretMode || showPurchasePricePeek ? (
-                        <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex flex-col items-start gap-1">
                           {/* 1. Selling Price - Primary High Emphasis */}
-                          <div className="flex items-center justify-end gap-1.5 font-mono">
-                            <span className="text-[10px] font-sans font-medium text-slate-400 dark:text-slate-500">
+                          <div className="flex items-center justify-start gap-1.5 font-mono">
+                            <span className="text-[11px] font-sans font-medium text-slate-500 dark:text-slate-400">
                               فروش:
                             </span>
-                            <span className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] tracking-tight">
+                            <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm tracking-tight">
                               {formatPrice(prod.sellingPrice)}
                             </span>
                           </div>
 
                           {/* 2. Purchase Price - Neutral Secondary */}
-                          <div className="flex items-center justify-end gap-1.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className="text-[10px] font-sans font-normal text-slate-400">
+                          <div className="flex items-center justify-start gap-1.5 font-mono text-xs text-slate-600 dark:text-slate-300">
+                            <span className="text-[11px] font-sans font-normal text-slate-400">
                               خرید:
                             </span>
-                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                            <span className="font-bold text-slate-700 dark:text-slate-300">
                               {formatPrice(prod.purchasePrice)}
                             </span>
                           </div>
 
                           {/* 3. Profit & Margin Indicator */}
                           {prod.sellingPrice > 0 && (
-                            <div className="flex items-center justify-end gap-1 text-[10px] font-mono pt-0.5 mt-0.5 border-t border-slate-100 dark:border-slate-800/80 w-full max-w-[140px]">
+                            <div className="flex items-center justify-start gap-1.5 text-[11px] font-mono pt-1 mt-0.5 border-t border-slate-100 dark:border-slate-800/80 w-full max-w-[150px]">
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                                 +{formatPrice(unitProfit)}
                               </span>
@@ -1070,12 +1071,12 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col items-end">
-                          <div className={`font-black ${theme.primaryText} text-xs sm:text-sm font-mono dir-ltr tracking-tight`}>
+                        <div className="flex flex-col items-start">
+                          <div className={`font-black ${theme.primaryText} text-xs sm:text-sm font-mono tracking-tight`}>
                             {formatPrice(prod.sellingPrice)}
                           </div>
                           {prod.sellingPrice >= 1000 && (
-                            <div className="text-[10px] text-slate-400 font-medium mt-0.5" title={`به حروف: ${numberToPersianWords(prod.sellingPrice)}`}>
+                            <div className="text-[11px] text-slate-500 font-medium mt-0.5" title={`به حروف: ${numberToPersianWords(prod.sellingPrice)}`}>
                               ({formatAmountScale(prod.sellingPrice)})
                             </div>
                           )}

@@ -963,9 +963,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             {/* Secret Mode Toggle Button */}
             <button
               onClick={handleSecretModeToggleClick}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer select-none ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer select-none ${
                 isSecretMode 
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black' 
+                  ? `${theme.primary} text-white shadow-xs` 
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700'
               }`}
               title={isSecretMode ? 'حالت محرمانه فعال (سود و قیمت‌های انبار مخفی هستند)' : 'حالت عادی (قیمت‌ها نمایان هستند)'}
@@ -989,9 +989,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             {onToggleSecurityMode && (
               <button
                 onClick={handleAdminModeToggle}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-bold text-xs transition-colors cursor-pointer select-none ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer select-none ${
                   isSecurityLocked
-                    ? 'bg-slate-900 dark:bg-slate-950 text-white hover:bg-slate-800'
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
                     : `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
                 }`}
                 title={
@@ -1002,9 +1002,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               >
                 {isSecurityLocked ? (
                   <>
-                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <Lock className="w-3.5 h-3.5 text-white shrink-0" />
                     <span className="hidden sm:inline font-bold text-[11px]">امنیت</span>
-                    <span className="px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[9px] font-bold">
+                    <span className="px-1 py-0.2 rounded bg-black/20 text-white text-[9px] font-bold">
                       قفل
                     </span>
                   </>
@@ -1012,7 +1012,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   <>
                     <ShieldCheck className="w-3.5 h-3.5 text-white shrink-0" />
                     <span className="hidden sm:inline font-bold text-[11px]">مدیر</span>
-                    <span className="px-1 py-0.2 rounded bg-white/20 text-white text-[9px] font-bold">
+                    <span className="px-1 py-0.2 rounded bg-black/20 text-white text-[9px] font-bold">
                       آزاد
                     </span>
                   </>

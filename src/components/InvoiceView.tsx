@@ -851,10 +851,10 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                   setIsPresentationPanelOpen(!isPresentationPanelOpen);
                 }
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
                 isPresentationModeActive
-                  ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                  ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
               }`}
               title="قیمت نمایشی یا درصد افزایش روی قیمت خرید جهت ارائه به مشتری"
             >
@@ -886,10 +886,10 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               type="button"
               id="invoice-toggle-profit-mode-btn"
               onClick={() => setShowProfitMode(!showProfitMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
                 showProfitMode
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                  ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
               }`}
               title="نمایش یا عدم نمایش سود و حاشیه سود اقلام و کل فاکتور"
             >
@@ -901,14 +901,14 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
           {/* Export Profit/Loss Include Checkbox Toggle */}
           {showProfitMode && !isSecretMode && (
             <label 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer select-none transition-colors"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} text-xs font-bold cursor-pointer select-none transition-colors`}
               title="در صورت فعال بودن، سود و زیان اقلام و جمع کل سود در چاپ، عکس و خروجی PDF نیز نمایش داده می‌شود"
             >
               <input
                 type="checkbox"
                 checked={includeProfitInExport}
                 onChange={(e) => setIncludeProfitInExport(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                className="w-3.5 h-3.5 rounded cursor-pointer"
               />
               <span>در چاپ و عکس</span>
             </label>

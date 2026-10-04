@@ -625,33 +625,35 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
 
         {/* Table Content */}
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse text-xs">
+          <table className="w-full text-right border-collapse text-xs sm:text-[13px]">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black select-none">
-                <th className="p-3.5 w-12 text-center">ردیف</th>
+              <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black select-none text-xs sm:text-[13px]">
+                <th className="p-3.5 w-12 text-center font-black">ردیف</th>
 
                 <SortableTableHeader
                   field="date"
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
+                  align="right"
                 >
                   تاریخ و ساعت
                 </SortableTableHeader>
 
-                <th className="p-3.5">نوع سند</th>
+                <th className="p-3.5 font-black text-right">نوع سند</th>
 
                 <SortableTableHeader
                   field="item"
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
+                  align="right"
                 >
                   نام کالا
                 </SortableTableHeader>
 
-                <th className="p-3.5">تعداد مرجوعی</th>
-                <th className="p-3.5">قیمت واحد</th>
+                <th className="p-3.5 font-black text-center">تعداد مرجوعی</th>
+                <th className="p-3.5 font-black text-left">قیمت واحد</th>
 
                 <SortableTableHeader
                   field="amount"
@@ -668,6 +670,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                   currentField={sortField}
                   currentDirection={sortDirection}
                   onSort={handleSort}
+                  align="right"
                 >
                   طرف حساب / فاکتور
                 </SortableTableHeader>
@@ -682,7 +685,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                   وضعیت تسویه
                 </SortableTableHeader>
 
-                <th className="p-3.5 text-center w-28">عملیات</th>
+                <th className="p-3.5 text-center w-28 font-black">عملیات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">

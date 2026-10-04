@@ -86,27 +86,27 @@ export const PricePeekButton: React.FC<PricePeekButtonProps> = ({
           }
         }}
         title="نگه دارید یا کلیک کنید: مشاهده لحظه‌ای قیمت خرید (با رها کردن مخفی می‌شود)"
-        className={`select-none flex items-center gap-1 rounded-lg font-bold transition-all cursor-pointer ${
+        className={`select-none flex items-center gap-1.5 rounded-lg font-bold transition-all cursor-pointer ${
           isPeeking
-            ? 'bg-amber-500 text-slate-950 scale-105 shadow-md ring-2 ring-amber-300'
-            : 'bg-slate-100 hover:bg-amber-100 text-slate-500 hover:text-amber-900 border border-slate-200/80 hover:border-amber-300'
+            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 scale-105 shadow-sm'
+            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
         } ${
           size === 'xs'
-            ? 'px-1.5 py-0.5 text-[10px]'
+            ? 'px-2 py-0.5 text-xs'
             : size === 'sm'
-            ? 'px-2 py-1 text-xs'
-            : 'px-2.5 py-1.5 text-xs'
+            ? 'px-2.5 py-1 text-xs'
+            : 'px-3 py-1.5 text-xs'
         }`}
       >
         {isPeeking ? (
           <>
-            <Unlock className="w-3 h-3 text-slate-950 animate-peek-pulse" />
-            <span className="font-black text-[10px] text-slate-950">خرید: {formatPrice(totalCost)}</span>
+            <Unlock className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-black text-xs">خرید: {formatPrice(totalCost)}</span>
           </>
         ) : (
           <>
-            <Eye className="w-3 h-3 text-slate-400 group-hover:text-amber-700" />
-            <span className="text-[10px]">{label || 'خرید؟'}</span>
+            <Eye className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-xs">{label || 'خرید؟'}</span>
           </>
         )}
       </button>
@@ -114,41 +114,41 @@ export const PricePeekButton: React.FC<PricePeekButtonProps> = ({
       {/* Floating Peek Popover Tooltip when holding */}
       {isPeeking && (
         <div 
-          className="absolute z-50 bottom-full mb-1.5 right-0 whitespace-nowrap bg-slate-900 text-white rounded-xl px-3.5 py-2.5 shadow-2xl border border-amber-400 text-xs animate-in fade-in zoom-in-95 pointer-events-none select-none"
-          style={{ minWidth: '190px' }}
+          className="absolute z-50 bottom-full mb-2 right-0 whitespace-nowrap bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl p-3 shadow-xl border border-slate-200/90 dark:border-slate-700 text-xs animate-in fade-in zoom-in-95 pointer-events-none select-none"
+          style={{ minWidth: '200px' }}
         >
           <div className="space-y-1.5 text-right font-semibold">
-            <div className="flex items-center justify-between text-amber-300 font-black border-b border-slate-700/80 pb-1.5">
+            <div className="flex items-center justify-between font-black border-b border-slate-100 dark:border-slate-800 pb-1.5 text-slate-900 dark:text-white">
               <span>خرید واحد هر عدد:</span>
-              <span>{formatPrice(purchasePrice)}</span>
+              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">{formatPrice(purchasePrice)}</span>
             </div>
             {sellingPrice !== undefined && sellingPrice > 0 && (
               <>
-                <div className="flex items-center justify-between text-emerald-400 font-extrabold text-[11px]">
+                <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-bold text-xs">
                   <span>سود در فروش هر عدد:</span>
-                  <span>{formatPrice(sellingPrice - purchasePrice)}</span>
+                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{formatPrice(sellingPrice - purchasePrice)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sky-300 font-extrabold text-[11px]">
+                <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-bold text-xs">
                   <span>درصد سود تک فروشی:</span>
-                  <span>{toPersianDigits(margin.toFixed(1))}٪</span>
+                  <span className="font-mono font-black text-indigo-600 dark:text-indigo-400">{toPersianDigits(margin.toFixed(1))}٪</span>
                 </div>
               </>
             )}
             {quantity > 1 && (
-              <div className="pt-1.5 mt-1 border-t border-slate-700/80 text-[10px] text-slate-300 space-y-1">
+              <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1">
                 <div className="flex items-center justify-between">
                   <span>خرید کل این ردیف ({toPersianDigits(quantity)} عدد):</span>
-                  <span className="font-bold text-amber-400">{formatPrice(totalCost)}</span>
+                  <span className="font-bold text-slate-900 dark:text-white font-mono">{formatPrice(totalCost)}</span>
                 </div>
                 {sellingPrice !== undefined && sellingPrice > 0 && (
-                  <div className="flex items-center justify-between text-emerald-400">
+                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                     <span>سود کل این ردیف:</span>
-                    <span className="font-bold">{formatPrice(profit)}</span>
+                    <span className="font-bold font-mono">{formatPrice(profit)}</span>
                   </div>
                 )}
               </div>
             )}
-            <div className="text-[9px] text-slate-400 text-center pt-1 border-t border-slate-800/80">
+            <div className="text-[10px] text-slate-400 text-center pt-1 border-t border-slate-100 dark:border-slate-800">
               🔒 با رها کردن مخفی می‌شود
             </div>
           </div>
