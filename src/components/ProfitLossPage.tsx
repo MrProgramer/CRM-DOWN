@@ -43,7 +43,8 @@ import {
   TrendingDown,
   Info,
   CheckCircle2,
-  Activity
+  Activity,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Pagination } from './Pagination';
 import { SortableTableHeader } from './SortableTableHeader';
@@ -105,6 +106,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
   // Selected inward invoices for multi-batch simulation & capital analysis
   const [selectedInwardInvoiceIds, setSelectedInwardInvoiceIds] = useState<string[]>([]);
+  // Simulation Basis for Tab 3: 'remaining-stock' (بر مبنای موجودی فعلی انبار) vs 'full-batch' (بر مبنای کل بار اولیه)
+  const [simulationBasis, setSimulationBasis] = useState<'remaining-stock' | 'full-batch'>('remaining-stock');
 
   const toggleInwardInvoiceSelection = (invId: string) => {
     setSelectedInwardInvoiceIds(prev => 
@@ -434,11 +437,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     let totalRevenue = 0;
     let totalCost = 0;
     let totalDiscountsGiven = 0;
+    let totalSalesExpenses = 0;
     let totalItemsCount = 0;
 
     filteredSalesInvoices.forEach(inv => {
-      totalRevenue += inv.finalAmount;
+      totalRevenue += (inv.finalAmount || 0);
       totalDiscountsGiven += (inv.hasDiscount ? (inv.discount || 0) : (inv.discount || 0));
+      const invExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      totalSalesExpenses += invExpenses;
       inv.items.forEach(it => {
         const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
         const cost = it.totalPieces > 0 ? (it.totalPieces * itemUnitCost) : (it.totalPurchaseCost || 0);
@@ -447,7 +453,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       });
     });
 
-    const rawGrossProfit = totalRevenue - totalCost;
+    // Real Gross Profit from Sales Invoices (سود ناخالص واقعی فاکتورهای فروش)
+    const rawGrossProfit = Math.max(0, totalRevenue - totalCost - totalSalesExpenses);
 
     // Inward Purchase Invoices discounts, freight, and projected profit in this period
     let totalInwardPurchaseDiscounts = 0;
@@ -482,12 +489,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       totalCustomerReturnsProfit += profitVal;
     });
 
-    // Operational expenses from treasury
-    const periodExpenses = (treasuryTransactions || []).filter(t => t.type === 'expense' && isDateInPeriod(t.date, period));
-    const totalOperationalExpenses = periodExpenses.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    // Operational expenses & personal drawings from treasury (STRICTLY EXCLUDING purchase invoices / restocks)
+    const operationalExpenses = (treasuryTransactions || []).filter(t => {
+      if (t.type !== 'expense') return false;
+      if (!isDateInPeriod(t.date, period)) return false;
+      const cat = (t.category || '').toLowerCase();
+      const desc = (t.description || '').toLowerCase();
+      const isPurchaseRestock = cat.includes('خرید') || cat.includes('ورود به انبار') || cat.includes('تامین') || 
+                               desc.includes('فاکتور خرید') || desc.includes('ورود به انبار') || desc.includes('تامین‌کننده') || desc.includes('تامین کننده');
+      return !isPurchaseRestock;
+    });
+    const totalOperationalExpenses = operationalExpenses.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
-    // Effective gross profit incorporating inward discount savings and returns adjustment
-    const effectiveGrossProfit = Math.max(0, rawGrossProfit + totalInwardPurchaseDiscounts - totalCustomerReturnsProfit);
+    // Effective gross profit from sales (realized from filtered sales invoices minus customer returns profit)
+    const effectiveGrossProfit = Math.max(0, rawGrossProfit - totalCustomerReturnsProfit);
     const netOperatingProfit = effectiveGrossProfit - totalOperationalExpenses;
 
     const overallMargin = totalRevenue > 0 ? (effectiveGrossProfit / totalRevenue) * 100 : 0;
@@ -863,7 +878,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     };
   }, [invoices, products, period, treasuryTransactions, payments, productReturns, customers, liquidityBalances, filteredSalesInvoices]);
 
-  // Interactive Simulation for selected inward invoices (e.g. 3 specific invoices or custom selection)
+  // Interactive Simulation for selected inward invoices / remaining stock
   const simulationMetrics = useMemo(() => {
     const isCustomSelection = selectedInwardInvoiceIds.length > 0;
     const targets = isCustomSelection
@@ -871,26 +886,72 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       : capitalAnalysisData.inwardLedger.slice(0, 3); // پیش‌فرض: ۳ فاکتور ورودی اخیر
 
     const count = targets.length;
-    const merchandisePrincipal = targets.reduce((s, i) => s + i.netMerchandisePrincipal, 0);
-    const freightExpenses = targets.reduce((s, i) => s + i.freightExpenses, 0);
-    const landedCost = targets.reduce((s, i) => s + i.landedCost, 0);
-    const projectedRevenue = targets.reduce((s, i) => s + i.projectedRevenue, 0);
-    const projectedGrossProfit = targets.reduce((s, i) => s + i.projectedGrossProfit, 0);
-    const markupPercent = landedCost > 0 ? (projectedGrossProfit / landedCost) * 100 : 0;
-    
+
+    // 1. Full Initial Batch Figures (دست نخورده / اولیه)
+    const fullMerchandisePrincipal = targets.reduce((s, i) => s + i.netMerchandisePrincipal, 0);
+    const fullFreightExpenses = targets.reduce((s, i) => s + i.freightExpenses, 0);
+    const fullLandedCost = targets.reduce((s, i) => s + i.landedCost, 0);
+    const fullProjectedRevenue = targets.reduce((s, i) => s + i.projectedRevenue, 0);
+    const fullProjectedGrossProfit = targets.reduce((s, i) => s + i.projectedGrossProfit, 0);
+    const fullTotalCartons = targets.reduce((s, i) => s + i.totalCartons, 0);
+    const fullTotalPieces = targets.reduce((s, i) => s + i.totalPieces, 0);
+
+    // 2. Remaining Current Physical Stock Figures (موجودی حال حاضر انبار پس از فروش‌های انجام شده)
+    const targetProductIds = new Set<string>();
+    const targetProductNames = new Set<string>();
+    targets.forEach(t => {
+      (t.inv.items || []).forEach(it => {
+        if (it.productId) targetProductIds.add(it.productId);
+        if (it.productName) targetProductNames.add(it.productName.trim().toLowerCase());
+      });
+    });
+
+    const isAllSelected = selectedInwardInvoiceIds.length === capitalAnalysisData.inwardLedger.length && capitalAnalysisData.inwardLedger.length > 0;
+    const relevantProducts = (!isCustomSelection || isAllSelected)
+      ? products
+      : products.filter(p => targetProductIds.has(p.id) || targetProductNames.has(p.name?.trim().toLowerCase()));
+
+    const remainingStockPieces = relevantProducts.reduce((s, p) => s + Math.max(0, Number(p.stockPieces) || 0), 0);
+    const remainingStockCartons = relevantProducts.reduce((s, p) => {
+      const ppc = p.cartonQuantity || p.piecesPerCarton || 1;
+      const stock = Math.max(0, Number(p.stockPieces) || 0);
+      return s + (ppc > 1 ? Math.floor(stock / ppc) : 0);
+    }, 0);
+
+    const remainingMerchandisePrincipal = relevantProducts.reduce((s, p) => s + (Math.max(0, Number(p.stockPieces) || 0) * (Number(p.purchasePrice) || 0)), 0);
+    const remainingProjectedRevenue = relevantProducts.reduce((s, p) => s + (Math.max(0, Number(p.stockPieces) || 0) * (Number(p.sellingPrice) || 0)), 0);
+    const remainingProjectedGrossProfit = Math.max(0, remainingProjectedRevenue - remainingMerchandisePrincipal);
+
     // Proportional share of operational expenses for this batch of invoices
     const expenseShare = capitalAnalysisData.inwardLedger.length > 0
       ? Math.round((capitalAnalysisData.totalOperationalExpenses / capitalAnalysisData.inwardLedger.length) * count)
       : 0;
 
+    // Determine values based on chosen simulationBasis
+    const isRemainingMode = simulationBasis === 'remaining-stock';
+    const merchandisePrincipal = isRemainingMode ? remainingMerchandisePrincipal : fullMerchandisePrincipal;
+    const freightExpenses = isRemainingMode ? 0 : fullFreightExpenses;
+    const landedCost = isRemainingMode ? remainingMerchandisePrincipal : fullLandedCost;
+    const projectedRevenue = isRemainingMode ? remainingProjectedRevenue : fullProjectedRevenue;
+    const projectedGrossProfit = isRemainingMode ? remainingProjectedGrossProfit : fullProjectedGrossProfit;
+    const markupPercent = landedCost > 0 ? (projectedGrossProfit / landedCost) * 100 : 0;
+    const totalCartons = isRemainingMode ? remainingStockCartons : fullTotalCartons;
+    const totalPieces = isRemainingMode ? remainingStockPieces : fullTotalPieces;
+
     const netProfit = projectedGrossProfit - expenseShare;
-    // Total cash & capital that returns to the owner: مایه اصلی خرید + سود خالص باقی‌مانده
-    const totalCashReturn = merchandisePrincipal + netProfit;
-    const totalCartons = targets.reduce((s, i) => s + i.totalCartons, 0);
-    const totalPieces = targets.reduce((s, i) => s + i.totalPieces, 0);
+    // Direct Cash from Inventory: اصل سرمایه موجودی + سود خالص منهای مخارج = ارزش فروش منهای مخارج
+    const inventoryCashReturn = merchandisePrincipal + netProfit;
+
+    // Comprehensive Business Realizable Cash (فرمول ۵گانه جامع: موجودی خرید + سود موجودی + مطالبات نسیه + نقدینگی حاضر - مخارج)
+    const currentLiquidity = capitalAnalysisData.liquidity.totalLiquidity;
+    const tradeReceivables = capitalAnalysisData.totalTradeReceivables;
+    const comprehensiveExpenses = isRemainingMode ? capitalAnalysisData.totalOperationalExpenses : expenseShare;
+    const comprehensiveTotalRealizableCash = (merchandisePrincipal + projectedGrossProfit + tradeReceivables + currentLiquidity) - comprehensiveExpenses;
 
     return {
       isCustomSelection,
+      simulationBasis,
+      isRemainingMode,
       targets,
       count,
       merchandisePrincipal,
@@ -901,11 +962,25 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       markupPercent,
       expenseShare,
       netProfit,
-      totalCashReturn,
+      totalCashReturn: isRemainingMode ? comprehensiveTotalRealizableCash : inventoryCashReturn,
+      inventoryCashReturn,
+      comprehensiveTotalRealizableCash,
+      currentLiquidity,
+      tradeReceivables,
+      comprehensiveExpenses,
       totalCartons,
-      totalPieces
+      totalPieces,
+      // Full vs Remaining details
+      fullMerchandisePrincipal,
+      fullProjectedRevenue,
+      fullProjectedGrossProfit,
+      remainingMerchandisePrincipal,
+      remainingProjectedRevenue,
+      remainingProjectedGrossProfit,
+      remainingStockPieces,
+      relevantProductsCount: relevantProducts.length
     };
-  }, [selectedInwardInvoiceIds, capitalAnalysisData]);
+  }, [selectedInwardInvoiceIds, capitalAnalysisData, simulationBasis, products]);
 
   const currentDatasetLength = useMemo(() => {
     if (activeTab === 'invoices') return filteredSalesInvoices.length;
@@ -1649,13 +1724,13 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             </div>
           </div>
 
-          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-right">
-            {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.netOperatingProfit)}`}
+          <div className={`text-xl sm:text-2xl font-black ${summaryMetrics.netOperatingProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} dir-ltr text-right font-mono`}>
+            {isSecretMode ? '••••••' : (summaryMetrics.netOperatingProfit >= 0 ? `+${formatPrice(summaryMetrics.netOperatingProfit)}` : formatPrice(summaryMetrics.netOperatingProfit))}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-            <span>سود حاصل از دوره:</span>
-            <span className="font-bold text-slate-700 dark:text-slate-300">
-              {toPersianDigits(summaryMetrics.invoicesCount)} فاکتور صادر شده
+            <span>سود ناخالص فروش ({toPersianDigits(summaryMetrics.invoicesCount)} فاکتور):</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
+              {isSecretMode ? '••••••' : formatPrice(summaryMetrics.effectiveGrossProfit)}
             </span>
           </div>
         </div>
@@ -2333,27 +2408,61 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
             {/* 2. SECTION: EXECUTIVE ACTION TOOLBAR & SIMULATION CONTROLS */}
             <div className="bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
-              <div>
+              <div className="space-y-2">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className={`p-2.5 rounded-xl ${theme.light} ${theme.primaryText}`}>
                     <Coins className="w-5 h-5" />
                   </span>
                   <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                    شبیه‌ساز سودآوری کل بارنامه‌ها (تحلیل سناریوی فروش کامل ۱۰۰٪)
+                    {simulationBasis === 'remaining-stock'
+                      ? 'محاسبه سودآوری و عایدی بر مبنای «موجودی باقیمانده انبار»'
+                      : 'شبیه‌ساز سودآوری کل بارنامه‌ها (تحلیل سناریوی فروش کامل ۱۰۰٪)'}
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-teal-50 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                    محاسبه بهای تمام‌شده و بازگشت سرمایه
+                  <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${simulationBasis === 'remaining-stock' ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' : 'bg-teal-50 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800'}`}>
+                    {simulationBasis === 'remaining-stock' ? 'موجودی پس از کسر فروش‌های انجام‌شده' : 'کل بار اولیه فاکتورها'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed font-medium">
-                  با فروش کامل این فاکتورهای ورودی، پس از کسر مخارج و برداشت‌های شخصی دقیقاً چقدر سود و اصل سرمایه به دست شما بازمی‌گردد:
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  {simulationBasis === 'remaining-stock'
+                    ? 'محاسبه ارزش خرید موجودی فعلی انبار، به اضافه سودی که از فروش این کالاها عایدتان می‌شود، منهای مخارج دوره = خالص نقدینگی نهایی در دست:'
+                    : 'با فروش کامل این فاکتورهای ورودی، پس از کسر مخارج و برداشت‌های شخصی دقیقاً چقدر سود و اصل سرمایه به دست شما بازمی‌گردد:'}
                 </p>
+
+                {/* Simulation Basis Switcher Toggle Buttons */}
+                <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-700 shadow-2xs w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setSimulationBasis('remaining-stock')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer select-none ${
+                      simulationBasis === 'remaining-stock'
+                        ? `${theme.primary} text-white shadow-xs`
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="تحلیل بر اساس موجودی واقعی حاضر در انبار پس از فروش‌های انجام شده"
+                  >
+                    <Boxes className="w-3.5 h-3.5" />
+                    <span>موجودی فعلی انبار</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulationBasis('full-batch')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer select-none ${
+                      simulationBasis === 'full-batch'
+                        ? `${theme.primary} text-white shadow-xs`
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="تحلیل بر اساس کل بارهای اولیه فاکتورهای ورودی دست‌نخورده (فروش ۱۰۰٪)"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>کل بار اولیه فاکتورها (۱۰۰٪)</span>
+                  </button>
+                </div>
               </div>
 
               {/* Quick Multi-Batch Selection Simulator Buttons */}
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap self-start lg:self-center">
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300 ml-1">
-                  انتخاب فاکتورهای ورودی:
+                  فاکتورهای تحت بررسی:
                 </span>
 
                 <button
@@ -2366,7 +2475,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   }`}
                   title="تحلیل فوری و مجزای ۳ فاکتور ورودی اخیر"
                 >
-                  تحلیل ۳ فاکتور اخیر
+                  ۳ فاکتور اخیر
                 </button>
 
                 <button
@@ -2379,7 +2488,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   }`}
                   title="انتخاب و محاسبه کل فاکتورهای ورودی"
                 >
-                  انتخاب همه ({toPersianDigits(capitalAnalysisData.inwardLedger.length)})
+                  همه ({toPersianDigits(capitalAnalysisData.inwardLedger.length)})
                 </button>
 
                 {selectedInwardInvoiceIds.length > 0 && (
@@ -2390,7 +2499,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     title="حذف فیلتر انتخابی و بازگشت به ۳ فاکتور پیش‌فرض"
                   >
                     <X className="w-3.5 h-3.5" />
-                    <span>پاک کردن انتخاب ({toPersianDigits(selectedInwardInvoiceIds.length)})</span>
+                    <span>پاک کردن ({toPersianDigits(selectedInwardInvoiceIds.length)})</span>
                   </button>
                 )}
               </div>
@@ -2402,7 +2511,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-sm font-black text-slate-900 dark:text-white">
-                    نتیجه مالی: {toPersianDigits(simulationMetrics.count)} فاکتور ورودی تحت بررسی
+                    {simulationBasis === 'remaining-stock'
+                      ? `نتیجه موجودی فعلی: ${toPersianDigits(simulationMetrics.totalPieces.toLocaleString())} عدد کالا در قفسه‌های انبار`
+                      : `نتیجه مالی: ${toPersianDigits(simulationMetrics.count)} فاکتور ورودی اولیه تحت بررسی`}
                   </span>
                   <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
                     {toPersianDigits(simulationMetrics.totalCartons)} کارتن · {toPersianDigits(simulationMetrics.totalPieces.toLocaleString())} عدد کالا
@@ -2410,9 +2521,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                 </div>
 
                 <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  {simulationMetrics.isCustomSelection 
-                    ? 'فاکتورهای انتخاب شده به‌صورت دستی از جدول پایین' 
-                    : 'پیش‌فرض: ۳ فاکتور ورودی اخیر (با تیک زدن جدول پایین می‌توانید هر ترکیبی را انتخاب کنید)'}
+                  {simulationBasis === 'remaining-stock'
+                    ? 'محاسبه ارزش موجودی واقعی حاضر در انبار + سود انتظاری - مخارج'
+                    : (simulationMetrics.isCustomSelection 
+                        ? 'فاکتورهای انتخاب شده به‌صورت دستی از جدول پایین' 
+                        : 'پیش‌فرض: ۳ فاکتور ورودی اخیر')}
                 </div>
               </div>
 
@@ -2422,52 +2535,52 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   {/* Card 1: Projected Sales Revenue */}
                   <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200/90 dark:border-slate-700 space-y-1.5">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 block truncate">
-                      ارزش کل فروش اقلام
+                      {simulationBasis === 'remaining-stock' ? 'ارزش فروش موجودی فعلی انبار' : 'ارزش کل فروش اقلام'}
                     </span>
                     <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white block font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.projectedRevenue)}
                     </span>
                     <span className="text-[11px] text-slate-400 block truncate">
-                      بر مبنای نرخ مصوب فروش کالاها
+                      {simulationBasis === 'remaining-stock' ? 'بر مبنای نرخ مصوب فروش اقلام موجود' : 'بر مبنای نرخ مصوب فروش کالاها'}
                     </span>
                   </div>
 
                   {/* Card 2: Merchandise Principal */}
                   <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200/90 dark:border-slate-700 space-y-1.5">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 block truncate">
-                      مایه اصلی خرید (خالص فاکتور)
+                      {simulationBasis === 'remaining-stock' ? 'مایه خرید موجودی فعلی (سرمایه خوابیده)' : 'مایه اصلی خرید (خالص فاکتور)'}
                     </span>
                     <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white block font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.merchandisePrincipal)}
                     </span>
                     <span className="text-[11px] text-slate-400 block truncate">
-                      سرمایه در گردش خرید کالا
+                      {simulationBasis === 'remaining-stock' ? 'سرمایه در گردش موجود در قفسه‌ها' : 'سرمایه در گردش خرید کالا'}
                     </span>
                   </div>
 
                   {/* Card 3: Freight Expenses (Display only) */}
                   <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-sky-200 dark:border-sky-900/60 space-y-1.5">
                     <span className="text-xs font-bold text-sky-700 dark:text-sky-300 block truncate">
-                      کرایه بار و باربری (نمایش تفکیکی)
+                      {simulationBasis === 'remaining-stock' ? 'کرایه بار اولیه فاکتورها' : 'کرایه بار و باربری (تفکیکی)'}
                     </span>
                     <span className="text-base sm:text-lg font-black text-sky-700 dark:text-sky-300 block font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : (simulationMetrics.freightExpenses > 0 ? `+${formatPrice(simulationMetrics.freightExpenses)}` : '۰ تومان')}
                     </span>
                     <span className="text-[11px] text-sky-600 dark:text-sky-400 block truncate">
-                      هزینه حمل کالا
+                      {simulationBasis === 'remaining-stock' ? 'پرداخت‌شده در مبدا ورود کالا' : 'هزینه حمل کالا'}
                     </span>
                   </div>
 
                   {/* Card 4: Landed Cost */}
                   <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200/90 dark:border-slate-700 space-y-1.5">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 block truncate">
-                      بهای تمام‌شده بار (Landed Cost)
+                      {simulationBasis === 'remaining-stock' ? 'بهای خرید موجودی فعلی' : 'بهای تمام‌شده بار (Landed Cost)'}
                     </span>
                     <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white block font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.landedCost)}
                     </span>
                     <span className="text-[11px] text-slate-400 block truncate">
-                      بهای خالص خرید فاکتور
+                      {simulationBasis === 'remaining-stock' ? 'ارزش دفتری انبار فعلی' : 'بهای خالص خرید فاکتور'}
                     </span>
                   </div>
                 </div>
@@ -2478,7 +2591,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   <div className="bg-emerald-50/80 dark:bg-emerald-950/50 p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 block truncate">
-                        سود ناخالص بارها
+                        {simulationBasis === 'remaining-stock' ? 'سود انتظاری از موجودی فعلی' : 'سود ناخالص بارها'}
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 text-[11px] font-bold">
                         مارک‌آپ: {toPersianDigits(simulationMetrics.markupPercent.toFixed(1))}٪
@@ -2488,7 +2601,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       {isSecretMode ? '••••••' : `+${formatPrice(simulationMetrics.projectedGrossProfit)}`}
                     </span>
                     <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block truncate font-bold">
-                      ارزش فروش منهای بهای خرید
+                      {simulationBasis === 'remaining-stock' ? 'ارزش فروش فعلی منهای بهای خرید' : 'ارزش فروش منهای بهای خرید'}
                     </span>
                   </div>
 
@@ -2508,46 +2621,75 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     </span>
                   </div>
 
-                  {/* Card 7: Total Pocket Return (Merchandise Capital + Net Profit) */}
+                  {/* Card 7: Total Realizable Cash Return (موجودی خرید + سود + مطالبات + نقدینگی - مخارج) */}
                   <div className="bg-amber-50/90 dark:bg-amber-950/60 p-4 rounded-xl border-2 border-amber-300 dark:border-amber-600 shadow-2xs space-y-1.5 sm:col-span-2 lg:col-span-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-amber-900 dark:text-amber-200 block truncate">
-                        کل نقدینگی بازگشتی به جیب
+                        {simulationBasis === 'remaining-stock' ? 'کل وجه و عایدی نهایی نقدینگی' : 'کل نقدینگی بازگشتی به جیب'}
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-amber-200 dark:bg-amber-900 text-amber-950 dark:text-amber-100 text-[10.5px] font-bold">
-                        بازگشت نهایی
+                        {simulationBasis === 'remaining-stock' ? 'موجودی + سود + نسیه + نقدینگی - مخارج' : 'بازگشت نهایی'}
                       </span>
                     </div>
-                    <span className="text-lg sm:text-xl font-black text-amber-900 dark:text-amber-200 block font-mono tabular-nums dir-ltr text-right">
+                    <div className="text-lg sm:text-xl font-black text-amber-900 dark:text-amber-200 font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.totalCashReturn)}
-                    </span>
+                    </div>
                     <span className="text-[11px] text-amber-800 dark:text-amber-300 block truncate font-bold">
-                      مایه اصلی خرید + سود خالص باقیمانده
+                      {simulationBasis === 'remaining-stock' ? 'مجموع ارزش فروش موجودی + مطالبات + نقدینگی - مخارج' : 'مایه اصلی خرید + سود خالص باقی‌مانده'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Clear Equation Formula Visualization */}
+              {/* Clear Equation Formula Visualization (سازگار با فرمول ۵گانه در حالت موجودی انبار) */}
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 flex-wrap font-bold text-slate-800 dark:text-slate-200">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">فرمول حسابداری بازگشت نقدینگی:</span>
-                  <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono">
-                    ارزش فروش: {formatPrice(simulationMetrics.projectedRevenue)}
-                  </span>
-                  <span>−</span>
-                  <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-mono">
-                    کرایه بار: {formatPrice(simulationMetrics.freightExpenses)}
-                  </span>
-                  <span>−</span>
-                  <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-mono">
-                    برداشت شخصی: {formatPrice(simulationMetrics.expenseShare)}
-                  </span>
-                  <span>=</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-black font-mono">
-                    کل نقدینگی نهایی دریافتی: {formatPrice(simulationMetrics.totalCashReturn)}
-                  </span>
-                </div>
+                {simulationBasis === 'remaining-stock' ? (
+                  <div className="flex items-center gap-1.5 flex-wrap font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">فرمول جامع نقدینگی نهایی:</span>
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono" title="مایه خرید موجودی فعلی انبار">
+                      موجودی خرید: {formatPrice(simulationMetrics.merchandisePrincipal)}
+                    </span>
+                    <span className="text-emerald-600 font-black">+</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-mono" title="سود حاصل از فروش موجودی">
+                      سود موجودی: {formatPrice(simulationMetrics.projectedGrossProfit)}
+                    </span>
+                    <span className="text-indigo-600 font-black">+</span>
+                    <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-mono" title="مطالبات نسیه مشتریان">
+                      مطالبات مشتریان: {formatPrice(simulationMetrics.tradeReceivables)}
+                    </span>
+                    <span className="text-sky-600 font-black">+</span>
+                    <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-mono" title="نقدینگی در دسترس بانک و صندوق">
+                      نقدینگی حاضر: {formatPrice(simulationMetrics.currentLiquidity)}
+                    </span>
+                    <span className="text-rose-600 font-black">−</span>
+                    <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-mono" title="کل مخارج دوره">
+                      مخارج: {formatPrice(simulationMetrics.comprehensiveExpenses)}
+                    </span>
+                    <span>=</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-black font-mono">
+                      کل وجه نهایی در دست: {formatPrice(simulationMetrics.totalCashReturn)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">فرمول حسابداری بازگشت نقدینگی:</span>
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono">
+                      ارزش فروش: {formatPrice(simulationMetrics.projectedRevenue)}
+                    </span>
+                    <span>−</span>
+                    <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-mono">
+                      کرایه بار: {formatPrice(simulationMetrics.freightExpenses)}
+                    </span>
+                    <span>−</span>
+                    <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-mono">
+                      برداشت شخصی: {formatPrice(simulationMetrics.expenseShare)}
+                    </span>
+                    <span>=</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-black font-mono">
+                      کل نقدینگی نهایی دریافتی: {formatPrice(simulationMetrics.totalCashReturn)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
