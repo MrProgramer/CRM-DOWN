@@ -83,9 +83,10 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
   const originalBoxSizing = element.style.boxSizing;
   const originalMinHeight = element.style.minHeight;
 
-  // Force Light (Day) Mode during image/PDF capture
+  // Force Light (Day) Mode during image/PDF capture ONLY for paper invoices, NOT for shot cards
+  const isShotCard = element.id === 'customer-statement-shot-card' || element.classList.contains('customer-statement-shot-card');
   const isDarkMode = document.documentElement.classList.contains('dark');
-  if (isDarkMode) {
+  if (isDarkMode && !isShotCard) {
     document.documentElement.classList.remove('dark');
   }
 
@@ -94,6 +95,13 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
   const activeFontFamily = typeof window !== 'undefined'
     ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
     : "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  // Prevent scrollbars on any inner elements during canvas capture
+  const scrollableElements = element.querySelectorAll<HTMLElement>('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
+  const originalOverflows = Array.from(scrollableElements).map((el) => el.style.overflow);
+  scrollableElements.forEach((el) => {
+    el.style.overflow = 'visible';
+  });
 
   if (isInvoicePaper) {
     // Standard Desktop A4 Paper Width (794px = 210mm at 96dpi)
@@ -106,19 +114,35 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
     element.style.color = '#0f172a';
     element.style.boxSizing = 'border-box';
     element.style.fontFamily = activeFontFamily;
+  } else if (isShotCard) {
+    // Optimal Width for Shot Statement Card to perfectly fit all 8 table columns with exact symmetrical margins
+    const isDarkShot = element.classList.contains('bg-slate-950') || element.classList.contains('dark');
+    element.style.width = '840px';
+    element.style.minWidth = '840px';
+    element.style.maxWidth = '840px';
+    element.style.minHeight = 'auto';
+    element.style.padding = '24px 24px';
+    element.style.margin = '0 auto';
+    element.style.boxSizing = 'border-box';
+    element.style.fontFamily = activeFontFamily;
+    element.style.backgroundColor = isDarkShot ? '#020617' : '#ffffff';
+    element.style.color = isDarkShot ? '#f8fafc' : '#0f172a';
   } else {
     element.style.backgroundColor = '#ffffff';
     element.style.color = '#0f172a';
     element.style.fontFamily = activeFontFamily;
   }
 
-  // Allow DOM to repaint in light mode
+  // Allow DOM to repaint
   const preparePromise = new Promise<void>((resolve) => setTimeout(resolve, 60));
 
   const restoreStyles = () => {
-    if (isDarkMode) {
+    if (isDarkMode && !isShotCard) {
       document.documentElement.classList.add('dark');
     }
+    scrollableElements.forEach((el, index) => {
+      el.style.overflow = originalOverflows[index] || '';
+    });
     element.style.width = originalWidth;
     element.style.minWidth = originalMinWidth;
     element.style.maxWidth = originalMaxWidth;
@@ -133,51 +157,124 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
   return { restoreStyles, preparePromise };
 }
 
+// Helper to capture a DOM element inside an unconstrained isolated staging wrapper
+// This eliminates modal scrollbar squishing, right-indentation, or RTL overflow bugs in html-to-image
+async function captureElementWithIsolation<T>(
+  elementId: string,
+  captureFn: (targetEl: HTMLElement) => Promise<T>
+): Promise<T> {
+  const originalElement = document.getElementById(elementId);
+  if (!originalElement) {
+    throw new Error(`Target element #${elementId} not found`);
+  }
+
+  const isShotCard = elementId === 'customer-statement-shot-card' || originalElement.classList.contains('customer-statement-shot-card');
+  const isNightShot = isShotCard && (originalElement.classList.contains('bg-slate-950') || originalElement.classList.contains('dark'));
+  const activeFontFamily = typeof window !== 'undefined'
+    ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
+    : "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  const targetWidth = isShotCard ? 840 : 794;
+  const paddingStr = isShotCard ? '28px 28px' : '36px 44px';
+  const targetBg = isNightShot ? '#020617' : '#ffffff';
+  const targetColor = isNightShot ? '#f8fafc' : '#0f172a';
+
+  // Create isolated container in DOM with exact target width at x=0, y=0
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '0';
+  wrapper.style.left = '0';
+  wrapper.style.width = `${targetWidth}px`;
+  wrapper.style.height = 'auto';
+  wrapper.style.zIndex = '-99999';
+  wrapper.style.opacity = '1';
+  wrapper.style.pointerEvents = 'none';
+  wrapper.style.direction = 'rtl';
+  wrapper.style.boxSizing = 'border-box';
+  wrapper.style.padding = '0';
+  wrapper.style.margin = '0';
+  wrapper.style.overflow = 'hidden';
+  wrapper.style.backgroundColor = targetBg;
+
+  const clone = originalElement.cloneNode(true) as HTMLElement;
+  clone.id = `${elementId}-isolated-capture`;
+
+  // Set explicit dimensions on clone aligned at top-left 0,0 inside wrapper
+  clone.style.width = `${targetWidth}px`;
+  clone.style.minWidth = `${targetWidth}px`;
+  clone.style.maxWidth = `${targetWidth}px`;
+  clone.style.margin = '0';
+  clone.style.padding = paddingStr;
+  clone.style.boxSizing = 'border-box';
+  clone.style.direction = 'rtl';
+  clone.style.fontFamily = activeFontFamily;
+  clone.style.backgroundColor = targetBg;
+  clone.style.color = targetColor;
+  clone.style.position = 'relative';
+  clone.style.left = '0';
+  clone.style.top = '0';
+
+  // Remove any scrollable constraints inside clone
+  const scrollables = clone.querySelectorAll<HTMLElement>('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
+  scrollables.forEach(el => {
+    el.style.overflow = 'visible';
+  });
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  // Wait for fonts & layout repaint
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 80));
+
+  try {
+    const result = await captureFn(clone);
+    if (document.body.contains(wrapper)) {
+      document.body.removeChild(wrapper);
+    }
+    return result;
+  } catch (err) {
+    if (document.body.contains(wrapper)) {
+      document.body.removeChild(wrapper);
+    }
+    throw err;
+  }
+}
+
 // Utility to render DOM elements or Invoice paper to standard PNG image download
 export async function downloadInvoiceAsImage(
   elementId: string, 
   fileName: string,
   onError?: (msg: string) => void
 ): Promise<boolean> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    if (onError) onError('المان مورد نظر جهت صدور تصویر یافت نشد.');
-    console.warn('Target element not found:', elementId);
-    return false;
-  }
-
-  const { restoreStyles, preparePromise } = normalizeElementForCapture(element);
-  await preparePromise;
-
   try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-
     const fontEmbedCSS = await getFontEmbedCSS();
 
-    // Generate high-resolution PNG using html-to-image
-    const dataUrl = await toPng(element, {
-      quality: 1.0,
-      pixelRatio: 3, // Ultra-sharp resolution
-      cacheBust: true,
-      backgroundColor: '#ffffff',
-      fontEmbedCSS: fontEmbedCSS || undefined,
-      preferredFontFormat: 'woff2',
-      filter: (node: HTMLElement) => {
-        if (node.classList && (
-          node.classList.contains('no-print') || 
-          node.classList.contains('hide-on-export') || 
-          node.classList.contains('confidential-price-data') || 
-          node.classList.contains('item-profit-badge')
-        )) {
-          return false;
-        }
-        return true;
-      },
+    // Generate high-resolution PNG using isolated staging clone
+    const dataUrl = await captureElementWithIsolation(elementId, async (clone) => {
+      const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
+      return await toPng(clone, {
+        quality: 1.0,
+        pixelRatio: 3, // Ultra-sharp resolution
+        cacheBust: true,
+        backgroundColor: isNightShot ? '#020617' : '#ffffff',
+        fontEmbedCSS: fontEmbedCSS || undefined,
+        preferredFontFormat: 'woff2',
+        filter: (node: HTMLElement) => {
+          if (node.classList && (
+            node.classList.contains('no-print') || 
+            node.classList.contains('hide-on-export') || 
+            node.classList.contains('confidential-price-data') || 
+            node.classList.contains('item-profit-badge')
+          )) {
+            return false;
+          }
+          return true;
+        },
+      });
     });
-
-    restoreStyles();
 
     const link = document.createElement('a');
     link.download = `${fileName}.png`;
@@ -187,9 +284,8 @@ export async function downloadInvoiceAsImage(
     document.body.removeChild(link);
     return true;
   } catch (e) {
-    restoreStyles();
     console.error('Image export failed:', e);
-    if (onError) onError('خطا در ایجاد تصویر. لطفاً از گزینه چاپ مستقیم یا ذخیره PDF استفاده فرمایید.');
+    if (onError) onError('خطا در ایجاد تصویر. لطفاً دوباره تلاش فرمایید.');
     return false;
   }
 }
@@ -200,44 +296,31 @@ export async function downloadInvoiceAsPDF(
   fileName: string,
   onError?: (msg: string) => void
 ): Promise<boolean> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    if (onError) onError('المان مورد نظر جهت صدور فایل PDF یافت نشد.');
-    console.warn('Target element for PDF not found:', elementId);
-    return false;
-  }
-
-  const { restoreStyles, preparePromise } = normalizeElementForCapture(element);
-  await preparePromise;
-
   try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-
     const fontEmbedCSS = await getFontEmbedCSS();
 
-    // Render DOM element to Canvas
-    const canvas = await toCanvas(element, {
-      pixelRatio: 2.5,
-      cacheBust: true,
-      backgroundColor: '#ffffff',
-      fontEmbedCSS: fontEmbedCSS || undefined,
-      preferredFontFormat: 'woff2',
-      filter: (node: HTMLElement) => {
-        if (node.classList && (
-          node.classList.contains('no-print') || 
-          node.classList.contains('hide-on-export') || 
-          node.classList.contains('confidential-price-data') || 
-          node.classList.contains('item-profit-badge')
-        )) {
-          return false;
-        }
-        return true;
-      },
+    // Render DOM element to Canvas using isolated clone
+    const canvas = await captureElementWithIsolation(elementId, async (clone) => {
+      const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
+      return await toCanvas(clone, {
+        pixelRatio: 2.5,
+        cacheBust: true,
+        backgroundColor: isNightShot ? '#020617' : '#ffffff',
+        fontEmbedCSS: fontEmbedCSS || undefined,
+        preferredFontFormat: 'woff2',
+        filter: (node: HTMLElement) => {
+          if (node.classList && (
+            node.classList.contains('no-print') || 
+            node.classList.contains('hide-on-export') || 
+            node.classList.contains('confidential-price-data') || 
+            node.classList.contains('item-profit-badge')
+          )) {
+            return false;
+          }
+          return true;
+        },
+      });
     });
-
-    restoreStyles();
 
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -294,7 +377,6 @@ export async function downloadInvoiceAsPDF(
     pdf.save(`${fileName}.pdf`);
     return true;
   } catch (e) {
-    restoreStyles();
     console.error('PDF export failed:', e);
     // Fallback to window print if canvas export fails
     window.print();
@@ -309,43 +391,31 @@ export async function copyInvoiceImageToClipboard(
   onError?: (msg: string) => void,
   textSummary?: string
 ): Promise<boolean> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    if (onError) onError('المان مورد نظر جهت تهیه تصویر یافت نشد.');
-    return false;
-  }
-
-  const { restoreStyles, preparePromise } = normalizeElementForCapture(element);
-  await preparePromise;
-
   try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-
     const fontEmbedCSS = await getFontEmbedCSS();
 
-    // Render Canvas
-    const canvas = await toCanvas(element, {
-      pixelRatio: 2.5,
-      cacheBust: true,
-      backgroundColor: '#ffffff',
-      fontEmbedCSS: fontEmbedCSS || undefined,
-      preferredFontFormat: 'woff2',
-      filter: (node: HTMLElement) => {
-        if (node.classList && (
-          node.classList.contains('no-print') || 
-          node.classList.contains('hide-on-export') || 
-          node.classList.contains('confidential-price-data') || 
-          node.classList.contains('item-profit-badge')
-        )) {
-          return false;
-        }
-        return true;
-      },
+    // Render Canvas using isolated staging clone
+    const canvas = await captureElementWithIsolation(elementId, async (clone) => {
+      const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
+      return await toCanvas(clone, {
+        pixelRatio: 2.5,
+        cacheBust: true,
+        backgroundColor: isNightShot ? '#020617' : '#ffffff',
+        fontEmbedCSS: fontEmbedCSS || undefined,
+        preferredFontFormat: 'woff2',
+        filter: (node: HTMLElement) => {
+          if (node.classList && (
+            node.classList.contains('no-print') || 
+            node.classList.contains('hide-on-export') || 
+            node.classList.contains('confidential-price-data') || 
+            node.classList.contains('item-profit-badge')
+          )) {
+            return false;
+          }
+          return true;
+        },
+      });
     });
-
-    restoreStyles();
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((b) => resolve(b), 'image/png', 1.0);
@@ -385,7 +455,6 @@ export async function copyInvoiceImageToClipboard(
       throw new Error('مرورگر شما از کپی مستقیم تصویر در کلیپ‌بورد پشتیبانی نمی‌کند.');
     }
   } catch (err: any) {
-    restoreStyles();
     console.error('Clipboard image copy failed:', err);
     if (onError) {
       onError(err?.message || 'خطا در کپی تصویر در حافظه. در حال دانلود فایل...');
