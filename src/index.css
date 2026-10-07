@@ -171,7 +171,7 @@
 }
 
 .dark .modern-glass-card, .dark .flat-card {
-  background: #0f172a;
+  background: #0b1120;
   border: 1px solid #1e293b;
   box-shadow: none;
 }
@@ -183,7 +183,7 @@
 }
 
 .dark .flat-surface {
-  background-color: #0f172a;
+  background-color: #0b1120;
   border: 1px solid #1e293b;
 }
 
@@ -193,23 +193,47 @@
 }
 
 .dark .flat-subtle {
-  background-color: #0b1120;
+  background-color: #070d18;
   border: 1px solid #1e293b;
 }
 
 /* Modern Flat Panel & Component Discipline */
 .flat-panel {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.95);
   border-radius: 0.75rem;
   box-shadow: none;
 }
 
 .dark .flat-panel {
-  background: #090d16;
-  border: 1px solid rgba(30, 41, 59, 0.9);
+  background: #0b1120;
+  border: 1px solid rgba(30, 41, 59, 0.95);
   border-radius: 0.75rem;
   box-shadow: none;
+}
+
+/* Professional Enterprise Form Control Flat Design */
+input[type="text"],
+input[type="number"],
+input[type="tel"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: none !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Flat Button Discipline - Zero puffy gradient bubbles, crisp professional feedback */
+button:not([class*="rounded-full"]):not([class*="p-"]) {
+  transition: background-color 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
 }
 
 /* Crisp 1px Hairline Borders & High-contrast Text */

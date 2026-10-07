@@ -4145,7 +4145,6 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                         <SmartPriceInput
                           value={amount}
                           onChange={(val) => setAmount(val)}
-                          placeholder="مبلغ انتقال به تومان (مثلاً ۵,۰۰۰,۰۰۰ یا کل مبلغ)"
                           themeColor={settings.themeColor}
                           showWords={true}
                           showScale={true}
@@ -4220,7 +4219,6 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                         <SmartPriceInput
                           value={amount}
                           onChange={(val) => setAmount(val)}
-                          placeholder="مبلغ به تومان (مثلاً ۵,۰۰۰,۰۰۰ یا ۲.۵m)"
                           themeColor={settings.themeColor}
                           showWords={true}
                           showScale={true}
@@ -4481,7 +4479,6 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">توضیحات و شرح سند:</label>
                     <input
                       type="text"
-                      placeholder="توضیحات تکمیلی (مثلاً: کرایه باربری، نام راننده، شماره بارنامه یا بابت...)"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-400"
@@ -4676,7 +4673,6 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="عنوان سرفصل هزینه جدید..."
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   onKeyDown={(e) => {

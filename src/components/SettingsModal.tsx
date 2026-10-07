@@ -97,6 +97,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   const gradientThemeKeys: ThemeColor[] = [
+    'gradient-royal',
+    'vip-royal-obsidian',
+    'vip-royal-sapphire',
+    'vip-royal-emerald',
+    'vip-royal-amethyst',
+    'vip-royal-ruby',
+    'vip-royal-gold',
+    'vip-royal-titanium',
+    'gradient-emerald-gold',
+    'gradient-titanium',
+    'gradient-crimson-dusk',
+    'gradient-midnight-cyan',
+    'gradient-nordic-frost',
     'gradient-sunset',
     'gradient-ocean',
     'gradient-cyber',

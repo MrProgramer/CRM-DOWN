@@ -608,6 +608,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           invoices={filteredInvoices}
           products={products}
           themeHex={currentTheme.hex}
+          settings={settings}
           isSecretMode={isSecretMode}
         />
       </motion.div>
@@ -907,7 +908,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div 
             className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 space-y-4 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <span className={`p-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
                   <Layers className="w-4 h-4" />
@@ -960,7 +961,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div 
             className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-4 space-y-3 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-amber-500" />
                 <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">هشدار موجودی بحرانی انبار</h3>
@@ -1014,7 +1015,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div 
             className="bg-white dark:bg-[#090d16] text-slate-900 dark:text-white rounded-xl p-4 space-y-3 border border-slate-200/90 dark:border-slate-800 shadow-none transition-colors"
           >
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span className="font-bold text-xs text-slate-900 dark:text-white">حساب بانکی و تسویه</span>
@@ -1065,7 +1066,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-850">
+            <div className="pt-2 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800">
               📍 {settings.address}
             </div>
           </div>
@@ -1075,7 +1076,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div 
               className="bg-white dark:bg-[#090d16] rounded-xl border border-slate-200/90 dark:border-slate-800 p-4 space-y-3 shadow-none transition-colors"
             >
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-850">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-blue-500" />
                   <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">رویدادها و اعلان‌های اخیر</h3>

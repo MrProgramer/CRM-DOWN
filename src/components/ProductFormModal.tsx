@@ -356,7 +356,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         setFormData(prev => ({ ...prev, name: newName }));
                       }
                     }}
-                    placeholder="مثلاً: لواشک نوشابه‌ای، شکلات تلخ..."
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-bold text-xs shadow-2xs ${
                       formErrors.name
                         ? 'border-rose-500 ring-2 ring-rose-500/20'
@@ -424,7 +423,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                           setFormData({ ...formData, category: e.target.value });
                           if (formErrors.category) setFormErrors({ ...formErrors, category: '' });
                         }}
-                        placeholder="نام دسته‌بندی جدید را وارد کنید..."
                         className={`w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-bold text-xs shadow-2xs ${
                           formErrors.category
                             ? 'border-rose-500 ring-2 ring-rose-500/20'
@@ -447,7 +445,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     type="text"
                     value={formData.unitTitle}
                     onChange={(e) => setFormData({ ...formData, unitTitle: e.target.value })}
-                    placeholder="عدد / بسته / کیلو"
                     className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
                   />
                 </div>
@@ -461,7 +458,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     min="0"
                     value={formData.leavesPerPiece || ''}
                     onChange={(e) => setFormData({ ...formData, leavesPerPiece: parseInt(e.target.value) || 0 })}
-                    placeholder="مثلاً ۶ برگی"
                     className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
                   />
                 </div>
@@ -559,7 +555,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                             stockPieces: prev.stockCartons * (calculatedPerCarton > 0 ? calculatedPerCarton : prev.piecesPerCarton)
                           }));
                         }}
-                        placeholder="مثلاً ۴ یا ۲۰"
                         className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-black text-center shadow-2xs text-sm"
                       />
                     </div>
@@ -584,7 +579,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                             stockPieces: prev.stockCartons * (calculatedPerCarton > 0 ? calculatedPerCarton : prev.piecesPerCarton)
                           }));
                         }}
-                        placeholder="مثلاً ۲۰۰ یا ۲۴"
                         className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-black text-center shadow-2xs text-sm"
                       />
                     </div>
@@ -611,7 +605,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                             stockPieces: prev.stockCartons * totalPerCarton
                           }));
                         }}
-                        placeholder="مثلاً ۴۸۰ یا ۱۰۰۰"
                         className={`w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 font-black ${theme.primaryText} text-center shadow-2xs text-base`}
                         style={{ borderColor: theme.hex }}
                       />
@@ -700,7 +693,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                           stockPieces: cartons * prev.piecesPerCarton
                         }));
                       }}
-                      placeholder="۴"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 text-slate-900 dark:text-white font-black text-center text-base shadow-xs"
                       style={{ borderColor: formData.stockCartons === 0 ? '#f43f5e' : theme.hex }}
                     />
@@ -796,7 +788,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   <SmartPriceInput
                     value={formData.sellingPrice}
                     onChange={(val) => setFormData({ ...formData, sellingPrice: val })}
-                    placeholder="مثال: ۶,۵۰۰ یا ۲.۲"
                     themeColor={settings.themeColor}
                   />
                   <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1">
@@ -811,7 +802,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   <SmartPriceInput
                     value={formData.purchasePrice}
                     onChange={(val) => setFormData({ ...formData, purchasePrice: val })}
-                    placeholder="مثال: ۵,۰۰۰ یا ۲.۲"
                     themeColor={settings.themeColor}
                   />
                   <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-1">
@@ -867,7 +857,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   type="text"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="مثلاً: ۲۰ بسته ۲۴ عددی در هر کارتن (۴۸۰ عدد) - انبار اصلی"
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${theme.ring}`}
                 />
               </div>

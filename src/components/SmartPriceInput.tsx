@@ -30,7 +30,7 @@ interface SmartPriceInputProps {
 export const SmartPriceInput: React.FC<SmartPriceInputProps> = ({
   value,
   onChange,
-  placeholder = 'قیمت به تومان...',
+  placeholder = '',
   className = '',
   id,
   disabled = false,
@@ -248,7 +248,6 @@ export const SmartPriceInput: React.FC<SmartPriceInputProps> = ({
           onBlur={handleBlur}
           disabled={disabled}
           autoFocus={autoFocus}
-          placeholder={placeholder}
           dir="ltr"
           className={`w-full pl-16 pr-14 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-black text-sm text-left focus:outline-none focus:ring-2 ${theme.ring} shadow-2xs transition-all ${className}`}
         />

@@ -1715,7 +1715,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} font-bold text-slate-900 dark:text-white`}
-                placeholder="1039"
               />
             </div>
             <div>
@@ -1726,7 +1725,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white`}
-                placeholder="1405/05/14"
               />
             </div>
           </div>
@@ -1739,7 +1737,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white`}
-                placeholder="13:48"
               />
             </div>
             <div>
@@ -1752,7 +1749,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={salesType}
                 onChange={(e) => setSalesType(e.target.value)}
                 className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white`}
-                placeholder={invoiceType === 'purchase' ? 'خرید نقدی' : 'نقدی عادی'}
               />
             </div>
           </div>
@@ -1837,7 +1833,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} font-bold text-slate-900 dark:text-white text-xs`}
-                  placeholder={invoiceType === 'purchase' ? 'نام شرکت تامین‌کننده یا پخش' : 'مثلاً: علی رضایی'}
                 />
                 {customerName && (
                   <button
@@ -1864,7 +1859,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white dir-ltr text-xs font-mono`}
-                placeholder="09180000000"
               />
             </div>
             <div>
@@ -1875,7 +1869,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={customerCity}
                 onChange={(e) => setCustomerCity(e.target.value)}
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white text-xs`}
-                placeholder="مثلاً: تهران / کرمانشاه"
               />
             </div>
           </div>
@@ -1965,7 +1958,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           const val = Math.max(0, parseInt(e.target.value) || 0);
                           setPaidAmount(Math.min(finalAmount, val));
                         }}
-                        placeholder="مبلغ پرداختی نقد..."
                         className="w-full px-3 py-2 text-sm font-black text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                       />
                     </div>
@@ -2177,7 +2169,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                               else if (valid >= finalAmount) setPaymentStatus('cash');
                               else setPaymentStatus('partial');
                             }}
-                            placeholder="مبلغ پرداختی"
                             className={`w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black ${theme.primaryText} focus:ring-2 ${theme.ring} focus:outline-none`}
                           />
                         </div>
@@ -2356,7 +2347,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   value={paymentMethodDetails}
                   onChange={(e) => setPaymentMethodDetails(e.target.value)}
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white text-xs`}
-                  placeholder="مثال: دستگاه کارتخوان فروشگاه / کارت به کارت / نقد"
                 />
               </div>
               <div>
@@ -2369,7 +2359,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   value={previousBalance}
                   onChange={(e) => setPreviousBalance(e.target.value)}
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 ${theme.ring} text-slate-900 dark:text-white text-xs`}
-                  placeholder="بی‌حساب (۰)"
                 />
               </div>
             </div>
@@ -3293,7 +3282,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className={`w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} focus:outline-none leading-relaxed text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500`}
-            placeholder="یادداشت‌ها، شرایط تسویه، یا تعهدات تحویل این فاکتور..."
           />
         </div>
 
@@ -3399,7 +3387,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             setDiscount(Math.round((subtotal * val) / 100));
                           }}
                           className={`w-full pr-3 pl-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-black text-xs text-center`}
-                          placeholder="8"
                         />
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs pointer-events-none">
                           ٪
@@ -3424,7 +3411,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           }
                         }}
                         className={`w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-black text-xs text-center`}
-                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -3505,7 +3491,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                 const newTitle = e.target.value;
                                 setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, title: newTitle } : item));
                               }}
-                              placeholder="عنوان هزینه (مثلاً: کرایه بار، ضایعات تاریخ گذشته، انبارداری)"
                               className="w-full text-xs font-bold bg-transparent border-b border-slate-200 dark:border-slate-800 focus:outline-none focus:border-teal-500 pb-0.5 text-slate-900 dark:text-white"
                             />
                           </div>
@@ -3571,7 +3556,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                 onChange={(val) => {
                                   setInvoiceExpenses(prev => prev.map((item, i) => i === expIdx ? { ...item, amount: Math.max(0, val) } : item));
                                 }}
-                                placeholder=""
                                 className="w-full text-base sm:text-lg font-black text-center text-teal-950 dark:text-teal-100 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-teal-500 rounded-xl py-2 px-3 shadow-inner"
                               />
                             </div>
@@ -3750,7 +3734,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 value={tax}
                 onChange={(e) => setTax(Math.max(0, parseInt(e.target.value) || 0))}
                 className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-2 ${theme.ring} text-slate-900 dark:text-white font-semibold`}
-                placeholder="0"
               />
             </div>
 
@@ -3929,7 +3912,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="جستجوی نام کالا (مثلاً نوشابه ای، شلاقی، آبنبات...)"
                         className={`w-full pr-10 pl-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
@@ -4261,7 +4243,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                     value={pickTotalPieces}
                                     onChange={(e) => handlePickerTotalPiecesChange(parseInt(e.target.value) || 0)}
                                     className={`w-full px-3 py-2.5 rounded-xl ${theme.badgeBg} border-2 ${theme.borderColor} focus:ring-2 ${theme.ring} font-black ${theme.primaryText} text-xl text-center shadow-xs focus:outline-none`}
-                                    placeholder="مثلاً: ۲۸"
                                   />
                                 </div>
                                 <button
@@ -4447,7 +4428,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           id="picker-selling-price-input"
                           value={pickSellingPrice}
                           onChange={(val) => setPickSellingPrice(val)}
-                          placeholder="مثال: ۵,۰۰۰ یا ۲.۲"
                           themeColor={settings.themeColor}
                         />
                       </div>
@@ -4460,7 +4440,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           type="text"
                           value={customDescription}
                           onChange={(e) => setCustomDescription(e.target.value)}
-                          placeholder="مثلاً: ۲۰ بسته ۲۴ عددی (کارتن ۴۸۰ عددی) یا نامشخص"
                           className={`w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} text-slate-800 dark:text-slate-200`}
                         />
                       </div>
@@ -4686,7 +4665,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         type="text"
                         value={editingItem.productName}
                         onChange={(e) => setEditingItem({ ...editingItem, productName: e.target.value })}
-                        placeholder="نام کامل کالا..."
                         className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
@@ -4700,7 +4678,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         list="edit-item-categories-list"
                         value={(editingItem as any).category || (products.find(p => p.id === editingItem.productId)?.category) || ''}
                         onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value } as any)}
-                        placeholder="دسته‌بندی..."
                         className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-bold text-slate-900 dark:text-white text-xs focus:outline-none"
                       />
                       <datalist id="edit-item-categories-list">
@@ -4718,7 +4695,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         type="text"
                         value={editingItem.unitTitle || 'عدد'}
                         onChange={(e) => setEditingItem({ ...editingItem, unitTitle: e.target.value })}
-                        placeholder="عدد / کارتن / بسته..."
                         className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-bold text-slate-900 dark:text-white text-xs focus:outline-none"
                       />
                     </div>
@@ -5027,7 +5003,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       <SmartPriceInput
                         value={editingItem.unitPurchasePrice || 0}
                         onChange={(val) => setEditingItem({ ...editingItem, unitPurchasePrice: val })}
-                        placeholder="قیمت خرید"
                         className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
@@ -5039,7 +5014,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       <SmartPriceInput
                         value={editingItem.unitSellingPrice}
                         onChange={(val) => setEditingItem({ ...editingItem, unitSellingPrice: val })}
-                        placeholder="قیمت فروش"
                         className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
@@ -5076,7 +5050,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     type="text"
                     value={editingItem.customDescription || ''}
                     onChange={(e) => setEditingItem({ ...editingItem, customDescription: e.target.value })}
-                    placeholder="مثلاً: ۲۰ بسته ۲۴ عددی (کارتن ۴۸۰ عددی) یا نامشخص"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-slate-400 focus:outline-none"
                   />
                 </div>

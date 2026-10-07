@@ -170,10 +170,15 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
     return null;
   };
 
+  const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const gridStroke = isDarkMode ? '#1e293b' : '#e2e8f0';
+  const axisStroke = isDarkMode ? '#334155' : '#cbd5e1';
+  const tickColor = isDarkMode ? '#64748b' : '#94a3b8';
+
   return (
     <div className="bg-white dark:bg-[#090d16] rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-none space-y-5 transition-colors">
       {/* Chart Header & Mode Toggle */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-850">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -268,17 +273,17 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} opacity={0.5} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 11, fill: '#94a3b8' }} 
+                  tick={{ fontSize: 11, fill: tickColor }} 
                   interval="preserveStartEnd"
                   minTickGap={20}
                   tickLine={false}
-                  axisLine={{ stroke: '#cbd5e1' }}
+                  axisLine={{ stroke: axisStroke }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                  tick={{ fontSize: 10, fill: tickColor }} 
                   tickLine={false} 
                   axisLine={false}
                   tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`}
@@ -317,19 +322,19 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
           topProductsData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topProductsData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} opacity={0.5} />
                 <XAxis 
                   dataKey="shortName" 
-                  tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                  tick={{ fontSize: 10, fill: tickColor }} 
                   interval="preserveStartEnd"
                   minTickGap={16}
                   angle={-15}
                   textAnchor="end"
                   tickLine={false}
-                  axisLine={{ stroke: '#cbd5e1' }}
+                  axisLine={{ stroke: axisStroke }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                  tick={{ fontSize: 10, fill: tickColor }} 
                   tickLine={false} 
                   axisLine={false}
                   tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`}

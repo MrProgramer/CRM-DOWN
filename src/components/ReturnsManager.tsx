@@ -1053,7 +1053,6 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                       min="0"
                       value={cartons || ''}
                       onChange={(e) => setCartons(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="0"
                       className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-black outline-none focus:ring-2 focus:ring-teal-500/30"
                     />
                   </div>
@@ -1064,7 +1063,6 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                       min="0"
                       value={pieces || ''}
                       onChange={(e) => setPieces(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="0"
                       className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-black outline-none focus:ring-2 focus:ring-teal-500/30"
                     />
                   </div>
@@ -1091,7 +1089,6 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                         setUnitPrice(Math.max(0, parseInt(e.target.value) || 0));
                         if (formErrors.unitPrice) setFormErrors({ ...formErrors, unitPrice: '' });
                       }}
-                      placeholder="0"
                       className={`w-full px-3.5 py-2.5 rounded-2xl border bg-slate-50 dark:bg-slate-800 text-xs font-black outline-none focus:ring-2 focus:ring-teal-500/30 font-mono ${
                         formErrors.unitPrice ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
                       }`}
@@ -1149,7 +1146,6 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                     <SmartPriceInput
                       value={extraCosts}
                       onChange={(val) => setExtraCosts(val)}
-                      placeholder="مثلاً ۵۰۰,۰۰۰ یا ۲m"
                       themeColor="rose"
                       showWords={true}
                       showScale={true}
@@ -1164,8 +1160,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                       type="text"
                       value={extraCostsReason}
                       onChange={(e) => setExtraCostsReason(e.target.value)}
-                      placeholder="مثلاً: کرایه باربری مرجوعی و کسر شرکت"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-rose-500/20"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-rose-500/20"
                     />
                   </div>
                 </div>
@@ -1216,7 +1211,6 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                   </div>
                   <input
                     type="text"
-                    placeholder="شرح دقیق علت مرجوعی..."
                     value={reason}
                     onChange={(e) => {
                       setReason(e.target.value);

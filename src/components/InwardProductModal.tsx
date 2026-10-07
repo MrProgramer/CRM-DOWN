@@ -1045,7 +1045,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       id="search-inward-existing-input"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="جستجوی نام یا دسته کالا..."
                       className="w-full pr-9 pl-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
@@ -1223,7 +1222,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
                             }`}
-                            placeholder={isExistingUnpackaged ? 'نامشخص' : 'مثلاً ۵'}
                           />
                         </div>
 
@@ -1244,7 +1242,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                             }`}
-                            placeholder="۲۰"
                           />
                         </div>
 
@@ -1265,7 +1262,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                             }`}
-                            placeholder="۲۴"
                           />
                         </div>
 
@@ -1286,7 +1282,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                             }`}
-                            placeholder="۰"
                           />
                         </div>
 
@@ -1303,7 +1298,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             value={existingTotalPieces === '' ? '' : existingTotalPieces}
                             onChange={(e) => handleExistingTotalPiecesChange(e.target.value)}
                             className="w-full px-2.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-center font-black text-emerald-800 dark:text-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"
-                            placeholder={isExistingUnpackaged ? 'مثلاً: ۵۰۰' : 'خودکار'}
                             title="تعداد کل دانه برای ورود به فاکتور"
                           />
                         </div>
@@ -1325,7 +1319,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <SmartPriceInput
                           value={existingPurchasePrice}
                           onChange={(val) => setExistingPurchasePrice(val)}
-                          placeholder="فی خرید هر دانه"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
                         />
                       </div>
@@ -1343,7 +1336,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <SmartPriceInput
                           value={existingSellingPrice}
                           onChange={(val) => setExistingSellingPrice(val)}
-                          placeholder="قیمت فروش کالا"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                         />
                       </div>
@@ -1372,7 +1364,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                   setExistingPurchasePrice(Math.round(val / ppc));
                                 }
                               }}
-                              placeholder="قیمت هر کارتن خرید"
                               className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm"
                             />
                           </div>
@@ -1620,7 +1611,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           setAutoDetectedCategory(null);
                         }
                       }}
-                      placeholder="مثلاً: لواشک انار، شکلات تلخ باراکا یا آبنبات..."
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 ${
                         formErrors.name
                           ? 'border-red-500 ring-2 ring-red-500/20'
@@ -1720,7 +1710,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-packs-per-carton-input"
                           value={newPacksPerCarton === '' ? '' : newPacksPerCarton}
                           onChange={(e) => handlePacksPerCartonChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          placeholder="مثلاً ۲۰"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
                       </div>
@@ -1735,7 +1724,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-pieces-per-pack-input"
                           value={newPiecesPerPack === '' ? '' : newPiecesPerPack}
                           onChange={(e) => handlePiecesPerPackChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          placeholder="مثلاً ۲۴"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
                       </div>
@@ -1751,7 +1739,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-pieces-per-carton-input"
                           value={newPiecesPerCarton === '' ? '' : newPiecesPerCarton}
                           onChange={(e) => handlePiecesPerCartonChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          placeholder="مثلاً ۴۸۰"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 font-black text-center text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
                       </div>
@@ -1774,7 +1761,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       type="text"
                       value={newUnitTitle}
                       onChange={(e) => setNewUnitTitle(e.target.value)}
-                      placeholder="عدد / بسته / کیلو"
                       className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
@@ -1787,7 +1773,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       type="text"
                       value={newNotes}
                       onChange={(e) => setNewNotes(e.target.value)}
-                      placeholder="توضیحات بسته‌بندی یا شرکت تامین‌کننده"
                       className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
@@ -1830,7 +1815,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                           : 'bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
                       }`}
-                      placeholder={isNewUnpackaged ? 'نامشخص' : 'مثلاً: ۵۰'}
                     />
                     {!isNewUnpackaged && formErrors.cartons && (
                       <span className="text-[10px] font-bold text-red-500 block">{formErrors.cartons}</span>
@@ -1855,7 +1839,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200'
                           : 'bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
                       }`}
-                      placeholder={isNewUnpackaged ? 'مثلاً: ۵۰۰' : '۰'}
                     />
                     {isNewUnpackaged && formErrors.cartons && (
                       <span className="text-[10px] font-bold text-red-500 block">{formErrors.cartons}</span>
@@ -1872,7 +1855,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         setNewPurchasePrice(val);
                         if (formErrors.purchasePrice) setFormErrors({ ...formErrors, purchasePrice: '' });
                       }}
-                      placeholder="قیمت خرید کالا"
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                     {formErrors.purchasePrice && (
@@ -1887,7 +1869,6 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                     <SmartPriceInput
                       value={newSellingPrice}
                       onChange={(val) => setNewSellingPrice(val)}
-                      placeholder="قیمت فروش کالا"
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>

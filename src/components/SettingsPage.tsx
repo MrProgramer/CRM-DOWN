@@ -170,16 +170,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   ];
 
   const gradientThemeKeys: ThemeColor[] = [
-    'gradient-sunset',
-    'gradient-ocean',
-    'gradient-cyber',
-    'gradient-aurora',
     'gradient-royal',
+    'vip-royal-obsidian',
+    'vip-royal-sapphire',
+    'vip-royal-emerald',
+    'vip-royal-amethyst',
+    'vip-royal-ruby',
+    'vip-royal-gold',
+    'vip-royal-titanium',
     'gradient-emerald-gold',
     'gradient-titanium',
     'gradient-crimson-dusk',
     'gradient-midnight-cyan',
     'gradient-nordic-frost',
+    'gradient-sunset',
+    'gradient-ocean',
+    'gradient-cyber',
+    'gradient-aurora',
   ];
 
   const allThemeKeys: ThemeColor[] = [...solidThemeKeys, ...gradientThemeKeys];

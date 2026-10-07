@@ -244,7 +244,14 @@ export type ThemeColor =
   | 'gradient-titanium'
   | 'gradient-crimson-dusk'
   | 'gradient-midnight-cyan'
-  | 'gradient-nordic-frost';
+  | 'gradient-nordic-frost'
+  | 'vip-royal-obsidian'
+  | 'vip-royal-sapphire'
+  | 'vip-royal-emerald'
+  | 'vip-royal-amethyst'
+  | 'vip-royal-ruby'
+  | 'vip-royal-gold'
+  | 'vip-royal-titanium';
 
 export type AppDesignMode = 
   | 'classic'        // ۱. حالت کلاسیک اداری و دفتری سنتی (بدون انحنا، حداکثر تراکم اطلاعات، کادرهای فیزیکی حسابداری)

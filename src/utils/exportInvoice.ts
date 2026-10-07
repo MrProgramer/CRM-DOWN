@@ -161,7 +161,7 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
 // This eliminates modal scrollbar squishing, right-indentation, or RTL overflow bugs in html-to-image
 async function captureElementWithIsolation<T>(
   elementId: string,
-  captureFn: (targetEl: HTMLElement) => Promise<T>
+  captureFn: (targetEl: HTMLElement, dims: { width: number; height: number }) => Promise<T>
 ): Promise<T> {
   const originalElement = document.getElementById(elementId);
   if (!originalElement) {
@@ -174,45 +174,68 @@ async function captureElementWithIsolation<T>(
     ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
     : "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-  const targetWidth = isShotCard ? 840 : 794;
-  const paddingStr = isShotCard ? '28px 28px' : '36px 44px';
-  const targetBg = isNightShot ? '#020617' : '#ffffff';
-  const targetColor = isNightShot ? '#f8fafc' : '#0f172a';
+  // For Shot Card: create a beautifully framed studio canvas (880px wide with 24px symmetrical framing padding)
+  // This guarantees the card is 100% centered, never cropped or indented to the right, and fully visible
+  const framePadding = isShotCard ? 24 : 0;
+  const innerCardWidth = isShotCard ? 832 : 794;
+  const outerWidth = innerCardWidth + (framePadding * 2);
+  const outerBg = isShotCard ? (isNightShot ? '#0b0f19' : '#f1f5f9') : (isNightShot ? '#020617' : '#ffffff');
+  const cardBg = isNightShot ? '#020617' : '#ffffff';
+  const cardColor = isNightShot ? '#f8fafc' : '#0f172a';
 
-  // Create isolated container in DOM with exact target width at x=0, y=0
+  // Create isolated container in DOM with fixed width, transparent/hidden backdrop, zero scroll
   const wrapper = document.createElement('div');
   wrapper.style.position = 'fixed';
   wrapper.style.top = '0';
   wrapper.style.left = '0';
-  wrapper.style.width = `${targetWidth}px`;
+  wrapper.style.width = `${outerWidth}px`;
   wrapper.style.height = 'auto';
   wrapper.style.zIndex = '-99999';
   wrapper.style.opacity = '1';
   wrapper.style.pointerEvents = 'none';
   wrapper.style.direction = 'rtl';
   wrapper.style.boxSizing = 'border-box';
-  wrapper.style.padding = '0';
+  wrapper.style.padding = `${framePadding}px`;
   wrapper.style.margin = '0';
-  wrapper.style.overflow = 'hidden';
-  wrapper.style.backgroundColor = targetBg;
+  wrapper.style.overflow = 'visible';
+  wrapper.style.backgroundColor = outerBg;
+  wrapper.style.display = 'flex';
+  wrapper.style.flexDirection = 'column';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.justifyContent = 'flex-start';
 
   const clone = originalElement.cloneNode(true) as HTMLElement;
   clone.id = `${elementId}-isolated-capture`;
 
-  // Set explicit dimensions on clone aligned at top-left 0,0 inside wrapper
-  clone.style.width = `${targetWidth}px`;
-  clone.style.minWidth = `${targetWidth}px`;
-  clone.style.maxWidth = `${targetWidth}px`;
-  clone.style.margin = '0';
-  clone.style.padding = paddingStr;
+  // Set explicit dimensions on clone aligned symmetrically
+  clone.style.width = `${innerCardWidth}px`;
+  clone.style.minWidth = `${innerCardWidth}px`;
+  clone.style.maxWidth = `${innerCardWidth}px`;
+  clone.style.margin = '0 auto';
   clone.style.boxSizing = 'border-box';
   clone.style.direction = 'rtl';
   clone.style.fontFamily = activeFontFamily;
-  clone.style.backgroundColor = targetBg;
-  clone.style.color = targetColor;
+  clone.style.backgroundColor = cardBg;
+  clone.style.color = cardColor;
   clone.style.position = 'relative';
-  clone.style.left = '0';
-  clone.style.top = '0';
+  clone.style.left = 'auto';
+  clone.style.right = 'auto';
+  clone.style.top = 'auto';
+  clone.style.bottom = 'auto';
+
+  if (isShotCard) {
+    clone.style.padding = '24px';
+    clone.style.borderRadius = '16px';
+    clone.style.border = isNightShot ? '1px solid #1e293b' : '1px solid #cbd5e1';
+    clone.style.boxShadow = isNightShot 
+      ? '0 10px 25px -5px rgba(0, 0, 0, 0.6)' 
+      : '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)';
+  } else {
+    clone.style.padding = '36px 44px';
+    clone.style.borderRadius = '0';
+    clone.style.border = 'none';
+    clone.style.boxShadow = 'none';
+  }
 
   // Remove any scrollable constraints inside clone
   const scrollables = clone.querySelectorAll<HTMLElement>('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
@@ -227,10 +250,18 @@ async function captureElementWithIsolation<T>(
   if (document.fonts && document.fonts.ready) {
     await document.fonts.ready;
   }
-  await new Promise<void>((resolve) => setTimeout(resolve, 80));
+  await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
+  // If it's shot card, we capture the outer framed wrapper so margins and centering are guaranteed
+  const targetCaptureEl = isShotCard ? wrapper : clone;
+  const rect = targetCaptureEl.getBoundingClientRect();
+  const captureOptions = {
+    width: Math.ceil(rect.width || outerWidth),
+    height: Math.ceil(rect.height || targetCaptureEl.offsetHeight),
+  };
 
   try {
-    const result = await captureFn(clone);
+    const result = await captureFn(targetCaptureEl, captureOptions);
     if (document.body.contains(wrapper)) {
       document.body.removeChild(wrapper);
     }
@@ -253,13 +284,15 @@ export async function downloadInvoiceAsImage(
     const fontEmbedCSS = await getFontEmbedCSS();
 
     // Generate high-resolution PNG using isolated staging clone
-    const dataUrl = await captureElementWithIsolation(elementId, async (clone) => {
+    const dataUrl = await captureElementWithIsolation(elementId, async (clone, dims) => {
       const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
       return await toPng(clone, {
         quality: 1.0,
-        pixelRatio: 3, // Ultra-sharp resolution
+        pixelRatio: 2.5, // Ultra-sharp 2.5x retina resolution
         cacheBust: true,
-        backgroundColor: isNightShot ? '#020617' : '#ffffff',
+        width: dims.width,
+        height: dims.height,
+        backgroundColor: isNightShot ? '#0b0f19' : '#f1f5f9',
         fontEmbedCSS: fontEmbedCSS || undefined,
         preferredFontFormat: 'woff2',
         filter: (node: HTMLElement) => {
@@ -300,11 +333,15 @@ export async function downloadInvoiceAsPDF(
     const fontEmbedCSS = await getFontEmbedCSS();
 
     // Render DOM element to Canvas using isolated clone
-    const canvas = await captureElementWithIsolation(elementId, async (clone) => {
+    const canvas = await captureElementWithIsolation(elementId, async (clone, dims) => {
       const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
       return await toCanvas(clone, {
         pixelRatio: 2.5,
         cacheBust: true,
+        width: dims.width,
+        height: dims.height,
+        canvasWidth: dims.width * 2.5,
+        canvasHeight: dims.height * 2.5,
         backgroundColor: isNightShot ? '#020617' : '#ffffff',
         fontEmbedCSS: fontEmbedCSS || undefined,
         preferredFontFormat: 'woff2',
@@ -395,12 +432,14 @@ export async function copyInvoiceImageToClipboard(
     const fontEmbedCSS = await getFontEmbedCSS();
 
     // Render Canvas using isolated staging clone
-    const canvas = await captureElementWithIsolation(elementId, async (clone) => {
-      const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark');
+    const canvas = await captureElementWithIsolation(elementId, async (clone, dims) => {
+      const isNightShot = clone.classList.contains('bg-slate-950') || clone.classList.contains('dark') || clone.style.backgroundColor?.includes('2, 6, 23') || clone.style.backgroundColor?.includes('11, 15, 25');
       return await toCanvas(clone, {
-        pixelRatio: 2.5,
+        pixelRatio: 2.2,
         cacheBust: true,
-        backgroundColor: isNightShot ? '#020617' : '#ffffff',
+        width: dims.width,
+        height: dims.height,
+        backgroundColor: isNightShot ? '#0b0f19' : '#f1f5f9',
         fontEmbedCSS: fontEmbedCSS || undefined,
         preferredFontFormat: 'woff2',
         filter: (node: HTMLElement) => {

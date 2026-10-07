@@ -1180,7 +1180,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
             <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
             <input
               type="text"
-              placeholder="جستجوی نام مشتری، شرکت، تلفن، شهر یا نوع طرف‌حساب..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-black dark:text-white placeholder-slate-500 rounded-2xl text-xs font-bold focus:outline-none ${theme.ring} shadow-2xs`}
@@ -1880,7 +1879,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       setPaymentAmount(val || '');
                       if (paymentFormErrors.amount) setPaymentFormErrors({ ...paymentFormErrors, amount: '' });
                     }}
-                    placeholder="مثال: ۵,۰۰۰,۰۰۰ یا ۵۰۰۰"
                     themeColor="emerald"
                   />
                   <CustomValidationMessage message={paymentFormErrors.amount} />
@@ -1981,7 +1979,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="مثال: پیگیری فیش ۶۵۲۰۳۹"
                     value={paymentRef}
                     onChange={(e) => setPaymentRef(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
@@ -1995,7 +1992,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="مثال: بابت خرید نسیه مرداد ماه"
                     value={paymentDescription}
                     onChange={(e) => setPaymentDescription(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
@@ -2159,7 +2155,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     type="number"
                     required
                     min="0"
-                    placeholder="مبلغ به تومان"
                     value={balanceAdjAmount}
                     onChange={(e) => setBalanceAdjAmount(e.target.value ? Number(e.target.value) : '')}
                     className="w-full pl-4 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500 dir-ltr text-right"
@@ -2269,7 +2264,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="شماره فیش یا سند"
                         value={balanceAdjRef}
                         onChange={(e) => setBalanceAdjRef(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
@@ -2283,7 +2277,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="مثال: تخفیف ویژه تسویه / واریز اضافه‌پرداخت / nsiye دستی"
                         value={balanceAdjNotes}
                         onChange={(e) => setBalanceAdjNotes(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
@@ -2389,7 +2382,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: علی رضایی"
                       value={formData.name || ''}
                       onChange={(e) => {
                         setFormData({ ...formData, name: e.target.value });
@@ -2408,7 +2400,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: بازرگانی رضایی"
                       value={formData.company || ''}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -2421,7 +2412,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="09121234567"
                       value={formData.phone || ''}
                       onChange={(e) => {
                         setFormData({ ...formData, phone: e.target.value });
@@ -2440,7 +2430,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: تهران، تبریز"
                       value={formData.city || ''}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -2453,7 +2442,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: 1361234567"
                       value={formData.nationalCode || ''}
                       onChange={(e) => setFormData({ ...formData, nationalCode: e.target.value })}
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold dir-ltr text-right focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -2466,7 +2454,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                     </label>
                     <input
                       type="number"
-                      placeholder="مثبت: بدهکار / منفی: بستانکار"
                       value={formData.initialBalance || ''}
                       onChange={(e) => setFormData({ ...formData, initialBalance: Number(e.target.value) })}
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold dir-ltr text-right focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -2480,7 +2467,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="آدرس دقیق فروشگاه یا انبار مشتری..."
                     value={formData.address || ''}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -3967,7 +3953,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="شماره فیش، ارجاع یا پیگیری پایا / کارت"
                         value={settlementRef}
                         onChange={(e) => setSettlementRef(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono dir-ltr text-right"
@@ -3981,7 +3966,6 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="توضیحات تسویه حساب کامل"
                         value={settlementNotes}
                         onChange={(e) => setSettlementNotes(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold"
