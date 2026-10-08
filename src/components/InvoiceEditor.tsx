@@ -1427,7 +1427,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   });
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-28 space-y-6">
+    <div className="w-full max-w-6xl mx-auto pb-36 sm:pb-44 space-y-6">
       {/* Header bar */}
       <div ref={topHeaderRef} className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-5 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
@@ -5327,93 +5327,112 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     )}
 
       {/* Floating Bottom Action Bar (کادر شناور کمکی و دکمه‌های ثبت نهایی) */}
-      <div ref={bottomBarRef} className="sticky bottom-3 sm:bottom-4 z-20 w-full mt-6 pointer-events-auto">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/15 dark:shadow-black/60 flex flex-wrap items-center justify-between gap-3 transition-all">
-          {/* Summary & Live KPIs */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Items count badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-              <Package className={`w-4 h-4 ${theme.activeIcon}`} />
-              <span className="font-black text-slate-900 dark:text-white">{toPersianDigits(items.length)}</span>
-              <span className="text-slate-500 dark:text-slate-400 text-[11px]">قلم کالا</span>
-            </div>
+      {typeof document !== 'undefined' && createPortal(
+        <div
+          ref={bottomBarRef}
+          className={`fixed bottom-3 sm:bottom-4 left-3 sm:left-6 transition-all duration-300 pointer-events-none no-print ${
+            isSidebarCollapsed ? 'lg:right-[5.75rem]' : 'lg:right-[16.75rem]'
+          } right-3 sm:right-6 flex justify-center z-30 ${
+            (editingItem || isNewProductModalOpen || isInwardModalOpen || restockProduct)
+              ? 'opacity-0 pointer-events-none translate-y-4'
+              : 'opacity-100 translate-y-0'
+          }`}
+          style={{ zIndex: 35 }}
+        >
+          <div className="w-full max-w-6xl pointer-events-auto">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/20 dark:shadow-black/70 flex flex-wrap items-center justify-between gap-3 transition-all">
+              {/* Summary & Live KPIs */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Items count badge */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                  <Package className={`w-4 h-4 ${theme.activeIcon}`} />
+                  <span className="font-black text-slate-900 dark:text-white">{toPersianDigits(items.length)}</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">قلم کالا</span>
+                </div>
 
-            {/* Customer Pill */}
-            {customerName && (
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
-                <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{customerName}</span>
+                {/* Customer Pill */}
+                {customerName && (
+                  <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
+                    <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{customerName}</span>
+                  </div>
+                )}
+
+                {/* Payment Status Pill */}
+                <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black border ${
+                  paymentStatus === 'cash'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                    : paymentStatus === 'credit'
+                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                    : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                }`}>
+                  <span>{paymentStatus === 'cash' ? 'نقدی کامل' : paymentStatus === 'credit' ? 'نسیه دفتری' : 'بخشی نقد + نسیه'}</span>
+                </div>
+
+                {/* Final Payable Amount */}
+                <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
+                  <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
+                    {formatPrice(finalAmount, false)}
+                  </span>
+                  <span className="text-[10px] text-slate-400">تومان</span>
+                </div>
               </div>
-            )}
 
-            {/* Payment Status Pill */}
-            <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black border ${
-              paymentStatus === 'cash'
-                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                : paymentStatus === 'credit'
-                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-                : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
-            }`}>
-              <span>{paymentStatus === 'cash' ? 'نقدی کامل' : paymentStatus === 'credit' ? 'نسیه دفتری' : 'بخشی نقد + نسیه'}</span>
-            </div>
+              {/* Quick Action Buttons */}
+              <div className="flex items-center gap-2 mr-auto flex-wrap">
+                {/* Scroll to Top */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                    document.body.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  title="بازگشت به ابتدای فرم (بالابر)"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
 
-            {/* Final Payable Amount */}
-            <div className="flex items-center gap-1.5 pr-1 sm:pr-2">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">مبلغ نهایی:</span>
-              <span className={`font-black text-sm sm:text-base ${theme.primaryText} font-mono dir-ltr`}>
-                {formatPrice(finalAmount, false)}
-              </span>
-              <span className="text-[10px] text-slate-400">تومان</span>
+                {/* Cancel Button */}
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                >
+                  انصراف
+                </button>
+
+                {/* Draft Button */}
+                <button
+                  id="save-draft-btn-bottom"
+                  type="button"
+                  onClick={() => handleSaveInvoice(true)}
+                  className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
+                  title="ذخیره پیش‌نویس بدون کسر انبار"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>پیش‌نویس</span>
+                </button>
+
+                {/* Final Submit Button */}
+                <button
+                  id="save-final-btn-bottom"
+                  type="button"
+                  onClick={() => handleSaveInvoice(false)}
+                  className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
+                  title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>ثبت نهایی فاکتور</span>
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2 mr-auto flex-wrap">
-            {/* Scroll to Top */}
-            <button
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-              title="بازگشت به ابتدای فرم"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
-
-            {/* Cancel Button */}
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
-            >
-              انصراف
-            </button>
-
-            {/* Draft Button */}
-            <button
-              id="save-draft-btn-bottom"
-              type="button"
-              onClick={() => handleSaveInvoice(true)}
-              className="px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5"
-              title="ذخیره پیش‌نویس بدون کسر انبار"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>پیش‌نویس</span>
-            </button>
-
-            {/* Final Submit Button */}
-            <button
-              id="save-final-btn-bottom"
-              type="button"
-              onClick={() => handleSaveInvoice(false)}
-              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white shadow-lg transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover}`}
-              title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
-            >
-              <Save className="w-4 h-4" />
-              <span>ثبت نهایی فاکتور</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

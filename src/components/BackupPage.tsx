@@ -1116,14 +1116,21 @@ export const BackupPage: React.FC<BackupPageProps> = ({
                         return (
                           <div 
                             key={`preview-prod-${p.id || pIdx}`}
-                            className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800/80 border border-blue-100 dark:border-blue-900/30 text-xs"
+                            className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800/80 border border-blue-100 dark:border-blue-900/30 text-xs gap-2"
                           >
                             <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">
                               {p.name}
                             </span>
-                            <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300 font-mono bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-                              {packSpec}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                              {p.coverPrice && Number(p.coverPrice) > 0 && (
+                                <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
+                                  روی جلد: {formatPrice(p.coverPrice, false)} تومان
+                                </span>
+                              )}
+                              <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300 font-mono bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                                {packSpec}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}

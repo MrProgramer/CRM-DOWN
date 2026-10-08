@@ -755,21 +755,24 @@ export default function App() {
     const currentFingerprint = JSON.stringify({
       prodLen: products.length,
       prodDigest: products.map(p => 
-        `${p.id}:${p.name}:${p.stockPieces}:${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}:${p.sellingPrice}:${p.purchasePrice}`
+        `${p.id}:${p.name}:${p.stockPieces}:${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}:${p.sellingPrice}:${p.purchasePrice}:${p.coverPrice || 0}:${p.category || ''}:${p.notes || ''}`
       ).join(';'),
       prodPackagingDigest: products.map(p =>
         `${p.id}:${p.name}:${p.piecesPerCarton}:${p.packsPerCarton || 0}:${p.piecesPerPack || 0}:${p.leavesPerPiece || 0}:${p.unitTitle || ''}:${p.isUnpackaged ? 1 : 0}:${p.isCartonUnknown ? 1 : 0}`
       ).join(';'),
+      prodCoverDigest: products.map(p =>
+        `${p.id}:${p.name}:${p.coverPrice || 0}`
+      ).join(';'),
       invLen: invoices.length,
-      invDigest: invoices.map(i => `${i.id}:${i.isDraft ? 'D' : 'F'}:${i.finalAmount}:${i.items?.length || 0}:${i.updatedAt || ''}`).join(';'),
+      invDigest: invoices.map(i => `${i.id}:${i.isDraft ? 'D' : 'F'}:${i.finalAmount}:${i.items?.length || 0}:${(i.items || []).map(it => `${it.productId || it.productName}:${it.totalPieces}:${it.coverPrice || 0}`).join(',')}:${i.updatedAt || ''}`).join(';'),
       custLen: customers.length,
-      custDigest: customers.map(c => `${c.id}:${c.balance || 0}`).join(';'),
+      custDigest: customers.map(c => `${c.id}:${c.name || ''}:${c.phone || ''}:${c.balance || 0}`).join(';'),
       payLen: payments.length,
       payDigest: payments.map(p => `${p.id}:${p.amount}`).join(';'),
       retLen: productReturns.length,
       retDigest: productReturns.map(r => `${r.id}:${r.totalAmount}`).join(';'),
       treLen: treasuryTransactions.length,
-      treDigest: treasuryTransactions.map(t => `${t.id}:${t.amount}`).join(';'),
+      treDigest: treasuryTransactions.map(t => `${t.id}:${t.amount}:${t.type || ''}`).join(';'),
     });
 
     if (!isDataMountedRef.current) {
@@ -786,8 +789,29 @@ export default function App() {
         const currDraftCount = invoices.filter(i => i.isDraft).length;
         const prevDraftCount = (prev.invDigest.match(/:D:/g) || []).length;
 
-        // Check if packaging was modified
-        if (prev.prodPackagingDigest && prev.prodPackagingDigest !== curr.prodPackagingDigest) {
+        // Check if coverPrice was modified on any product
+        if (prev.prodCoverDigest && prev.prodCoverDigest !== curr.prodCoverDigest) {
+          const prevCoverMap = new Map<string, string>();
+          (prev.prodCoverDigest.split(';') || []).forEach((item: string) => {
+            const parts = item.split(':');
+            if (parts[0]) prevCoverMap.set(parts[0], parts[2] || '0');
+          });
+
+          const changedProd = products.find(p => {
+            const prevCov = prevCoverMap.get(p.id) || '0';
+            const currCov = String(p.coverPrice || 0);
+            return prevCov !== currCov;
+          });
+
+          if (changedProd) {
+            const newCover = changedProd.coverPrice && Number(changedProd.coverPrice) > 0 ? Number(changedProd.coverPrice) : 0;
+            changeNote = newCover > 0
+              ? `تنظیم یا ویرایش قیمت روی جلد کالای «${changedProd.name}» (${formatPrice(newCover)} تومان)`
+              : `حذف قیمت روی جلد کالای «${changedProd.name}»`;
+          } else {
+            changeNote = 'بروزرسانی قیمت‌های روی جلد کالاها در انبار';
+          }
+        } else if (prev.prodPackagingDigest && prev.prodPackagingDigest !== curr.prodPackagingDigest) {
           const prevPackMap = new Map<string, string>();
           (prev.prodPackagingDigest.split(';') || []).forEach((item: string) => {
             const parts = item.split(':');
@@ -2885,7 +2909,7 @@ export default function App() {
       />
 
       {/* Main View Area with RTL Sidebar Container */}
-      <div className={`flex-1 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full min-w-0 overflow-x-hidden transition-all duration-300`}>
+      <div className={`flex-1 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full min-w-0 overflow-x-clip transition-all duration-300`}>
         <main className="p-4 sm:p-6 lg:p-8 max-w-[1700px] w-full mx-auto min-w-0">
           <AnimatePresence mode="wait">
           {currentTab === 'dashboard' && (
