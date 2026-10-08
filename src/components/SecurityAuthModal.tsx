@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { StoreSettings } from '../types';
 import { themes } from './ThemeConfig';
 import { 
@@ -69,11 +70,18 @@ export const SecurityAuthModal: React.FC<SecurityAuthModalProps> = ({
       setErrorMsg('');
       setIsScanning(false);
       setScanSuccess(false);
+      // Lock background scrolling cleanly while modal is displayed
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       // Default to pin mode for quick entry
       setActiveMode('pin');
-      setTimeout(() => {
-        inputRef.current?.focus();
+      const timer = setTimeout(() => {
+        inputRef.current?.focus({ preventScroll: true });
       }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = prevOverflow;
+      };
     }
   }, [isOpen]);
 
@@ -123,20 +131,21 @@ export const SecurityAuthModal: React.FC<SecurityAuthModalProps> = ({
     } else {
       setErrorMsg('پین‌کد / رمز عبور وارد شده نادرست است.');
       setPin('');
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 10 }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden text-right"
-      >
+  return typeof document !== 'undefined'
+    ? createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 10 }}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden text-right"
+          >
         {/* Ambient Top Glow */}
         <div 
           className="absolute -top-20 -left-20 w-44 h-44 rounded-full blur-3xl opacity-20 pointer-events-none"
@@ -392,7 +401,8 @@ export const SecurityAuthModal: React.FC<SecurityAuthModalProps> = ({
           </div>
         )}
       </motion.div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 };
 

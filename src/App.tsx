@@ -30,7 +30,10 @@ import {
   getCurrentPersianDate, 
   getCurrentPersianTime,
   formatStockBreakdown,
-  formatProductPackagingSpec
+  formatProductPackagingSpec,
+  normalizePersianText,
+  matchProduct,
+  resolveItemCoverPrice
 } from './utils/formatters';
 import { checkAndRunAutoBackup, createSafetyPreDeleteSnapshot, createOnChangeSnapshot, TOTAL_BACKUP_LIMIT } from './utils/backupManager';
 import { syncInvoiceWithReturns, syncAllInvoicesWithReturns } from './utils/invoiceSync';
@@ -904,9 +907,9 @@ export default function App() {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [invoiceOriginTab, setInvoiceOriginTab] = useState<AppTab>('invoices');
 
-  // Auto-scroll to top when tab or viewing/editing invoice changes
+  // Cleanly scroll to top when tab or viewing/editing invoice changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   }, [currentTab, activeViewingInvoice, editingInvoice]);
 
   const [profitAnalysisInvoice, setProfitAnalysisInvoice] = useState<Invoice | null>(null);
@@ -2070,63 +2073,99 @@ export default function App() {
   };
 
   const handleUpdateProduct = (updatedProd: Product) => {
-    let matchedPrev: Product | undefined;
+    // 1. Synchronously identify existing product from current products list
+    const existingProd = products.find(p => p.id === updatedProd.id) ||
+      (updatedProd.name ? products.find(p => p.name && normalizePersianText(p.name) === normalizePersianText(updatedProd.name)) : undefined);
+    const matchedPrev = existingProd;
+
+    const prevNameClean = existingProd?.name ? normalizePersianText(existingProd.name) : undefined;
+    const updatedNameClean = normalizePersianText(updatedProd.name);
+
+    // 2. Update products list in state & storage
+    let nextProductsList: Product[] = [];
+    const cleanCover = (updatedProd.coverPrice && Number(updatedProd.coverPrice) > 0) ? Number(updatedProd.coverPrice) : undefined;
+
     setProducts(prevProducts => {
-      matchedPrev = prevProducts.find(p => p.id === updatedProd.id) ||
-        (updatedProd.name ? prevProducts.find(p => p.name && p.name.trim().toLowerCase() === updatedProd.name.trim().toLowerCase()) : undefined);
-
-      let nextList: Product[];
       const existsById = prevProducts.some(p => p.id === updatedProd.id);
-      if (existsById) {
-        nextList = prevProducts.map(p => p.id === updatedProd.id ? { ...p, ...updatedProd } : p);
-      } else if (matchedPrev) {
-        // Matched by name
-        nextList = prevProducts.map(p => p.id === matchedPrev!.id ? { ...p, ...updatedProd, id: p.id } : p);
-      } else {
-        // Product was newly added or not present in catalog yet, add it
-        nextList = [updatedProd, ...prevProducts];
-      }
+      const sanitize = (base: Product): Product => {
+        const res: Product = { ...base, ...updatedProd };
+        if (cleanCover) {
+          res.coverPrice = cleanCover;
+        } else {
+          delete res.coverPrice;
+        }
+        return res;
+      };
 
+      if (existsById) {
+        nextProductsList = prevProducts.map(p => p.id === updatedProd.id ? sanitize(p) : p);
+      } else if (existingProd) {
+        nextProductsList = prevProducts.map(p => p.id === existingProd.id ? { ...sanitize(p), id: p.id } : p);
+      } else {
+        const newEntry: Product = { ...updatedProd };
+        if (cleanCover) {
+          newEntry.coverPrice = cleanCover;
+        } else {
+          delete newEntry.coverPrice;
+        }
+        nextProductsList = [newEntry, ...prevProducts];
+      }
       try {
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextList));
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextProductsList));
       } catch (e) {
         console.error('Failed to save products to localStorage', e);
       }
-      return nextList;
+      return nextProductsList;
     });
 
-    // Synchronize linked invoice items across invoices and draft records
-    const prevName = matchedPrev?.name?.trim().toLowerCase();
-    const updatedName = updatedProd.name.trim().toLowerCase();
+    // Helper to determine if an invoice item matches this product
+    const isItemMatch = (it: Invoice['items'][0]) => {
+      if (updatedProd.id && it.productId === updatedProd.id) return true;
+      if (existingProd?.id && it.productId === existingProd.id) return true;
+      if (!it.productName) return false;
+      const itNameClean = normalizePersianText(it.productName);
+      if (updatedNameClean && itNameClean === updatedNameClean) return true;
+      if (prevNameClean && itNameClean === prevNameClean) return true;
+      if (updatedNameClean && (itNameClean.includes(updatedNameClean) || updatedNameClean.includes(itNameClean))) return true;
+      return false;
+    };
+
+    // Helper to sync an invoice item with updated product specifications
+    const syncItemWithProduct = (it: Invoice['items'][0]) => {
+      const ppc = updatedProd.piecesPerCarton || 1;
+      const packs = updatedProd.packsPerCarton || 0;
+      const ppp = updatedProd.piecesPerPack || 0;
+      const cartons = ppc > 1 ? Math.floor(it.totalPieces / ppc) : (it.cartonsCount || 0);
+      const extra = ppc > 1 ? (it.totalPieces % ppc) : (it.extraPieces || 0);
+      const updatedItem: any = {
+        ...it,
+        productId: updatedProd.id,
+        productName: updatedProd.name,
+        category: updatedProd.category || (it as any).category,
+        unitTitle: updatedProd.unitTitle || it.unitTitle,
+        piecesPerCarton: ppc,
+        packsCount: packs > 0 ? (cartons * packs) : (it.packsCount || 0),
+        piecesPerPack: ppp > 0 ? ppp : (it.piecesPerPack || 0),
+        cartonsCount: cartons,
+        extraPieces: extra,
+      };
+      if (cleanCover) {
+        updatedItem.coverPrice = cleanCover;
+      } else {
+        delete updatedItem.coverPrice;
+      }
+      return updatedItem;
+    };
+
+    // 3. Synchronize linked invoice items across ALL invoices (relational sync for coverPrice, packaging, and unit)
     setInvoices(prevInvoices => {
       let anyInvoiceChanged = false;
       const syncedInvoices = prevInvoices.map(inv => {
         let hasChange = false;
-        const syncedItems = inv.items.map(it => {
-          const isMatch = (updatedProd.id && it.productId === updatedProd.id) || 
-            (matchedPrev?.id && it.productId === matchedPrev.id) ||
-            (prevName && it.productName && it.productName.trim().toLowerCase() === prevName) ||
-            (updatedName && it.productName && it.productName.trim().toLowerCase() === updatedName);
-
-          if (isMatch) {
+        const syncedItems = (inv.items || []).map(it => {
+          if (isItemMatch(it)) {
             hasChange = true;
-            const ppc = updatedProd.piecesPerCarton || 1;
-            const packs = updatedProd.packsPerCarton || 0;
-            const ppp = updatedProd.piecesPerPack || 0;
-            const cartons = ppc > 1 ? Math.floor(it.totalPieces / ppc) : (it.cartonsCount || 0);
-            const extra = ppc > 1 ? (it.totalPieces % ppc) : (it.extraPieces || 0);
-            return {
-              ...it,
-              productId: updatedProd.id,
-              productName: updatedProd.name,
-              category: updatedProd.category || (it as any).category,
-              unitTitle: updatedProd.unitTitle || it.unitTitle,
-              piecesPerCarton: ppc,
-              packsCount: packs > 0 ? (cartons * packs) : (it.packsCount || 0),
-              piecesPerPack: ppp > 0 ? ppp : (it.piecesPerPack || 0),
-              cartonsCount: cartons,
-              extraPieces: extra,
-            };
+            return syncItemWithProduct(it);
           }
           return it;
         });
@@ -2145,8 +2184,35 @@ export default function App() {
           console.error('Failed to sync invoices to localStorage', e);
         }
       }
-
       return anyInvoiceChanged ? syncedInvoices : prevInvoices;
+    });
+
+    // 4. Relational sync for activeViewingInvoice
+    setActiveViewingInvoice(prevInv => {
+      if (!prevInv) return null;
+      let hasChange = false;
+      const nextItems = (prevInv.items || []).map(it => {
+        if (isItemMatch(it)) {
+          hasChange = true;
+          return syncItemWithProduct(it);
+        }
+        return it;
+      });
+      return hasChange ? { ...prevInv, items: nextItems } : prevInv;
+    });
+
+    // 5. Relational sync for editingInvoice
+    setEditingInvoice(prevInv => {
+      if (!prevInv) return null;
+      let hasChange = false;
+      const nextItems = (prevInv.items || []).map(it => {
+        if (isItemMatch(it)) {
+          hasChange = true;
+          return syncItemWithProduct(it);
+        }
+        return it;
+      });
+      return hasChange ? { ...prevInv, items: nextItems } : prevInv;
     });
 
     if (matchedPrev) {
@@ -2878,6 +2944,18 @@ export default function App() {
                 customers={customers}
                 payments={payments}
                 invoices={invoices}
+                onUpdateInvoice={(inv) => {
+                  setActiveViewingInvoice(inv);
+                  setInvoices(prev => {
+                    const next = prev.map(i => i.id === inv.id ? inv : i);
+                    try {
+                      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(next));
+                    } catch (e) {
+                      console.error('Failed to save updated invoice', e);
+                    }
+                    return next;
+                  });
+                }}
                 onShowAlert={showAlert}
                 onExportPDF={(inv) => {
                   addActivityLog(

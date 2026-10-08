@@ -1,5 +1,5 @@
 import React from 'react';
-import { InvoiceTemplateProps, renderCumulativeBalanceSection } from './InvoiceTemplates';
+import { InvoiceTemplateProps, renderCumulativeBalanceSection, renderItemCoverPriceBadge } from './InvoiceTemplates';
 import { toPersianDigits, formatPrice } from '../utils/formatters';
 import { 
   Boxes, 
@@ -217,6 +217,7 @@ export const PurchaseInvoiceScreen: React.FC<InvoiceTemplateProps> = (props) => 
                     <div className="font-bold text-slate-900 dark:text-white">
                       {toPersianDigits(displayUnitPrice.toLocaleString())}
                     </div>
+                    {renderItemCoverPriceBadge((itemObj as any).coverPrice, props.showCoverPrice)}
                     {hasDiscount && discountPercent && discountPercent > 0 && (
                       <div className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold">
                         تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}

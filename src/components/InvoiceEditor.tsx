@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Invoice, 
   InvoiceItem, 
@@ -22,7 +23,9 @@ import {
   getCurrentPersianDate, 
   getCurrentPersianTime,
   numberToPersianWords,
-  formatProductPackagingSpec
+  formatProductPackagingSpec,
+  matchProduct,
+  resolveItemCoverPrice
 } from '../utils/formatters';
 import { themes, getThemeBadges } from './ThemeConfig';
 import { PricePeekButton } from './PricePeekButton';
@@ -192,7 +195,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [items, setItems] = useState<InvoiceItem[]>(() => {
     if (!initialInvoice?.items) return [];
     return initialInvoice.items.map(it => {
-      const matchingProd = products.find(p => p.id === it.productId || p.name?.trim() === it.productName?.trim());
+      const matchingProd = matchProduct(it, products);
       const pPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
         ? it.unitPurchasePrice
         : (matchingProd?.purchasePrice || 0);
@@ -206,8 +209,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         : (sPrice > 0 && totPieces > 0 ? totPieces * sPrice : (it.totalPrice || 0));
       const totPurchaseCost = totPieces * pPrice;
       const profit = Math.max(0, (sPrice - pPrice) * totPieces);
+      const resolvedCover = resolveItemCoverPrice(it, products);
 
-      return {
+      const resItem: InvoiceItem = {
         ...it,
         cartonsCount: it.cartonsCount !== undefined ? it.cartonsCount : (matchingProd && matchingProd.piecesPerCarton > 0 ? Math.floor(totPieces / matchingProd.piecesPerCarton) : 0),
         extraPieces: it.extraPieces !== undefined ? it.extraPieces : (matchingProd && matchingProd.piecesPerCarton > 0 ? totPieces % matchingProd.piecesPerCarton : 0),
@@ -220,8 +224,42 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
         profitAmount: it.profitAmount !== undefined && it.profitAmount > 0 ? it.profitAmount : profit,
         profitPercentage: it.profitPercentage !== undefined && it.profitPercentage > 0 ? it.profitPercentage : (totPrice > 0 ? (profit / totPrice) * 100 : 0),
       };
+      if (resolvedCover) {
+        resItem.coverPrice = resolvedCover;
+      } else {
+        delete resItem.coverPrice;
+      }
+      return resItem;
     });
   });
+
+  // Keep invoice items in sync with latest products catalog (relational master updates for coverPrice, packaging & prices)
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    setItems(prevItems => {
+      let changed = false;
+      const updated = prevItems.map(it => {
+        const matchingProd = matchProduct(it, products);
+        if (!matchingProd) return it;
+
+        const resolvedCover = resolveItemCoverPrice(it, products);
+        const currentCover = it.coverPrice && Number(it.coverPrice) > 0 ? Number(it.coverPrice) : undefined;
+        
+        if (resolvedCover !== currentCover) {
+          changed = true;
+          const nextIt = { ...it };
+          if (resolvedCover) {
+            nextIt.coverPrice = resolvedCover;
+          } else {
+            delete nextIt.coverPrice;
+          }
+          return nextIt;
+        }
+        return it;
+      });
+      return changed ? updated : prevItems;
+    });
+  }, [products]);
   const [hasDiscount, setHasDiscount] = useState<boolean>(() => {
     if (initialInvoice?.hasDiscount !== undefined) return initialInvoice.hasDiscount;
     return Boolean(initialInvoice?.discount && initialInvoice.discount > 0);
@@ -334,12 +372,19 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       setHasDiscount(initialInvoice.hasDiscount !== undefined ? initialInvoice.hasDiscount : Boolean(initialInvoice.discount && initialInvoice.discount > 0));
       setDiscountPercent(initialInvoice.discountPercent !== undefined && initialInvoice.discountPercent > 0 ? initialInvoice.discountPercent : 8);
       setDiscount(initialInvoice.discount || 0);
+      setShowCoverPrice(initialInvoice.showCoverPrice !== undefined ? initialInvoice.showCoverPrice : (settings?.defaultShowCoverPrice !== undefined ? settings.defaultShowCoverPrice : true));
       setTax(initialInvoice.tax || 0);
       setNotes(initialInvoice.notes || settings.minOrderNotice || '');
       setInvoiceExpenses(initialInvoice.expenses ? JSON.parse(JSON.stringify(initialInvoice.expenses)) : []);
       setIsExpensesSectionOpen(Boolean(initialInvoice.expenses && initialInvoice.expenses.length > 0));
     }
   }, [initialInvoice?.id]);
+
+  const [showCoverPrice, setShowCoverPrice] = useState<boolean>(() => {
+    if (initialInvoice?.showCoverPrice !== undefined) return initialInvoice.showCoverPrice;
+    if (settings?.defaultShowCoverPrice !== undefined) return settings.defaultShowCoverPrice;
+    return true;
+  });
 
   // Multi-item quick add customizer in picker
   const [activePickingProduct, setActivePickingProduct] = useState<Product | null>(null);
@@ -351,6 +396,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [pickTotalPieces, setPickTotalPieces] = useState<number>(480);
   const [pickSellingPrice, setPickSellingPrice] = useState<number>(0);
   const [pickPurchasePrice, setPickPurchasePrice] = useState<number>(0);
+  const [pickCoverPrice, setPickCoverPrice] = useState<number>(0);
   const [customDescription, setCustomDescription] = useState<string>('');
 
   // Inward sell-through analysis (for purchase invoices)
@@ -364,9 +410,20 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [editingOriginalMeta, setEditingOriginalMeta] = useState<{ id?: string; name?: string; productId?: string; category?: string }>({});
   const [isUnknownCartonMode, setIsUnknownCartonMode] = useState<boolean>(false);
 
+  // Lock body scroll cleanly while editing item modal is open
+  useEffect(() => {
+    if (editingItem) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [editingItem]);
+
   // Helper to open edit item modal with smart detection of unpackaged / unknown carton items
   const openEditItemModal = (item: InvoiceItem) => {
-    const associatedProduct = currentProductsList.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
+    const associatedProduct = matchProduct(item, currentProductsList);
     
     const packs = item.packsCount || associatedProduct?.packsPerCarton || 1;
     const ppp = item.piecesPerPack || associatedProduct?.piecesPerPack || 1;
@@ -379,7 +436,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       category: (item as any).category || associatedProduct?.category || '',
     });
 
-    setEditingItem({
+    const resolvedCover = resolveItemCoverPrice(item, currentProductsList);
+    const itemToEdit: any = {
       ...item,
       productId: item.productId || associatedProduct?.id || '',
       productName: item.productName || associatedProduct?.name || '',
@@ -388,7 +446,13 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       piecesPerPack: ppp,
       piecesPerCarton: ppc,
       unitTitle: item.unitTitle || associatedProduct?.unitTitle || 'عدد'
-    } as any);
+    };
+    if (resolvedCover) {
+      itemToEdit.coverPrice = resolvedCover;
+    } else {
+      delete itemToEdit.coverPrice;
+    }
+    setEditingItem(itemToEdit);
     const isUnpack = (ppc <= 1) || item.cartonsCount === 0 || item.cartonsCount === item.totalPieces || !!item.isUnpackaged || !!associatedProduct?.isUnpackaged;
     setIsUnknownCartonMode(isUnpack);
   };
@@ -670,6 +734,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     setPickTotalPieces(total);
     setPickSellingPrice(prod.sellingPrice > 0 ? prod.sellingPrice : (prod.purchasePrice > 0 ? Math.round(prod.purchasePrice * 1.25) : 0));
     setPickPurchasePrice(prod.purchasePrice);
+    setPickCoverPrice(prod.coverPrice || 0);
     setCustomDescription('');
   };
 
@@ -780,6 +845,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       totalPieces,
       unitPurchasePrice,
       unitSellingPrice,
+      coverPrice: pickCoverPrice > 0 ? pickCoverPrice : (activePickingProduct.coverPrice || undefined),
       totalPrice,
       totalPurchaseCost,
       profitAmount,
@@ -1329,6 +1395,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       })),
       hasDiscount,
       discountPercent: hasDiscount ? effectiveDiscountPercent : 0,
+      showCoverPrice,
       subtotal,
       discount: activeDiscountAmount,
       tax,
@@ -1347,45 +1414,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     onSave(newInvoice, pendingNewProducts);
   };
 
-  // Smart scroll detection for floating action dock
+  // Top and Bottom bar refs for navigation
   const topHeaderRef = useRef<HTMLDivElement>(null);
   const bottomBarRef = useRef<HTMLDivElement>(null);
-  const [showFloatingDock, setShowFloatingDock] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      let isTopOut = false;
-      let isBottomIn = false;
-
-      if (topHeaderRef.current) {
-        const topRect = topHeaderRef.current.getBoundingClientRect();
-        isTopOut = topRect.bottom < 80 || window.scrollY > 100;
-      } else {
-        isTopOut = window.scrollY > 100;
-      }
-
-      if (bottomBarRef.current) {
-        const bottomRect = bottomBarRef.current.getBoundingClientRect();
-        isBottomIn = bottomRect.top < window.innerHeight - 30;
-      }
-
-      setShowFloatingDock(isTopOut && !isBottomIn);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    
-    // Also listen to any scrollable parent elements
-    const scrollContainers = document.querySelectorAll('.overflow-y-auto, main, #app');
-    scrollContainers.forEach(el => el.addEventListener('scroll', handleScroll, { passive: true, capture: true }));
-
-    handleScroll();
-    return () => {
-      window.removeEventListener('scroll', handleScroll, { capture: true });
-      document.removeEventListener('scroll', handleScroll, { capture: true });
-      scrollContainers.forEach(el => el.removeEventListener('scroll', handleScroll, { capture: true }));
-    };
-  }, []);
 
   // Filter products in picker
   const filteredProducts = currentProductsList.filter(p => {
@@ -1396,7 +1427,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   });
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-10 space-y-6">
+    <div className="w-full max-w-6xl mx-auto pb-28 space-y-6">
       {/* Header bar */}
       <div ref={topHeaderRef} className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-5 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
@@ -1439,6 +1470,22 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 <span>حالت محرمانه: <b className="font-bold">آشکار</b></span>
               </>
             )}
+          </button>
+
+          {/* Cover Price Toggle Button */}
+          <button
+            id="editor-toggle-cover-price-btn"
+            type="button"
+            onClick={() => setShowCoverPrice(!showCoverPrice)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              showCoverPrice
+                ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+            title="نمایش یا عدم نمایش قیمت روی جلد در فاکتور"
+          >
+            <Tag className="w-3.5 h-3.5" />
+            <span>قیمت روی جلد: <b className="font-bold">{showCoverPrice ? 'فعال' : 'مخفی'}</b></span>
           </button>
 
           {/* Invoice Type Toggle */}
@@ -3008,6 +3055,16 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                   تخفیف: {toPersianDigits(effectiveDiscountPercent)}٪ ({formatPrice(Math.round(unitSell * (1 - effectiveDiscountPercent / 100)))})
                                 </span>
                               )}
+                              {(() => {
+                                const relCoverPrice = resolveItemCoverPrice(item, currentProductsList);
+                                if (!relCoverPrice || relCoverPrice <= 0) return null;
+                                return (
+                                  <span className={`text-[10px] block text-center font-mono font-bold mt-0.5 ${showCoverPrice ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 opacity-60'}`}>
+                                    روی جلد: {formatPrice(relCoverPrice)}
+                                    {!showCoverPrice && ' (مخفی)'}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </td>
 
@@ -3068,6 +3125,16 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                 marginPercent={item.profitPercentage}
                               />
                             </div>
+                            {(() => {
+                              const relCoverPrice = resolveItemCoverPrice(item, currentProductsList);
+                              if (!relCoverPrice || relCoverPrice <= 0) return null;
+                              return (
+                                <span className={`text-[10px] block text-center font-mono font-bold mt-0.5 ${showCoverPrice ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 opacity-60'}`}>
+                                  روی جلد: {formatPrice(relCoverPrice)}
+                                  {!showCoverPrice && ' (مخفی)'}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </td>
                       )}
@@ -4419,9 +4486,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     })()}
 
                     {/* Price settings */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs">
                           {invoiceType === 'purchase' ? 'قیمت واحد خرید (تومان)' : 'قیمت واحد فروش (تومان)'}
                         </label>
                         <SmartPriceInput
@@ -4433,14 +4500,27 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       </div>
 
                       <div>
-                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block font-bold text-indigo-700 dark:text-indigo-400 mb-1 text-xs flex items-center justify-between">
+                          <span>قیمت روی جلد (مصرف‌کننده)</span>
+                          <span className="text-[10px] text-slate-400 font-normal">اختیاری</span>
+                        </label>
+                        <SmartPriceInput
+                          id="picker-cover-price-input"
+                          value={pickCoverPrice}
+                          onChange={(val) => setPickCoverPrice(val)}
+                          themeColor={settings.themeColor}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs">
                           شرح کالا و مشخصات بسته‌بندی
                         </label>
                         <input
                           type="text"
                           value={customDescription}
                           onChange={(e) => setCustomDescription(e.target.value)}
-                          className={`w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} text-slate-800 dark:text-slate-200`}
+                          className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} text-slate-800 dark:text-slate-200 text-xs`}
                         />
                       </div>
                     </div>
@@ -4607,10 +4687,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       />
 
       {/* Modal for Detailed Item Editing (ویرایش حرفه‌ای و کامل مشخصات ردیف فاکتور) */}
-      <AnimatePresence>
-        {editingItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-            <motion.div
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {editingItem && (
+            <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+              <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -4995,26 +5076,38 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     })()}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs">
                         قیمت واحد خرید هر {editingItem.unitTitle || 'دانه'} (تومان)
                       </label>
                       <SmartPriceInput
                         value={editingItem.unitPurchasePrice || 0}
                         onChange={(val) => setEditingItem({ ...editingItem, unitPurchasePrice: val })}
-                        className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
+                        className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs">
                         قیمت واحد فروش هر {editingItem.unitTitle || 'دانه'} (تومان)
                       </label>
                       <SmartPriceInput
                         value={editingItem.unitSellingPrice}
                         onChange={(val) => setEditingItem({ ...editingItem, unitSellingPrice: val })}
-                        className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
+                        className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-indigo-700 dark:text-indigo-400 mb-1 text-xs flex items-center justify-between">
+                        <span>قیمت روی جلد</span>
+                        <span className="text-[10px] text-slate-400 font-normal">اختیاری</span>
+                      </label>
+                      <SmartPriceInput
+                        value={editingItem.coverPrice || 0}
+                        onChange={(val) => setEditingItem({ ...editingItem, coverPrice: val > 0 ? val : undefined })}
+                        className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-indigo-700 dark:text-indigo-400 text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
                   </div>
@@ -5141,6 +5234,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
                       const effectiveProdId = targetProduct?.id || editingItem.productId || editingOriginalMeta.productId || `prod-${Date.now()}`;
 
+                      const cleanItemCover = (editingItem.coverPrice && Number(editingItem.coverPrice) > 0) ? Number(editingItem.coverPrice) : undefined;
+
                       const updatedProd: Product = {
                         ...(targetProduct || {
                           id: effectiveProdId,
@@ -5158,6 +5253,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                         sellingPrice: sellingPrice > 0 ? sellingPrice : (targetProduct?.sellingPrice || 0),
                         updatedAt: Date.now()
                       };
+                      if (cleanItemCover) {
+                        updatedProd.coverPrice = cleanItemCover;
+                      } else {
+                        delete updatedProd.coverPrice;
+                      }
 
                       // Update pending products buffer
                       setPendingNewProducts(prev => {
@@ -5181,7 +5281,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           const itemExtra = ppc > 1 ? (itemTotalPieces % ppc) : (isThisItem ? editingItem.extraPieces : it.extraPieces);
                           const unitPriceForTotal = invoiceType === 'purchase' ? purchasePrice : sellingPrice;
 
-                          return {
+                          const updatedRow: any = {
                             ...it,
                             ...(isThisItem ? editingItem : {}),
                             productId: effectiveProdId,
@@ -5198,6 +5298,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             unitSellingPrice: sellingPrice > 0 ? sellingPrice : it.unitSellingPrice,
                             totalPrice: unitPriceForTotal > 0 ? itemTotalPieces * unitPriceForTotal : it.totalPrice,
                           };
+                          if (cleanItemCover) {
+                            updatedRow.coverPrice = cleanItemCover;
+                          } else {
+                            delete updatedRow.coverPrice;
+                          }
+                          return updatedRow;
                         }
                         return it;
                       }));
@@ -5216,11 +5322,13 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
-      {/* Natural Bottom Action Bar at end of form */}
-      <div ref={bottomBarRef} className="w-full mt-6">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/50 flex flex-wrap items-center justify-between gap-3 transition-all">
+      {/* Floating Bottom Action Bar (کادر شناور کمکی و دکمه‌های ثبت نهایی) */}
+      <div ref={bottomBarRef} className="sticky bottom-3 sm:bottom-4 z-20 w-full mt-6 pointer-events-auto">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/15 dark:shadow-black/60 flex flex-wrap items-center justify-between gap-3 transition-all">
           {/* Summary & Live KPIs */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Items count badge */}
@@ -5306,107 +5414,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           </div>
         </div>
       </div>
-
-      {/* 🚀 SMART SCROLL FLOATING ACTION DOCK (APPEARS ONLY WHEN TOP HEADER BUTTONS ARE SCROLLED PAST) */}
-      <AnimatePresence>
-        {showFloatingDock && (
-          <div className={`fixed bottom-2 sm:bottom-4 left-0 ${isSidebarCollapsed ? 'lg:right-20' : 'lg:right-64'} z-50 pointer-events-none px-2 sm:px-4 md:px-6 transition-all duration-300`}>
-            <div className="max-w-5xl mx-auto pointer-events-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-xl p-2 sm:p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 sm:gap-3"
-                style={{ borderTop: `2.5px solid var(--primary-color, #0d9488)` }}
-              >
-                {/* Context & Financial Summary Bar */}
-                <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    {/* Invoice Type Badge (Fully matched to active theme palette without any icons) */}
-                    <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black shadow-2xs shrink-0 border ${
-                      invoiceType === 'purchase' ? badges.purchase : badges.sale
-                    }`}>
-                      <span className="truncate whitespace-nowrap">
-                        {invoiceType === 'purchase' ? 'ورود کالا (خرید)' : 'فاکتور فروش کالا'}
-                      </span>
-                    </div>
-
-                    {/* Items count badge */}
-                    <div className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-800 dark:text-slate-200 shrink-0">
-                      <span className="font-mono font-black text-slate-900 dark:text-white tabular-nums">{toPersianDigits(items.length)}</span>
-                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400">قلم</span>
-                    </div>
-
-                    {/* Customer Name (Visible when set) */}
-                    {customerName && (
-                      <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-700 dark:text-slate-300 max-w-[140px] truncate">
-                        <span className="truncate">{customerName}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Final Net Amount */}
-                  <div className="flex items-center gap-1.5 shrink-0 bg-slate-100/90 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent px-2.5 py-1 md:py-0 rounded-xl border border-slate-200/60 dark:border-slate-700/60 md:border-0">
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">خالص:</span>
-                    <span className={`font-black text-xs sm:text-sm md:text-base ${theme.primaryText} font-mono tabular-nums dir-ltr`}>
-                      {formatPrice(finalAmount, false)}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">تومان</span>
-                  </div>
-                </div>
-
-                {/* Quick Action Buttons */}
-                <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
-                  {/* Scroll to Top */}
-                  <button
-                    type="button"
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="hidden sm:flex p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shrink-0 items-center justify-center"
-                    title="بازگشت به ابتدای فاکتور"
-                    aria-label="بازگشت به بالا"
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-
-                  {/* Cancel Button */}
-                  <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/80 shrink-0"
-                  >
-                    انصراف
-                  </button>
-
-                  {/* Draft Button */}
-                  <button
-                    id="floating-dock-save-draft-btn"
-                    type="button"
-                    onClick={() => handleSaveInvoice(true)}
-                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 shrink-0"
-                    title="ذخیره پیش‌نویس بدون کسر انبار"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
-                    <span>پیش‌نویس</span>
-                  </button>
-
-                  {/* Final Submit Button */}
-                  <button
-                    id="floating-dock-save-final-btn"
-                    type="button"
-                    onClick={() => handleSaveInvoice(false)}
-                    className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black text-white shadow-md transition-all cursor-pointer transform active:scale-95 ${theme.primary} ${theme.primaryHover} shrink-0`}
-                    title="ثبت نهایی فاکتور و اعمال در انبار و نقدینگی"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>ثبت نهایی</span>
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

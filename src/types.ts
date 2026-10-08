@@ -5,6 +5,7 @@ export interface Product {
   category: string;
   purchasePrice: number; // قیمت خرید به تومان
   sellingPrice: number; // قیمت فروش به تومان
+  coverPrice?: number; // قیمت مصرف‌کننده / درج‌شده روی جلد به تومان (اختیاری)
   piecesPerCarton: number; // تعداد در کارتن (مثلاً ۴۸۰ یا ۸۰۰ یا ۱۵۰)
   packsPerCarton?: number; // تعداد بسته در کارتن (اختیاری مثلاً ۲۰ بسته)
   piecesPerPack?: number; // تعداد در هر بسته (مثلاً ۲۴ عدد)
@@ -34,6 +35,7 @@ export interface InvoiceItem {
   totalPieces: number; // جمع کل دانه = (cartonsCount * piecesPerCarton) + extraPieces
   unitPurchasePrice: number; // قیمت خرید واحد (تومان)
   unitSellingPrice: number; // قیمت فروش واحد (تومان)
+  coverPrice?: number; // قیمت مصرف‌کننده / روی جلد کالا به تومان (اختیاری)
   unitPrice?: number;
   totalPrice: number; // مبلغ کل = totalPieces * unitSellingPrice
   totalPurchaseCost: number; // بهای تمام شده = totalPieces * unitPurchasePrice
@@ -99,6 +101,7 @@ export interface Invoice {
   discount: number; // تخفیف
   hasDiscount?: boolean; // فعال/غیرفعال بودن تخفیف روی فاکتور
   discountPercent?: number; // درصد تخفیف اعمال شده (مثلا ۸٪)
+  showCoverPrice?: boolean; // آیا قیمت روی جلد در این فاکتور نمایش داده شود یا خیر (پیش‌فرض: true)
   tax: number; // مالیات
   finalAmount: number; // مبلغ نهایی این فاکتور
   totalAmount?: number;
@@ -333,6 +336,7 @@ export interface StoreSettings {
   requirePinForEdit?: boolean; // درخواست پین امنیتی برای ویرایش
   requirePinForDelete?: boolean; // درخواست پین امنیتی برای حذف
   hideConfidentialPrices?: boolean; // مدیریت و پنهان‌سازی قیمت محرمانه (قیمت خرید/ سود)
+  defaultShowCoverPrice?: boolean; // پیش‌فرض نمایش قیمت روی جلد در فاکتورها (پیش‌فرض: true)
   enableAutoBackup?: boolean; // فعال بودن پشتیبان‌گیری خودکار دیتابیس
   autoBackupIntervalHours?: number; // فاصله پشتیبان‌گیری خودکار (بر حسب ساعت - ۲۴، ۱۲، ۶)
   backupRetentionCount?: number; // تعداد نسخه‌های پشتیبان نگهداری شده (مثلاً ۵ نسخه، ۳ نسخه)

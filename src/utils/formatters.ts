@@ -1,6 +1,7 @@
 /**
  * Utilities for Persian numbers, currency, and carton formatting
  */
+import { Product } from '../types';
 
 // Convert Latin digits to Persian digits
 export function toPersianDigits(n: number | string | undefined | null): string {
@@ -698,6 +699,60 @@ export const CUSTOMER_TYPE_OPTIONS: CustomerTypeOption[] = [
 export function getCustomerTypeInfo(type?: string): CustomerTypeOption {
   const found = CUSTOMER_TYPE_OPTIONS.find(t => t.id === type || t.value === type);
   return found || CUSTOMER_TYPE_OPTIONS[0];
+}
+
+/**
+ * Robustly matches an invoice item to its parent Product in the catalog
+ * Uses product ID, exact normalized name, or substring fuzzy match
+ */
+export function matchProduct(
+  item: { productId?: string; productName?: string },
+  productList?: Product[]
+): Product | undefined {
+  if (!productList || productList.length === 0) return undefined;
+  if (item.productId) {
+    const byId = productList.find(p => p.id === item.productId);
+    if (byId) return byId;
+  }
+  if (!item.productName) return undefined;
+  const cleanItem = normalizePersianText(item.productName);
+  if (!cleanItem) return undefined;
+
+  const byExact = productList.find(p => p.name && normalizePersianText(p.name) === cleanItem);
+  if (byExact) return byExact;
+
+  const byPrefix = productList.find(p => {
+    if (!p.name) return false;
+    const cleanP = normalizePersianText(p.name);
+    return cleanP.includes(cleanItem) || cleanItem.includes(cleanP);
+  });
+  return byPrefix;
+}
+
+/**
+ * Resolves the relational cover price (قیمت روی جلد) for an item
+ * Prioritizes the active product catalog relation.
+ * If the product is linked to the catalog, its catalog definition is authoritative:
+ * If the catalog product has no cover price (or <= 0), returns undefined.
+ * Only falls back to item.coverPrice if the item is not matched to any catalog product.
+ */
+export function resolveItemCoverPrice(
+  item: { coverPrice?: number; productId?: string; productName?: string },
+  productList?: Product[]
+): number | undefined {
+  if (productList && productList.length > 0) {
+    const prod = matchProduct(item, productList);
+    if (prod) {
+      if (prod.coverPrice !== undefined && prod.coverPrice !== null && Number(prod.coverPrice) > 0) {
+        return Number(prod.coverPrice);
+      }
+      return undefined;
+    }
+  }
+  if (item.coverPrice !== undefined && item.coverPrice !== null && Number(item.coverPrice) > 0) {
+    return Number(item.coverPrice);
+  }
+  return undefined;
 }
 
 

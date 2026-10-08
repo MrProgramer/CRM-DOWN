@@ -50,7 +50,8 @@ import {
   Type,
   CaseSensitive,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -103,6 +104,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     watermarkFontSize: settings.watermarkFontSize || 48,
     enableWatermark: settings.enableWatermark !== false,
     watermarkText: settings.watermarkText || settings.brandName || 'بازرگانی رسمی',
+    defaultShowCoverPrice: settings.defaultShowCoverPrice !== false,
     showSignatureArea: settings.showSignatureArea !== false,
     fontFamily: settings.fontFamily || 'vazirmatn',
     numberFormat: settings.numberFormat || 'persian',
@@ -1663,6 +1665,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         <div className="text-[10px] font-black">{formData.stampText || 'مهر رسمی'}</div>
                         <div className="text-[8px] opacity-80">تایید و ثبت رایانه‌ای</div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Cover Price Visibility Configuration */}
+                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-indigo-500" />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-white block">پیش‌فرض نمایش قیمت روی جلد در فاکتورها</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">نمایش قیمت مصرف‌کننده/روی جلد زیر قیمت فی اقلام (امکان مخفی‌سازی لحظه‌ای با دکمه روی فاکتور نیز وجود دارد)</span>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.defaultShowCoverPrice !== false}
+                          onChange={(e) => setFormData({ ...formData, defaultShowCoverPrice: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
                     </div>
                   </div>
 

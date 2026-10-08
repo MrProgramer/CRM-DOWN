@@ -1057,7 +1057,23 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             </span>
                           </div>
 
-                          {/* 3. Profit & Margin Indicator */}
+                          {/* 3. Cover Price (قیمت روی جلد) */}
+                          <div className="flex items-center justify-start gap-1.5 font-mono text-xs text-slate-500 dark:text-slate-400">
+                            <span className="text-[10.5px] font-sans font-normal text-slate-400 dark:text-slate-500">
+                              روی جلد:
+                            </span>
+                            {prod.coverPrice && prod.coverPrice > 0 ? (
+                              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                {formatPrice(prod.coverPrice)}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-sans italic">
+                                نامشخص
+                              </span>
+                            )}
+                          </div>
+
+                          {/* 4. Profit & Margin Indicator */}
                           {prod.sellingPrice > 0 && (
                             <div className="flex items-center justify-start gap-1.5 text-[11px] font-mono pt-1 mt-0.5 border-t border-slate-100 dark:border-slate-800/80 w-full max-w-[150px]">
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold">
@@ -1075,6 +1091,11 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                           <div className={`font-black ${theme.primaryText} text-xs sm:text-sm font-mono tracking-tight`}>
                             {formatPrice(prod.sellingPrice)}
                           </div>
+                          {prod.coverPrice && prod.coverPrice > 0 && (
+                            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
+                              روی جلد: {formatPrice(prod.coverPrice)}
+                            </div>
+                          )}
                           {prod.sellingPrice >= 1000 && (
                             <div className="text-[11px] text-slate-500 font-medium mt-0.5" title={`به حروف: ${numberToPersianWords(prod.sellingPrice)}`}>
                               ({formatAmountScale(prod.sellingPrice)})

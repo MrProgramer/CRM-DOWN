@@ -8,7 +8,9 @@ import {
   getCurrentPersianDate, 
   getCurrentPersianTime, 
   getNetReturnAmount, 
-  formatProductPackagingSpec 
+  formatProductPackagingSpec,
+  matchProduct,
+  resolveItemCoverPrice
 } from '../utils/formatters';
 import { calculateInwardInvoiceSellThrough } from '../utils/inwardSellThrough';
 import { calculateCustomerLiveBalance } from '../utils/customerBalanceCalculations';
@@ -46,7 +48,8 @@ import {
   Boxes,
   FileSpreadsheet,
   Layers,
-  LayoutTemplate
+  LayoutTemplate,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -93,6 +96,7 @@ interface InvoiceViewProps {
   onExportImage?: (invoice: Invoice) => void;
   onShowAlert?: (message: string, type?: 'success' | 'error' | 'warning' | 'info', title?: string) => void;
   invoices?: Invoice[];
+  onUpdateInvoice?: (invoice: Invoice) => void;
 }
 
 export const InvoiceView: React.FC<InvoiceViewProps> = ({
@@ -112,6 +116,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   onExportImage,
   onShowAlert,
   invoices = [],
+  onUpdateInvoice,
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedCard, setCopiedCard] = useState(false);
@@ -136,6 +141,12 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
 
   // Toggle to show profit/loss in preview on screen (when prices are in normal display mode)
   const [showProfitMode, setShowProfitMode] = useState<boolean>(false);
+
+  // Toggle to show/hide cover price (قیمت روی جلد) on invoice
+  const [showCoverPrice, setShowCoverPrice] = useState<boolean>(() => {
+    if (invoice.showCoverPrice !== undefined) return invoice.showCoverPrice;
+    return settings?.defaultShowCoverPrice !== undefined ? settings.defaultShowCoverPrice : true;
+  });
 
   // Toggle to include profit/loss rows in print and image exports
   const [includeProfitInExport, setIncludeProfitInExport] = useState<boolean>(false);
@@ -543,7 +554,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
 
   const processedItems = useMemo<ProcessedItem[]>(() => {
     return (invoice.items || []).map((item, index) => {
-      const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
+      const prod = matchProduct(item, products);
       const correctPiecesPerCarton = prod?.piecesPerCarton || item.piecesPerCarton || 1;
       const unitTitle = prod?.unitTitle || item.unitTitle || 'عدد';
       const cartonLabel = formatCartonText(item.totalPieces, correctPiecesPerCarton);
@@ -676,6 +687,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         itemNetPrice,
         displayUnitPrice,
         displayLineTotal,
+        coverPrice: resolveItemCoverPrice(item, products),
         hasDiscount: hasInvDiscount,
         discountPercent: invDiscountPercent,
         discountedUnitPrice,
@@ -753,6 +765,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
     copiedCard,
     shouldShowProfitUnderItems,
     includeProfitInExport,
+    showCoverPrice,
     totalInvoiceProfit,
     totalInvoiceCost,
     totalInvoiceProfitMargin,
@@ -879,6 +892,27 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               )}
             </button>
           )}
+
+          {/* Cover Price Visibility Toggle Button */}
+          <button
+            type="button"
+            id="invoice-toggle-cover-price-btn"
+            onClick={() => {
+              const nextVal = !showCoverPrice;
+              setShowCoverPrice(nextVal);
+              invoice.showCoverPrice = nextVal;
+              onUpdateInvoice?.({ ...invoice, showCoverPrice: nextVal });
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+              showCoverPrice
+                ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
+                : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
+            }`}
+            title="نمایش یا عدم نمایش قیمت روی جلد در فاکتور"
+          >
+            <Tag className="w-3.5 h-3.5" />
+            <span>{showCoverPrice ? 'قیمت روی جلد: فعال' : 'قیمت روی جلد: مخفی'}</span>
+          </button>
 
           {/* Profit / Loss Display Mode Toggle Button */}
           {!isSecretMode && (

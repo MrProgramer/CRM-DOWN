@@ -724,6 +724,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">نمایش قیمت روی جلد در فاکتور</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">نمایش قیمت مصرف‌کننده/روی جلد زیر قیمت فی در فاکتورهای فروش و ورود به انبار</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.defaultShowCoverPrice !== false}
+                  onChange={(e) => setFormData({ ...formData, defaultShowCoverPrice: e.target.checked })}
+                  style={{ accentColor: currentTheme.hex }}
+                  className="w-5 h-5 rounded-md cursor-pointer"
+                />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
                   <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">نمایش واترمارک در چاپ فاکتور</span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">واترمارک کم‌رنگ لوگو/نام بازرگانی در مرکز برگه فاکتور A4</span>
                 </div>

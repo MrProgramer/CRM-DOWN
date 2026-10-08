@@ -53,6 +53,7 @@ export interface ProcessedItem {
   itemNetPrice: number;
   displayUnitPrice: number;
   displayLineTotal: number;
+  coverPrice?: number;
   hasDiscount?: boolean;
   discountPercent?: number;
   discountedUnitPrice?: number;
@@ -94,12 +95,33 @@ export interface InvoiceTemplateProps {
   inwardSellThroughSummary: InvoiceSellThroughSummary | null;
   onCopyCardNumber: () => void;
   copiedCard: boolean;
+  showCoverPrice?: boolean;
   shouldShowProfitUnderItems?: boolean;
   includeProfitInExport?: boolean;
   totalInvoiceProfit?: number;
   totalInvoiceCost?: number;
   totalInvoiceProfitMargin?: number;
 }
+
+/* ========================================================================= */
+/* HELPER: RENDER ITEM COVER PRICE (قیمت روی جلد) UNDER UNIT PRICE           */
+/* ========================================================================= */
+export const renderItemCoverPriceBadge = (
+  coverPrice?: number,
+  showCoverPrice: boolean = true
+) => {
+  if (!showCoverPrice || !coverPrice || coverPrice <= 0) return null;
+
+  return (
+    <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-sans mt-0.5 flex items-center justify-center gap-1 select-none print:text-slate-600">
+      <span className="text-[8.5px] text-slate-400 dark:text-slate-500 font-medium">روی جلد:</span>
+      <span className="font-bold text-slate-700 dark:text-slate-300">
+        {toPersianDigits(coverPrice.toLocaleString())}
+      </span>
+      <span className="text-[8px] text-slate-400 font-normal">تومان</span>
+    </div>
+  );
+};
 
 /* ========================================================================= */
 /* HELPER: RENDER ITEM PROFIT / LOSS BADGE (CONFIDENTIAL & PRINT-HIDDEN)     */
@@ -677,6 +699,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                 </td>
                 <td className="py-2.5 px-3 text-center text-sm whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1014,6 +1037,7 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
                     <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white font-mono">
                       {toPersianDigits(displayUnitPrice.toLocaleString())}
                     </div>
+                    {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                     {hasDiscount && discountPercent && discountPercent > 0 && (
                       <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                         با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1395,6 +1419,7 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                 </td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1540,6 +1565,7 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2.5 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1682,6 +1708,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1804,6 +1831,7 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
                 <td className="py-2 px-2 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2 px-2 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[9.5px] text-slate-900 dark:text-slate-100 font-bold">
                       -{toPersianDigits(discountPercent)}٪: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -1960,6 +1988,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
                 </td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -2108,6 +2137,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
                 <td className="py-3 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
@@ -2245,6 +2275,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
                 <td className="py-2.5 px-3 text-center">{toPersianDigits(item.totalPieces.toLocaleString())}</td>
                 <td className="py-2.5 px-3 text-center whitespace-nowrap">
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
+                  {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
                     <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}

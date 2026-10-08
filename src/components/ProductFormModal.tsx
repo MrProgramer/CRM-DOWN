@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Product, StoreSettings } from '../types';
 import { 
   formatPrice, 
@@ -88,6 +89,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     category: string;
     purchasePrice: number;
     sellingPrice: number;
+    coverPrice: number;
     piecesPerCarton: number;
     packsPerCarton: number;
     piecesPerPack: number;
@@ -102,6 +104,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     category: '',
     purchasePrice: 0,
     sellingPrice: 0,
+    coverPrice: 0,
     piecesPerCarton: 480,
     packsPerCarton: 20,
     piecesPerPack: 24,
@@ -142,6 +145,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           category: editingProduct.category || categoriesList[0] || 'سایر',
           purchasePrice: editingProduct.purchasePrice || 0,
           sellingPrice: editingProduct.sellingPrice || 0,
+          coverPrice: editingProduct.coverPrice || 0,
           piecesPerCarton: editingProduct.piecesPerCarton || (unpack ? 1 : (initialPacks > 0 && initialPpp > 0 ? initialPacks * initialPpp : 480)),
           packsPerCarton: initialPacks,
           piecesPerPack: initialPpp,
@@ -160,6 +164,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           category: defaultCat,
           purchasePrice: 0,
           sellingPrice: 0,
+          coverPrice: 0,
           piecesPerCarton: 480,
           packsPerCarton: 20,
           piecesPerPack: 24,
@@ -173,6 +178,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
     }
   }, [isOpen, editingProduct]);
+
+  // Lock body scroll when modal is open to prevent page scrolling behind modal
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -213,6 +229,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       category: formData.category.trim(),
       purchasePrice: Number(formData.purchasePrice) || 0,
       sellingPrice: Number(formData.sellingPrice) || 0,
+      coverPrice: Number(formData.coverPrice) > 0 ? Number(formData.coverPrice) : undefined,
       piecesPerCarton: piecesPerCartonCalculated,
       packsPerCarton: isUnpackaged ? 1 : rawPacks,
       piecesPerPack: isUnpackaged ? 1 : rawPpp,
@@ -275,14 +292,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden text-xs my-auto"
+  return typeof document !== 'undefined'
+    ? createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+            <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 10 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden text-xs my-auto"
         >
           {/* Modal Header */}
           <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
@@ -779,10 +798,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 )}
               </div>
 
-              {/* Selling & Purchase Prices */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+              {/* Selling, Purchase & Cover Prices */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
                 <div>
-                  <label className={`block font-bold ${theme.primaryText} mb-1`}>
+                  <label className={`block font-bold ${theme.primaryText} mb-1 text-xs`}>
                     قیمت فروش پیش‌فرض (تومان) <span className="text-rose-500">*</span>
                   </label>
                   <SmartPriceInput
@@ -796,7 +815,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-amber-800 dark:text-amber-400 mb-1">
+                  <label className="block font-bold text-amber-800 dark:text-amber-400 mb-1 text-xs">
                     قیمت خرید هر دانه (تومان) <span className="text-rose-500">*</span>
                   </label>
                   <SmartPriceInput
@@ -806,6 +825,27 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   />
                   <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-1">
                     خرید هر کارتن: {toPersianDigits(((formData.purchasePrice || 0) * (formData.piecesPerCarton || 1)).toLocaleString())} تومان
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-indigo-800 dark:text-indigo-400 mb-1 text-xs flex items-center justify-between">
+                    <span>قیمت روی جلد (مصرف‌کننده)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">اختیاری</span>
+                  </label>
+                  <SmartPriceInput
+                    value={formData.coverPrice}
+                    onChange={(val) => setFormData({ ...formData, coverPrice: val })}
+                    themeColor={settings.themeColor}
+                  />
+                  <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    {formData.coverPrice > 0 ? (
+                      <span className="text-indigo-600 dark:text-indigo-300 font-bold">
+                        روی جلد هر کارتن: {toPersianDigits(((formData.coverPrice || 0) * (formData.piecesPerCarton || 1)).toLocaleString())} تومان
+                      </span>
+                    ) : (
+                      <span>درج نشده (نامشخص)</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -823,7 +863,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className={`grid ${formData.coverPrice > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 text-center text-xs`}>
                     <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80">
                       <span className="text-[10px] text-slate-400 font-bold block">سود هر کارتن</span>
                       <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs">
@@ -837,6 +877,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         +{toPersianDigits((((formData.sellingPrice - formData.purchasePrice) / (formData.purchasePrice || 1)) * 100).toFixed(1))}٪
                       </span>
                     </div>
+
+                    {formData.coverPrice > 0 && (
+                      <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-indigo-200/80 dark:border-indigo-800/80">
+                        <span className="text-[10px] text-indigo-500 font-bold block">تخفیف از روی جلد</span>
+                        <span className="font-black text-indigo-700 dark:text-indigo-300 text-xs">
+                          {formData.coverPrice > formData.sellingPrice 
+                            ? `${toPersianDigits((((formData.coverPrice - formData.sellingPrice) / formData.coverPrice) * 100).toFixed(0))}٪ ارزان‌تر`
+                            : 'هم‌قیمت جلد'}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80">
                       <span className="text-[10px] text-slate-400 font-bold block">ارزش انبار این کالا</span>
@@ -864,36 +915,23 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
             </div>
 
-            {/* Floating Sticky Action Bar (کادر شناور دکمه‌های ذخیره و انصراف) */}
-            <div className="p-3 sm:p-4 border-t border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex items-center justify-between gap-3 shrink-0 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_25px_rgba(0,0,0,0.3)] z-30 sticky bottom-0">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 min-w-0">
-                <span className="truncate max-w-[140px] sm:max-w-[220px] font-black text-slate-900 dark:text-white text-xs sm:text-sm">
-                  {formData.name || 'کالای بدون نام'}
-                </span>
-                {formData.sellingPrice > 0 && (
-                  <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-black text-[11px] border border-emerald-200 dark:border-emerald-800 dir-ltr whitespace-nowrap">
-                    {formatPrice(formData.sellingPrice)}
-                  </span>
-                )}
-              </div>
+            {/* Modal Footer Actions */}
+            <div className="p-4 sm:p-5 border-t border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 sm:px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer transition-colors text-xs sm:text-sm"
+              >
+                انصراف
+              </button>
 
-              <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-3.5 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer transition-colors text-xs sm:text-sm"
-                >
-                  انصراف
-                </button>
-
-                <button
-                  type="submit"
-                  className={`px-4 sm:px-6 py-2.5 rounded-xl sm:rounded-2xl ${theme.primary} hover:opacity-95 text-white font-black cursor-pointer shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 flex-1 sm:flex-initial text-xs sm:text-sm`}
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{editingProduct ? 'ذخیره تغییرات کالا' : 'ثبت و تعریف کالا'}</span>
-                </button>
-              </div>
+              <button
+                type="submit"
+                className={`px-5 sm:px-6 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black cursor-pointer shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 text-xs sm:text-sm`}
+              >
+                <Save className="w-4 h-4" />
+                <span>{editingProduct ? 'ذخیره تغییرات کالا' : 'ثبت و تعریف کالا'}</span>
+              </button>
             </div>
           </form>
         </motion.div>
@@ -911,6 +949,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         themeColor={settings.themeColor}
         onShowAlert={onShowAlert}
       />
-    </AnimatePresence>
-  );
+    </AnimatePresence>,
+    document.body
+  ) : null;
 };

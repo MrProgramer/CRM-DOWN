@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Product, StoreSettings, InvoiceItem, ThemeColor } from '../types';
 import { formatPrice, formatAmountScale, toPersianDigits, formatProductPackagingSpec, detectCategoryFromName } from '../utils/formatters';
 import { themes } from './ThemeConfig';
@@ -165,6 +166,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
   const [existingTotalPieces, setExistingTotalPieces] = useState<number | ''>('');
   const [existingPurchasePrice, setExistingPurchasePrice] = useState<number>(0);
   const [existingSellingPrice, setExistingSellingPrice] = useState<number>(0);
+  const [existingCoverPrice, setExistingCoverPrice] = useState<number>(0);
   const [distinctNewName, setDistinctNewName] = useState('');
   const [distinctHandlingMode, setDistinctHandlingMode] = useState<'create_distinct' | 'update_existing'>('create_distinct');
 
@@ -178,6 +180,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
   const [editProdTotalPerCarton, setEditProdTotalPerCarton] = useState<number | ''>('');
   const [editProdPurchasePrice, setEditProdPurchasePrice] = useState<number>(0);
   const [editProdSellingPrice, setEditProdSellingPrice] = useState<number>(0);
+  const [editProdCoverPrice, setEditProdCoverPrice] = useState<number>(0);
 
   // New product inward form state (COMPLETELY EMPTY DEFAULT TEXTBOXES)
   const [newName, setNewName] = useState('');
@@ -195,6 +198,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
   const [newExtraPieces, setNewExtraPieces] = useState<number | ''>('');
   const [newPurchasePrice, setNewPurchasePrice] = useState<number>(0);
   const [newSellingPrice, setNewSellingPrice] = useState<number>(0);
+  const [newCoverPrice, setNewCoverPrice] = useState<number>(0);
   const [newNotes, setNewNotes] = useState('');
 
   // Unpackaged & Unknown Cartons Modes
@@ -395,6 +399,17 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
     }
   }, [isOpen]);
 
+  // Lock body scroll cleanly while InwardProductModal is active
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const categories = useMemo(() => {
     const set = new Set<string>();
     products.forEach(p => {
@@ -423,6 +438,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
     setIsExistingUnpackaged(isUnpack);
     setExistingPurchasePrice(prod.purchasePrice || 0);
     setExistingSellingPrice(prod.sellingPrice || 0);
+    setExistingCoverPrice(prod.coverPrice || 0);
     setDistinctNewName(`${prod.name} (فی جدید ${formatPrice(prod.purchasePrice || 0)})`);
     setDistinctHandlingMode('create_distinct');
 
@@ -461,6 +477,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
     setEditProdTotalPerCarton(finalPpc);
     setEditProdPurchasePrice(prod.purchasePrice || 0);
     setEditProdSellingPrice(prod.sellingPrice || 0);
+    setEditProdCoverPrice(prod.coverPrice || 0);
     setIsEditingProductDetails(false);
   };
 
@@ -469,8 +486,10 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
     setExistingPacks(updated.packsPerCarton || 20);
     setExistingPiecesPerPack(updated.piecesPerPack || 24);
     setExistingPiecesPerCarton(updated.piecesPerCarton || 480);
-    if (updated.purchasePrice) setExistingPurchasePrice(updated.purchasePrice);
-    if (updated.sellingPrice) setExistingSellingPrice(updated.sellingPrice);
+    if (updated.purchasePrice !== undefined) setExistingPurchasePrice(updated.purchasePrice);
+    if (updated.sellingPrice !== undefined) setExistingSellingPrice(updated.sellingPrice);
+    setExistingCoverPrice(updated.coverPrice || 0);
+    setEditProdCoverPrice(updated.coverPrice || 0);
     onUpdateProduct?.(updated);
     setIsEditingProductDetails(false);
     onShowAlert?.(`مشخصات کالای «${updated.name}» با موفقیت در انبار به‌روزرسانی شد.`, 'success', 'ویرایش کالا');
@@ -584,6 +603,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
         category: selectedExistingProduct.category,
         purchasePrice: unitPurchasePrice,
         sellingPrice: unitSellingPrice,
+        coverPrice: existingCoverPrice > 0 ? existingCoverPrice : (selectedExistingProduct.coverPrice || undefined),
         piecesPerCarton: piecesPerCarton,
         packsPerCarton: packs,
         piecesPerPack: ppp,
@@ -612,6 +632,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
         isCartonUnknown: isUnpack,
         unitPurchasePrice,
         unitSellingPrice,
+        coverPrice: existingCoverPrice > 0 ? existingCoverPrice : (selectedExistingProduct.coverPrice || undefined),
         totalPrice,
         totalPurchaseCost,
         profitAmount,
@@ -645,6 +666,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
       isCartonUnknown: isUnpack,
       unitPurchasePrice,
       unitSellingPrice,
+      coverPrice: existingCoverPrice > 0 ? existingCoverPrice : (selectedExistingProduct.coverPrice || undefined),
       totalPrice,
       totalPurchaseCost,
       profitAmount,
@@ -668,6 +690,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
       isCartonUnknown: isUnpack,
       purchasePrice: unitPurchasePrice,
       sellingPrice: unitSellingPrice,
+      coverPrice: existingCoverPrice > 0 ? existingCoverPrice : selectedExistingProduct.coverPrice,
       unitTitle: selectedExistingProduct.unitTitle || 'عدد',
       updatedAt: Date.now()
     };
@@ -731,6 +754,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
       category: newCategory.trim(),
       purchasePrice: unitPurchasePrice,
       sellingPrice: unitSellingPrice,
+      coverPrice: newCoverPrice > 0 ? newCoverPrice : undefined,
       piecesPerCarton: isUnpack ? 1 : piecesPerCarton,
       packsPerCarton: isUnpack ? 1 : packs,
       piecesPerPack: isUnpack ? 1 : ppp,
@@ -759,6 +783,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
       isCartonUnknown: isUnpack,
       unitPurchasePrice,
       unitSellingPrice,
+      coverPrice: newCoverPrice > 0 ? newCoverPrice : undefined,
       totalPrice,
       totalPurchaseCost,
       profitAmount,
@@ -775,12 +800,15 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto dir-rtl">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto dir-rtl w-screen h-screen">
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.15 }}
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto transition-colors"
       >
         {/* Header */}
@@ -1112,6 +1140,9 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           <div className="truncate font-black text-xs">{p.name}</div>
                           <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1">
                             <span>فی: {formatPrice(p.purchasePrice)}</span>
+                            {p.coverPrice && p.coverPrice > 0 ? (
+                              <span className="text-amber-700 dark:text-amber-300 font-bold font-mono">جلد: {formatPrice(p.coverPrice)}</span>
+                            ) : null}
                             <span className={`font-mono ${theme.primaryText} font-bold`}>{toPersianDigits(p.stockPieces)} موجود</span>
                           </div>
                         </button>
@@ -1304,8 +1335,8 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Price Inputs: Unit Purchase Price First, Unit Selling Price Second, Carton Purchase Price Third */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Price Inputs: Unit Purchase Price First, Unit Selling Price Second, Cover Price Third, Carton Purchase Price Fourth */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                       {/* 1. Purchase Price Input (فی خرید هر دانه - اول) */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -1337,6 +1368,23 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           value={existingSellingPrice}
                           onChange={(val) => setExistingSellingPrice(val)}
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                        />
+                      </div>
+
+                      {/* 2.5 Cover Price (قیمت روی جلد - اختیاری) */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                            قیمت روی جلد
+                          </label>
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            اختیاری
+                          </span>
+                        </div>
+                        <SmartPriceInput
+                          value={existingCoverPrice}
+                          onChange={(val) => setExistingCoverPrice(val)}
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-indigo-700 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
                         />
                       </div>
 
@@ -1872,6 +1920,17 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
+
+                  <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+                    <label className="block font-bold text-xs text-indigo-700 dark:text-indigo-400">
+                      قیمت روی جلد / مصرف‌کننده (اختیاری - در فاکتور فروش زیر فی درج می‌شود)
+                    </label>
+                    <SmartPriceInput
+                      value={newCoverPrice}
+                      onChange={(val) => setNewCoverPrice(val)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-indigo-700 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 {/* Carton & Pack calculated costs banner */}
@@ -2050,6 +2109,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
           onShowAlert={onShowAlert}
         />
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };
