@@ -772,7 +772,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-16 transition-colors">
+    <div className="w-full max-w-5xl mx-auto pb-16 transition-colors print:max-w-none print:w-full print:m-0 print:p-0 print:pb-0">
       {/* Control Bar (Hidden when printing) - Flat, Clean, Modern */}
       <div className="no-print mb-4 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-slate-900 dark:text-slate-100 shadow-none transition-colors">
         <div className="flex items-center gap-2.5 flex-wrap">
@@ -1519,7 +1519,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
           isDarkCanvas 
             ? 'bg-[#0b0f19] text-slate-100 border-slate-800 shadow-sm' 
             : 'bg-white text-slate-900 border-slate-200/90 shadow-sm'
-        } print:p-0 print:border-none print:shadow-none print:bg-white print:text-slate-900`}
+        } print:p-0 print:m-0 print:border-none print:shadow-none print:bg-white print:text-slate-900 print:w-full print:max-w-none print:min-h-0`}
         style={{ minHeight: '297mm', fontFamily: "var(--app-font-family)" }}
       >
         {/* Subtle Watermark */}

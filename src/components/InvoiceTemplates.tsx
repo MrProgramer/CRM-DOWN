@@ -335,32 +335,44 @@ export const renderCumulativeBalanceSection = (props: InvoiceTemplateProps) => {
 
         {/* 3-Step Math Formula */}
         <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
-          <div className="p-1.5 rounded-none border border-slate-200 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/70">
-            <span className="text-[9px] text-slate-500 block mb-0.5">مانده قبلی:</span>
-            <span className="font-mono font-bold text-slate-800 dark:text-slate-200 dir-ltr text-[11px] block truncate">
-              {formatPrice(previousBalanceNumber)}
+          {/* 1. مانده قبلی */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/80 flex flex-col justify-between items-center min-h-[66px]">
+            <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-bold block mb-0.5">مانده قبلی:</span>
+            <span className="font-mono font-black text-slate-800 dark:text-slate-200 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+              {previousBalanceNumber < 0 ? `-${formatPrice(Math.abs(previousBalanceNumber), false)}` : formatPrice(previousBalanceNumber, false)}
+            </span>
+            <span className="text-[8px] sm:text-[8.5px] leading-tight text-slate-500 dark:text-slate-400 font-medium block mt-1 break-words max-w-full text-center">
+              ({numberToPersianWords(previousBalanceNumber, true)})
             </span>
           </div>
 
-          <div className="p-1.5 rounded-none border border-slate-200 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/70">
-            <span className="text-[9px] text-slate-500 block mb-0.5">نسیه فاکتور (+):</span>
-            <span className="font-mono font-bold text-amber-600 dark:text-amber-400 dir-ltr text-[11px] block truncate">
-              +{formatPrice(unpaidAmount)}
+          {/* 2. نسیه فاکتور */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-amber-200 dark:border-amber-800/70 bg-amber-50/60 dark:bg-amber-950/40 flex flex-col justify-between items-center min-h-[66px]">
+            <span className="text-[9.5px] text-amber-700 dark:text-amber-400 font-bold block mb-0.5">نسیه فاکتور (+):</span>
+            <span className="font-mono font-black text-amber-600 dark:text-amber-400 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+              +{formatPrice(unpaidAmount, false)}
+            </span>
+            <span className="text-[8px] sm:text-[8.5px] leading-tight text-amber-800/80 dark:text-amber-400/80 font-medium block mt-1 break-words max-w-full text-center">
+              ({numberToPersianWords(unpaidAmount, true)})
             </span>
           </div>
 
-          <div className="p-1.5 rounded-none border border-rose-200 dark:border-rose-900/70 bg-rose-50/70 dark:bg-rose-950/40">
-            <span className="text-[9px] text-rose-700 dark:text-rose-400 font-bold block mb-0.5">جمع کل مانده (=):</span>
-            <span className="font-mono font-black text-rose-700 dark:text-rose-300 dir-ltr text-[11px] block truncate">
-              {formatPrice(cumulativeBalanceVal)}
+          {/* 3. جمع کل مانده */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-rose-200 dark:border-rose-900/70 bg-rose-50/70 dark:bg-rose-950/40 flex flex-col justify-between items-center min-h-[66px]">
+            <span className="text-[9.5px] text-rose-700 dark:text-rose-400 font-bold block mb-0.5">جمع کل مانده (=):</span>
+            <span className="font-mono font-black text-rose-700 dark:text-rose-300 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+              {cumulativeBalanceVal < 0 ? `-${formatPrice(Math.abs(cumulativeBalanceVal), false)}` : formatPrice(cumulativeBalanceVal, false)}
+            </span>
+            <span className="text-[8px] sm:text-[8.5px] leading-tight text-rose-800 dark:text-rose-300 font-bold block mt-1 break-words max-w-full text-center">
+              ({numberToPersianWords(cumulativeBalanceVal, true)})
             </span>
           </div>
         </div>
 
         {/* Running Balance Word Banner */}
-        <div className="flex items-center justify-between text-[10.5px] pt-0.5 font-medium">
-          <span className="text-slate-500 dark:text-slate-400">وضعیت نهایی حساب:</span>
-          <span className="font-black text-slate-900 dark:text-white">
+        <div className="flex items-center justify-between text-[10.5px] pt-1 font-medium border-t border-black/5 dark:border-white/5">
+          <span className="text-slate-500 dark:text-slate-400">وضعیت نهایی حساب طرف‌حساب:</span>
+          <span className="font-black text-slate-900 dark:text-white text-[11px]">
             {finalBalanceDisplay}
           </span>
         </div>

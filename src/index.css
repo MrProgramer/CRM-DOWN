@@ -330,6 +330,46 @@ button:not([class*="rounded-full"]):not([class*="p-"]) {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  #root,
+  #root > div,
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Reset all sidebar offsets in RTL when printing */
+  div[class*="lg:pr-"],
+  div[class*="pr-"],
+  div[class*="lg:pl-"],
+  div[class*="pl-"] {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  /* Reset max-width layout restrictions in print so document uses full A4 printable area */
+  .max-w-5xl,
+  .max-w-6xl,
+  .max-w-7xl,
+  .max-w-\[1700px\],
+  .max-w-full {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
   }
 
   .no-print {
@@ -340,13 +380,16 @@ button:not([class*="rounded-full"]):not([class*="p-"]) {
     display: block !important;
   }
 
+  #invoice-paper,
   .invoice-paper-container {
     box-shadow: none !important;
     border: none !important;
-    margin: 0 auto !important;
-    padding: 2mm 4mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
     background: #ffffff !important;
     color: #0f172a !important;
   }
