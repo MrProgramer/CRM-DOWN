@@ -28,6 +28,7 @@ import { themes, getThemeBadges } from './ThemeConfig';
 import { Pagination } from './Pagination';
 import { calculateInwardInvoiceSellThrough } from '../utils/inwardSellThrough';
 import { SortableTableHeader } from './SortableTableHeader';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -42,6 +43,7 @@ interface InvoiceListProps {
   onDeleteInvoice: (invoiceId: string) => void;
   onNewInvoice: (type?: 'sale' | 'purchase') => void;
   onOpenProfitAnalysis: (invoice: Invoice) => void;
+  highlightedInvoiceId?: string | null;
 }
 
 export const InvoiceList: React.FC<InvoiceListProps> = ({
@@ -56,6 +58,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   onEditInvoice,
   onDeleteInvoice,
   onNewInvoice,
+  highlightedInvoiceId = null,
 }) => {
   const theme = themes[settings.themeColor] || themes.teal;
   const badges = getThemeBadges(settings.themeColor);
@@ -607,15 +610,25 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     ? calculateInwardInvoiceSellThrough(inv, invoices, products)
                     : null;
 
+                  const isInvHighlighted = Boolean(highlightedInvoiceId && highlightedInvoiceId === inv.id);
+
                   return (
                     <tr 
+                      id={`invoice-row-${inv.id || index}`}
                       key={`inv-row-${inv.id || index}-${index}`}
-                      className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors"
+                      className={`transition-all duration-500 ${
+                        isInvHighlighted
+                          ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                          : 'hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors'
+                      }`}
                     >
                       {/* Column 1: Customer / Party */}
                       <td className="p-3.5">
                         <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
                           <span className="truncate max-w-[220px]">{inv.customerName}</span>
+                          {isInvHighlighted && (
+                            <RowUpdateBadge label="فاکتور بروز شد" />
+                          )}
                           {(inv.customerName.includes('مدیریت انبار') || isPurchaseMode) && (
                             <span className={`px-1.5 py-0.5 ${badges.supplier} font-bold text-[9px] rounded-md whitespace-nowrap shrink-0`}>
                               تأمین‌کننده

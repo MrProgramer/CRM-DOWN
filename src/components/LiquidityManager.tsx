@@ -4,6 +4,7 @@ export type { TreasuryTransaction };
 import { themes, getThemeBadges } from './ThemeConfig';
 import { SmartPriceInput } from './SmartPriceInput';
 import { SortableTableHeader } from './SortableTableHeader';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 import { 
   formatPrice, 
   formatAmountScale,
@@ -161,6 +162,22 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
   };
   const [isTxFormOpen, setIsTxFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<TreasuryTransaction | null>(null);
+  const [highlightedTxId, setHighlightedTxId] = useState<string | null>(null);
+
+  const triggerTxHighlight = (txId: string) => {
+    if (!txId) return;
+    setHighlightedTxId(txId);
+    setTimeout(() => {
+      const cleanId = txId.startsWith('tx-') ? txId : `tx-${txId}`;
+      const el = document.getElementById(`liq-row-${cleanId}`) || document.getElementById(`liq-row-${txId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 120);
+    setTimeout(() => {
+      setHighlightedTxId(prev => (prev === txId ? null : prev));
+    }, 4500);
+  };
   const [deleteConfirmTx, setDeleteConfirmTx] = useState<{ 
     id: string; 
     rawId?: string;
@@ -1486,6 +1503,8 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         ? (source === 'personal' ? impactOnLiquidity : 'deduct')
         : (txType === 'deposit' ? 'inject' : 'deduct');
 
+    const txIdToHighlight = editingTx?.id;
+
     if (editingTx && onUpdateTreasuryTransaction) {
       onUpdateTreasuryTransaction({
         ...editingTx,
@@ -1497,6 +1516,9 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
         category: txType === 'expense' ? category : txType === 'transfer' ? 'انتقال وجه' : 'افزایش اعتبار',
         description: description || (txType === 'expense' ? `هزینه بابت ${category}` : txType === 'transfer' ? 'انتقال موجودی بین حساب‌ها' : 'افزایش اعتبار دستی خزانه'),
       });
+      if (txIdToHighlight) {
+        triggerTxHighlight(txIdToHighlight);
+      }
     } else {
       onAddTreasuryTransaction({
         type: txType,
@@ -3711,10 +3733,31 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                       const absIdx = startIndex + idx + 1;
                       const isExpense = log.type === 'expense';
                       const isTreasuryTx = log.id.startsWith('tx-');
+                      const isTxHighlighted = Boolean(
+                        highlightedTxId &&
+                        (log.id === highlightedTxId ||
+                         log.id === `tx-${highlightedTxId}` ||
+                         log.rawId === highlightedTxId ||
+                         (log.id && highlightedTxId && (log.id.replace('tx-', '') === highlightedTxId.replace('tx-', ''))))
+                      );
 
                       return (
-                        <tr key={`liq-log-${log.id || idx}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors">
-                          <td className="p-3.5 text-center text-slate-400 font-mono">{toPersianDigits(absIdx)}</td>
+                        <tr 
+                          id={`liq-row-${log.id}`}
+                          key={`liq-log-${log.id || idx}-${idx}`} 
+                          className={`transition-all duration-500 ${
+                            isTxHighlighted
+                              ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                              : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors'
+                          }`}
+                        >
+                          <td className="p-3.5 text-center text-slate-400 font-mono">
+                            {isTxHighlighted ? (
+                              <RowUpdateIcon title="تراکنش با موفقیت بروزرسانی شد" className="mx-auto" />
+                            ) : (
+                              toPersianDigits(absIdx)
+                            )}
+                          </td>
                           <td className="p-3.5 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
                             {toPersianDigits(log.date)} {log.time ? ` - ${toPersianDigits(log.time)}` : ''}
                           </td>
@@ -3752,9 +3795,14 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                             {isExpense ? '-' : '+'}{formatPrice(log.amount)}
                           </td>
                           <td className="p-3.5 text-slate-600 dark:text-slate-400">
-                            <div>{log.description}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{log.description}</span>
+                              {isTxHighlighted && (
+                                <RowUpdateBadge label="سند ویرایش شد" />
+                              )}
+                            </div>
                             {log.referenceCode && (
-                              <span className="text-[10px] text-slate-400 font-mono">پیگیری: {toPersianDigits(log.referenceCode)}</span>
+                              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">پیگیری: {toPersianDigits(log.referenceCode)}</span>
                             )}
                           </td>
                           <td className="p-3.5 text-center no-print">

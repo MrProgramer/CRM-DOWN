@@ -33,6 +33,7 @@ import { ProductFormModal } from './ProductFormModal';
 import { InwardProductModal } from './InwardProductModal';
 import { LiquidityBalances } from '../utils/liquidityCalculations';
 import { calculateCustomerLiveBalance } from '../utils/customerBalanceCalculations';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 import { 
   Plus, 
   Trash2, 
@@ -411,12 +412,31 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const [isUnknownCartonMode, setIsUnknownCartonMode] = useState<boolean>(false);
 
   // Lock body scroll cleanly while editing item modal is open
+  // Track recently updated item for smooth highlight and animated badge without scrolling away
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+
+  const triggerItemHighlight = (itemId: string) => {
+    if (!itemId) return;
+    setHighlightedItemId(itemId);
+    setTimeout(() => {
+      const el = document.getElementById(`invoice-item-row-${itemId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 120);
+    setTimeout(() => {
+      setHighlightedItemId(prev => (prev === itemId ? null : prev));
+    }, 4500);
+  };
+
   useEffect(() => {
     if (editingItem) {
+      const savedScrollY = window.scrollY;
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = prevOverflow;
+        window.scrollTo({ top: savedScrollY, behavior: 'instant' });
       };
     }
   }, [editingItem]);
@@ -2785,17 +2805,36 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     potentialProfit: 0
                   } : null);
 
+                  const isItemHighlighted = Boolean(highlightedItemId && highlightedItemId === item.id);
+
                   return (
-                    <tr key={`edit-inv-item-${item.id || index}-${index}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr 
+                      id={`invoice-item-row-${item.id}`}
+                      key={`edit-inv-item-${item.id || index}-${index}`} 
+                      className={`transition-all duration-500 ${
+                        isItemHighlighted
+                          ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                          : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors'
+                      }`}
+                    >
                       {/* Row Index (ردیف) */}
                       <td className="py-3.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400">
-                        {toPersianDigits(index + 1)}
+                        {isItemHighlighted ? (
+                          <RowUpdateIcon title="ردیف کالا با موفقیت ویرایش شد" className="mx-auto" />
+                        ) : (
+                          toPersianDigits(index + 1)
+                        )}
                       </td>
 
                       {/* Product Name & Details */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white text-sm">
-                          {item.productName}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">
+                            {item.productName}
+                          </span>
+                          {isItemHighlighted && (
+                            <RowUpdateBadge label="ردیف ویرایش شد" />
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[10px] border ${
@@ -5309,8 +5348,10 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       }));
 
                       // 3. Product changes are buffered locally in items and pending state, and will commit to warehouse on final invoice save
+                      const updatedItemId = editingItem.id;
                       onShowAlert?.(`تغییرات ردیف کالا «${newName || editingItem.productName}» در این فاکتور اعمال شد. (ذخیره قطعی در انبار با ثبت نهایی فاکتور انجام می‌شود).`, 'success', 'ویرایش ردیف فاکتور');
                       setEditingItem(null);
+                      triggerItemHighlight(updatedItemId);
                     }
                   }}
                   className={`px-6 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black shadow-md transition-all cursor-pointer flex items-center gap-2`}

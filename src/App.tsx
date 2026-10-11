@@ -930,6 +930,7 @@ export default function App() {
   const [activeViewingInvoice, setActiveViewingInvoice] = useState<Invoice | null>(null);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [invoiceOriginTab, setInvoiceOriginTab] = useState<AppTab>('invoices');
+  const [recentlyUpdatedInvoiceId, setRecentlyUpdatedInvoiceId] = useState<string | null>(null);
 
   // Cleanly scroll to top when tab or viewing/editing invoice changes
   useEffect(() => {
@@ -1899,6 +1900,10 @@ export default function App() {
     setProducts(updatedProducts);
     setActiveViewingInvoice(savedInvoice);
     setEditingInvoice(null);
+    setRecentlyUpdatedInvoiceId(savedInvoice.id);
+    setTimeout(() => {
+      setRecentlyUpdatedInvoiceId(prev => (prev === savedInvoice.id ? null : prev));
+    }, 5500);
     setCurrentTab('view-invoice');
 
     // Trigger Activity Log Notification
@@ -3022,6 +3027,7 @@ export default function App() {
                 onDeleteInvoice={handleDeleteInvoice}
                 onNewInvoice={handleStartNewInvoice}
                 onOpenProfitAnalysis={(inv) => setProfitAnalysisInvoice(inv)}
+                highlightedInvoiceId={recentlyUpdatedInvoiceId}
               />
             </motion.div>
           )}

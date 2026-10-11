@@ -5,6 +5,7 @@ import { CustomValidationMessage } from './CustomValidationMessage';
 import { Pagination } from './Pagination';
 import { SmartPriceInput } from './SmartPriceInput';
 import { SortableTableHeader } from './SortableTableHeader';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 import { 
   formatPrice, 
   toPersianDigits, 
@@ -77,6 +78,21 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
   const badges = useMemo(() => getThemeBadges(settings.themeColor), [settings.themeColor]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'to_supplier' | 'from_customer' | 'refunded' | 'pending'>('all');
+  const [highlightedReturnId, setHighlightedReturnId] = useState<string | null>(null);
+
+  const triggerReturnHighlight = (returnId: string) => {
+    if (!returnId) return;
+    setHighlightedReturnId(returnId);
+    setTimeout(() => {
+      const el = document.getElementById(`return-row-${returnId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 120);
+    setTimeout(() => {
+      setHighlightedReturnId(prev => (prev === returnId ? null : prev));
+    }, 4500);
+  };
   type ReturnSortField = 'date' | 'item' | 'customer' | 'amount' | 'status';
   const [sortField, setSortField] = useState<ReturnSortField>('date');
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
@@ -390,6 +406,7 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
 
     if (editingReturnId && onUpdateReturn) {
       onUpdateReturn(editingReturnId, fields, updateStock);
+      triggerReturnHighlight(editingReturnId);
     } else {
       onAddReturn(fields, updateStock);
     }
@@ -704,13 +721,24 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                   const qtyFormatted = [cartonsText, piecesText].filter(Boolean).join(' و ') || '۰ عدد';
                   const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
 
+                  const isReturnHighlighted = Boolean(highlightedReturnId && highlightedReturnId === item.id);
+
                   return (
                     <tr 
+                      id={`return-row-${item.id}`}
                       key={`ret-row-${item.type}-${item.id || idx}-${idx}`} 
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                      className={`transition-all duration-500 ${
+                        isReturnHighlighted
+                          ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                          : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors'
+                      }`}
                     >
                       <td className="p-3.5 text-center font-mono text-slate-400 font-bold">
-                        {toPersianDigits(rowNumber)}
+                        {isReturnHighlighted ? (
+                          <RowUpdateIcon title="سند مرجوعی با موفقیت ویرایش شد" className="mx-auto" />
+                        ) : (
+                          toPersianDigits(rowNumber)
+                        )}
                       </td>
 
                       <td className="p-3.5 whitespace-nowrap">
@@ -739,9 +767,12 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
                       </td>
 
                       <td className="p-3.5 font-black text-slate-900 dark:text-white">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Boxes className="w-4 h-4 text-teal-500 shrink-0" />
                           <span>{item.productName}</span>
+                          {isReturnHighlighted && (
+                            <RowUpdateBadge label="مرجوعی ویرایش شد" />
+                          )}
                         </div>
                       </td>
 

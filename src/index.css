@@ -226,8 +226,14 @@ select {
 
 input:focus,
 textarea:focus,
-select:focus {
-  outline: none;
+select:focus,
+button:focus,
+button:focus-visible,
+button:active,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+[role="button"]:active {
+  outline: none !important;
   box-shadow: none !important;
 }
 
@@ -315,6 +321,69 @@ button:not([class*="rounded-full"]):not([class*="p-"]) {
 
 .animate-peek-pulse {
   animation: peekPulse 1.2s infinite ease-in-out;
+}
+
+/* Row Updated Visual Feedback Animation */
+@keyframes rowHighlightSuccess {
+  0% {
+    background-color: rgba(16, 185, 129, 0.28) !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.75), 0 4px 20px -2px rgba(16, 185, 129, 0.25) !important;
+  }
+  25% {
+    background-color: rgba(16, 185, 129, 0.22) !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.65), 0 2px 12px -2px rgba(16, 185, 129, 0.2) !important;
+  }
+  60% {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.4) !important;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.row-updated-highlight {
+  animation: rowHighlightSuccess 4.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes badgePopIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge-updated-pop {
+  animation: badgePopIn 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes checkmarkStrokeDraw {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 0;
+  animation: checkmarkStrokeDraw 0.4s ease-out forwards;
 }
 
 @media print {

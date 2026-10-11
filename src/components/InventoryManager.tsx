@@ -15,6 +15,7 @@ import { CategoryManagerModal } from './CategoryManagerModal';
 import { InventoryAuditReport } from './InventoryAuditReport';
 import { ProductFormModal } from './ProductFormModal';
 import { SortableTableHeader } from './SortableTableHeader';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 import { 
   Package, 
   Plus, 
@@ -279,11 +280,13 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
   const handleConfirmZeroStockAction = () => {
     if (!zeroConfirmProduct) return;
+    const prodId = zeroConfirmProduct.id;
     onUpdateProduct({
       ...zeroConfirmProduct,
       stockPieces: 0
     });
     setZeroConfirmProduct(null);
+    triggerRowSuccessHighlight(prodId);
     if (editingProduct && editingProduct.id === zeroConfirmProduct.id) {
       setIsModalOpen(false);
     }
@@ -359,12 +362,23 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     notes: '',
   });
 
-  // Scroll to top when modal opens or category/view changes
-  React.useEffect(() => {
-    if (isModalOpen) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [isModalOpen]);
+  // Track recently updated product for smooth highlight and animated badge without scrolling away
+  const [highlightedRowId, setHighlightedRowId] = useState<string | null>(null);
+  const lastScrollYRef = React.useRef<number>(0);
+
+  const triggerRowSuccessHighlight = (prodId: string) => {
+    if (!prodId) return;
+    setHighlightedRowId(prodId);
+    setTimeout(() => {
+      const el = document.getElementById(`inv-prod-row-${prodId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 120);
+    setTimeout(() => {
+      setHighlightedRowId(prev => (prev === prodId ? null : prev));
+    }, 4500);
+  };
 
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
@@ -389,7 +403,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         notes: '',
       });
       setIsModalOpen(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     if (runWithSecurityCheck) {
@@ -404,9 +417,10 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     }
   };
 
-  // Open modal for editing
+  // Open modal for editing (strictly preserves scroll position)
   const handleOpenEdit = (prod: Product) => {
     const execute = () => {
+      lastScrollYRef.current = window.scrollY;
       setEditingProduct(prod);
       setFormErrors({});
       const ppc = prod.piecesPerCarton || 1;
@@ -566,6 +580,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     } else {
       onUpdateProduct(updatedProduct);
     }
+    triggerRowSuccessHighlight(restockingProduct.id);
     setRestockingProduct(null);
   };
 
@@ -1004,16 +1019,31 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 const unitProfit = prod.sellingPrice - prod.purchasePrice;
 
                 return (
-                  <tr key={`inv-prod-${prod.id || idx}-${idx}`} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    id={`inv-prod-row-${prod.id}`}
+                    key={`inv-prod-${prod.id || idx}-${idx}`}
+                    className={`transition-all duration-500 ${
+                      highlightedRowId === prod.id
+                        ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                        : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors'
+                    }`}
+                  >
                     {/* Index */}
                     <td className="py-3.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-                      {toPersianDigits(startIndex + idx + 1)}
+                      {highlightedRowId === prod.id ? (
+                        <RowUpdateIcon title="تغییرات کالا با موفقیت ذخیره شد" className="mx-auto" />
+                      ) : (
+                        toPersianDigits(startIndex + idx + 1)
+                      )}
                     </td>
 
                     {/* Name, Category & Notes */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-black text-black dark:text-white text-xs sm:text-sm">{prod.name}</span>
+                        {highlightedRowId === prod.id && (
+                          <RowUpdateBadge label="تغییرات کالا ذخیره شد" />
+                        )}
                         {/* Category badge inside product description column */}
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md font-bold text-[11px] border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
                           <Tag className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" />
@@ -1208,9 +1238,11 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           if (editingProduct) {
             onUpdateProduct(savedProduct);
             onShowAlert?.(`کالای «${savedProduct.name}» با موفقیت بروزرسانی شد.`, 'success', 'ویرایش کالا');
+            triggerRowSuccessHighlight(savedProduct.id);
           } else {
             onAddProduct(savedProduct);
             onShowAlert?.(`کالای «${savedProduct.name}» به انبار اضافه شد.`, 'success', 'ثبت کالا');
+            triggerRowSuccessHighlight(savedProduct.id);
           }
           setIsModalOpen(false);
         }}

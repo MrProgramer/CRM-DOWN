@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Customer, Invoice, CustomerPayment, StoreSettings, ProductReturn } from '../types';
 import { Pagination } from './Pagination';
+import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
 import { 
   formatPrice, 
   toPersianDigits, 
@@ -89,6 +90,7 @@ interface CustomerStatementViewProps {
   onUpdateCustomer: (customer: Customer) => void;
   onShowAlert?: (message: string, type?: 'success' | 'warning' | 'error' | 'info', title?: string) => void;
   renderCustomerTypeIcon: (iconName: string, className?: string) => React.ReactNode;
+  highlightedPaymentId?: string | null;
 }
 
 export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
@@ -100,6 +102,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
   settings,
   isDarkMode = false,
   theme,
+  highlightedPaymentId = null,
   onBack,
   onNewInvoice,
   onOpenPaymentModal,
@@ -1347,16 +1350,34 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
                 ) : (
                   paginatedLedgerRows.map((r, idx) => {
                     const absoluteIndex = ledgerStartIndex + idx + 1;
+                    const isUpdatedRow = Boolean(highlightedPaymentId && (r.id === highlightedPaymentId || r.rawObj?.id === highlightedPaymentId));
 
                     return (
-                      <tr key={`stmt-row-${r.type}-${r.id}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-3.5 text-center text-slate-400 font-mono">{toPersianDigits(absoluteIndex)}</td>
+                      <tr 
+                        id={`ledger-row-${r.id}`}
+                        key={`stmt-row-${r.type}-${r.id}-${idx}`} 
+                        className={`transition-all duration-500 ${
+                          isUpdatedRow
+                            ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                            : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors'
+                        }`}
+                      >
+                        <td className="p-3.5 text-center text-slate-400 font-mono">
+                          {isUpdatedRow ? (
+                            <RowUpdateIcon title="سند مالی با موفقیت بروزرسانی شد" className="mx-auto" />
+                          ) : (
+                            toPersianDigits(absoluteIndex)
+                          )}
+                        </td>
                         <td className="p-3.5 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
                           {toPersianDigits(r.date)} {r.time ? ` - ${toPersianDigits(r.time)}` : ''}
                         </td>
                         <td className="p-3.5 max-w-[260px] sm:max-w-xs">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
+                              {isUpdatedRow && (
+                                <RowUpdateBadge label="سند مالی اصلاح شد" />
+                              )}
                               {r.type === 'invoice_credit' ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 text-[10px] font-black shrink-0 whitespace-nowrap">
                                   <FileText className="w-3 h-3 text-amber-600" />
@@ -1762,17 +1783,38 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
                     const methodLabel = p.paymentMethod === 'card' ? 'کارت به کارت' : p.paymentMethod === 'bank_transfer' ? 'واریز بانکی' : p.paymentMethod === 'cash' ? 'نقدی' : 'چک صیادی';
                     const amt = Number(p.amount) || 0;
 
+                    const isUpdatedPayment = Boolean(highlightedPaymentId && highlightedPaymentId === p.id);
+
                     return (
-                      <tr key={`stmt-pay-${p.id || idx}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-3.5 text-center text-slate-400 font-mono">{toPersianDigits(idx + 1)}</td>
+                      <tr 
+                        id={`payment-row-${p.id}`}
+                        key={`stmt-pay-${p.id || idx}-${idx}`} 
+                        className={`transition-all duration-500 ${
+                          isUpdatedPayment
+                            ? 'row-updated-highlight bg-emerald-500/15 dark:bg-emerald-500/20 ring-2 ring-emerald-500 shadow-md'
+                            : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors'
+                        }`}
+                      >
+                        <td className="p-3.5 text-center text-slate-400 font-mono">
+                          {isUpdatedPayment ? (
+                            <RowUpdateIcon title="سند پرداخت با موفقیت ویرایش شد" className="mx-auto" />
+                          ) : (
+                            toPersianDigits(idx + 1)
+                          )}
+                        </td>
                         <td className="p-3.5 text-slate-600 dark:text-slate-400 font-medium">
                           {toPersianDigits(p.date)} {p.time ? `- ${toPersianDigits(p.time)}` : ''}
                         </td>
                         <td className="p-3.5">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold text-[11px]">
-                            <CreditCard className="w-3 h-3 text-slate-400" />
-                            <span>{methodLabel}</span>
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold text-[11px]">
+                              <CreditCard className="w-3 h-3 text-slate-400" />
+                              <span>{methodLabel}</span>
+                            </span>
+                            {isUpdatedPayment && (
+                              <RowUpdateBadge label="سند ویرایش شد" />
+                            )}
+                          </div>
                         </td>
                         <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">
                           {p.referenceNumber ? toPersianDigits(p.referenceNumber) : '-'}

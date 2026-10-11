@@ -101,7 +101,61 @@ export interface InvoiceTemplateProps {
   totalInvoiceProfit?: number;
   totalInvoiceCost?: number;
   totalInvoiceProfitMargin?: number;
+  useGradient?: boolean;
 }
+
+/* ========================================================================= */
+/* PALETTE STYLES HELPER: ADAPTIVE SOLID OR GRADIENT ACCORDING TO APP THEME  */
+/* ========================================================================= */
+export const getInvoicePaletteStyles = (
+  theme: ThemeStyles,
+  isPurchase: boolean,
+  isDarkCanvas: boolean,
+  useGradient: boolean = false
+) => {
+  const primaryHex = theme?.hex || (isPurchase ? '#5c67f2' : '#0d9488');
+  const secondaryHex = theme?.secondaryHex || primaryHex;
+  const isGradientEnabled = !!useGradient && (!!theme?.isGradient || !!theme?.secondaryHex);
+
+  const primaryGradient = isGradientEnabled
+    ? `linear-gradient(135deg, ${primaryHex}, ${secondaryHex})`
+    : primaryHex;
+
+  const softGradient = isGradientEnabled
+    ? `linear-gradient(135deg, ${primaryHex}1A, ${secondaryHex}12)`
+    : (isDarkCanvas ? `${primaryHex}18` : `${primaryHex}0A`);
+
+  const highlightTotalBoxStyle = {
+    background: primaryGradient,
+    borderColor: primaryHex,
+    color: '#ffffff',
+  };
+
+  const partyCardStyle = {
+    background: isDarkCanvas
+      ? (isGradientEnabled ? `linear-gradient(135deg, ${primaryHex}20, ${secondaryHex}15)` : `${primaryHex}18`)
+      : (isGradientEnabled ? `linear-gradient(135deg, ${primaryHex}12, ${secondaryHex}08)` : `${primaryHex}0A`),
+    borderColor: `${primaryHex}35`,
+  };
+
+  const bottomFinanceCardStyle = {
+    background: isDarkCanvas
+      ? (isGradientEnabled ? `linear-gradient(135deg, ${primaryHex}18, ${secondaryHex}12)` : `${primaryHex}14`)
+      : (isGradientEnabled ? `linear-gradient(135deg, ${primaryHex}0E, ${secondaryHex}06)` : `${primaryHex}08`),
+    borderColor: `${primaryHex}30`,
+  };
+
+  return {
+    primaryHex,
+    secondaryHex,
+    isGradientEnabled,
+    primaryGradient,
+    softGradient,
+    highlightTotalBoxStyle,
+    partyCardStyle,
+    bottomFinanceCardStyle,
+  };
+};
 
 /* ========================================================================= */
 /* HELPER: RENDER ITEM COVER PRICE (قیمت روی جلد) UNDER UNIT PRICE           */
@@ -829,7 +883,8 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
   } = props;
 
   // Primary palette styling matching the active theme color palette:
-  const primaryHex = theme?.hex || (isPurchase ? '#5c67f2' : '#0d9488');
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+  const { primaryHex, primaryGradient, highlightTotalBoxStyle, partyCardStyle, bottomFinanceCardStyle } = palette;
 
   const additionExpenses = invoice.expenses?.filter(e => e.action === 'add' && e.amount > 0) || [];
   const totalAdditionExpenses = additionExpenses.reduce((s, e) => s + e.amount, 0);
@@ -838,22 +893,6 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
   const infoCardBg = isDarkCanvas 
     ? 'bg-slate-800/60 border-slate-700/80' 
     : 'bg-[#f8fafc] border-slate-200/90';
-
-  const partyCardStyle = {
-    backgroundColor: isDarkCanvas ? `${primaryHex}18` : `${primaryHex}0A`,
-    borderColor: `${primaryHex}35`
-  };
-
-  const bottomFinanceCardStyle = {
-    backgroundColor: isDarkCanvas ? `${primaryHex}14` : `${primaryHex}08`,
-    borderColor: `${primaryHex}30`
-  };
-
-  const highlightTotalBoxStyle = {
-    backgroundColor: primaryHex,
-    borderColor: primaryHex,
-    color: '#ffffff'
-  };
 
   const brandTitle = settings.brandName || 'بازرگانی';
   const brandSubtitle = settings.subtitle || (isPurchase ? 'همراه مطمئن کسب و کار شما' : 'اعتماد شما سرمایه ماست');
@@ -867,7 +906,7 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
         <div className="flex items-center gap-3">
           <div 
             className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-xs"
-            style={{ backgroundColor: primaryHex }}
+            style={{ background: primaryGradient }}
           >
             <Boxes className="w-7 h-7 stroke-[2.2]" />
           </div>
@@ -885,7 +924,7 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
         <div className="flex flex-col items-start sm:items-end">
           <div 
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-black text-sm shadow-xs"
-            style={{ backgroundColor: primaryHex }}
+            style={{ background: primaryGradient }}
           >
             {isPurchase ? (
               <Truck className="w-4 h-4 stroke-[2.2]" />
@@ -911,7 +950,7 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
             <div className="flex items-center gap-2">
               <div 
                 className="w-7 h-7 rounded-xl text-white flex items-center justify-center shrink-0"
-                style={{ backgroundColor: primaryHex }}
+                style={{ background: primaryGradient }}
               >
                 {isPurchase ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
@@ -942,7 +981,7 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
           <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200/70 dark:border-slate-700/70">
             <div 
               className="w-7 h-7 rounded-xl text-white flex items-center justify-center shrink-0"
-              style={{ backgroundColor: primaryHex }}
+              style={{ background: primaryGradient }}
             >
               <FileText className="w-4 h-4" />
             </div>
@@ -1361,12 +1400,14 @@ export const GraphicFintechTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     includeProfitInExport,
   } = props;
 
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+
   return (
     <div className={`space-y-5 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Top Banner Ribbon */}
       <div 
         className="p-5 rounded-2xl text-white shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-        style={{ backgroundColor: theme.hex }}
+        style={{ background: palette.primaryGradient }}
       >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -1524,15 +1565,20 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
     includeProfitInExport,
   } = props;
 
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+
   return (
     <div className={`space-y-6 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Formal Header Stripe */}
-      <div className="border-b-2 pb-4 flex items-center justify-between" style={{ borderColor: theme.hex }}>
+      <div className="border-b-2 pb-4 flex items-center justify-between" style={{ borderColor: palette.primaryHex }}>
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">{settings.brandName || 'سازمان بازرگانی'}</h1>
           <p className="text-xs text-slate-500">{settings.subtitle || 'سیستم رسمی حسابداری و مدیریت مالی'}</p>
         </div>
-        <div className="text-center p-2 rounded border-2 border-slate-900 dark:border-slate-100 font-black text-xs">
+        <div 
+          className="text-center p-2 rounded border font-black text-xs text-white shadow-xs"
+          style={{ background: palette.primaryGradient, borderColor: palette.primaryHex }}
+        >
           {isPurchase ? 'سند رسمی ورود کالا' : 'صورت‌حساب فروش رسمی'}
         </div>
       </div>
@@ -1662,6 +1708,8 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     includeProfitInExport,
   } = props;
 
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+
   return (
     <div className={`space-y-5 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Header */}
@@ -1672,7 +1720,7 @@ export const GraphicArtisanTemplate: React.FC<InvoiceTemplateProps> = (props) =>
         </div>
         <div 
           className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs"
-          style={{ backgroundColor: theme.hex }}
+          style={{ background: palette.primaryGradient }}
         >
           {isPurchase ? 'فاکتور ورود کالا' : 'صورت‌حساب فروش'}
         </div>
@@ -1793,6 +1841,7 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
   const {
     invoice,
     settings,
+    theme,
     isPurchase,
     isSecretMode,
     isPresentationModeActive,
@@ -1804,6 +1853,8 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
     shouldShowProfitUnderItems,
     includeProfitInExport,
   } = props;
+
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
 
   return (
     <div className={`space-y-4 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
@@ -1878,7 +1929,10 @@ export const GraphicCompactTemplate: React.FC<InvoiceTemplateProps> = (props) =>
           </div>
           {renderExpensesSummary(invoice)}
 
-          <div className={`p-3 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+          <div 
+            className={`p-3 rounded-lg border transition-all ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+            style={palette.isGradientEnabled ? palette.highlightTotalBoxStyle : undefined}
+          >
             <div className="flex items-center justify-between font-bold">
               <span>مبلغ خالص قابل دریافت:</span>
               <span className="text-lg font-black">{formatPrice(netPayableAmount)}</span>
@@ -1929,14 +1983,16 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
     includeProfitInExport,
   } = props;
 
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+
   return (
     <div className={`space-y-6 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Luxury Commercial Top Line */}
-      <div className="flex items-center justify-between pb-4 border-b-2" style={{ borderColor: theme.hex }}>
+      <div className="flex items-center justify-between pb-4 border-b-2" style={{ borderColor: palette.primaryHex }}>
         <div className="flex items-center gap-3">
           <div 
             className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-base shadow-xs"
-            style={{ backgroundColor: theme.hex }}
+            style={{ background: palette.primaryGradient }}
           >
             {settings.brandName ? settings.brandName.charAt(0) : 'ب'}
           </div>
@@ -1947,7 +2003,7 @@ export const GraphicCommercialLedgerTemplate: React.FC<InvoiceTemplateProps> = (
         </div>
 
         <div className="text-left text-xs space-y-0.5">
-          <div className="font-bold text-sm" style={{ color: theme.hex }}>
+          <div className="font-bold text-sm" style={{ color: palette.primaryHex }}>
             #{toPersianDigits(invoice.invoiceNumber)}
           </div>
           <div className="text-slate-400">{toPersianDigits(invoice.date)}</div>
@@ -2088,12 +2144,14 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
     includeProfitInExport,
   } = props;
 
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
+
   return (
     <div className={`space-y-6 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Top Graphic Banner */}
       <div 
         className="p-6 rounded-xl text-white shadow-md flex items-center justify-between"
-        style={{ backgroundColor: theme.hex }}
+        style={{ background: palette.primaryGradient }}
       >
         <div className="space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
@@ -2126,7 +2184,7 @@ export const GraphicNeoCommerceTemplate: React.FC<InvoiceTemplateProps> = (props
       {/* Table */}
       <div className={`rounded-2xl border overflow-hidden ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200'}`}>
         <table className="w-full text-right text-xs">
-          <thead style={{ backgroundColor: `${theme.hex}18` }}>
+          <thead style={{ background: palette.softGradient }}>
             <tr>
               <th className="py-3 px-3 text-center w-10">ردیف</th>
               <th className="py-3 px-4">شرح کالا و مشخصات</th>
@@ -2221,6 +2279,7 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
   const {
     invoice,
     settings,
+    theme,
     isPurchase,
     isSecretMode,
     isPresentationModeActive,
@@ -2232,6 +2291,8 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
     shouldShowProfitUnderItems,
     includeProfitInExport,
   } = props;
+
+  const palette = getInvoicePaletteStyles(theme, isPurchase, isDarkCanvas, props.useGradient);
 
   return (
     <div className={`space-y-6 transition-colors ${isDarkCanvas ? 'text-slate-100' : 'text-slate-900'}`}>
@@ -2322,7 +2383,10 @@ export const GraphicHyperMinimalTemplate: React.FC<InvoiceTemplateProps> = (prop
           </div>
           {renderExpensesSummary(invoice)}
 
-          <div className={`p-3.5 rounded-lg border ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+          <div 
+            className={`p-3.5 rounded-lg border transition-all ${isDarkCanvas ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+            style={palette.isGradientEnabled ? palette.highlightTotalBoxStyle : undefined}
+          >
             <div className="flex items-center justify-between font-black text-sm">
               <span>مبلغ خالص قابل دریافت:</span>
               <span className="text-xl font-black">{formatPrice(netPayableAmount)}</span>

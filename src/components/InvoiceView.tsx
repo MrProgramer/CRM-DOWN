@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Invoice, StoreSettings, Product, ProductReturn, Customer, CustomerPayment } from '../types';
 import { 
   formatPrice, 
@@ -154,6 +154,23 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   const theme = themes[settings.themeColor] || themes.teal;
   const badges = getThemeBadges(settings.themeColor);
   const isPurchase = invoice.type === 'purchase';
+
+  // Check if active app theme is a gradient palette
+  const isAppThemeGradient = useMemo(() => {
+    return !!(theme?.isGradient || theme?.secondaryHex || settings.themeColor?.startsWith('gradient-') || settings.themeColor?.startsWith('vip-'));
+  }, [theme, settings.themeColor]);
+
+  // Gradient styling active state - defaults to true when app theme is gradient
+  const [useGradientStyling, setUseGradientStyling] = useState<boolean>(isAppThemeGradient);
+
+  // Sync state whenever settings.themeColor changes
+  useEffect(() => {
+    if (isAppThemeGradient) {
+      setUseGradientStyling(true);
+    } else {
+      setUseGradientStyling(false);
+    }
+  }, [isAppThemeGradient, settings.themeColor]);
 
   // Determine if the canvas should currently render in dark style on screen
   const isDarkCanvas = useMemo(() => {
@@ -769,6 +786,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
     totalInvoiceProfit,
     totalInvoiceCost,
     totalInvoiceProfitMargin,
+    useGradient: useGradientStyling,
   };
 
   return (
@@ -945,6 +963,37 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 className="w-3.5 h-3.5 rounded cursor-pointer"
               />
               <span>در چاپ و عکس</span>
+            </label>
+          )}
+
+          {/* Gradient Styling Checkbox Toggle */}
+          {isAppThemeGradient && (
+            <label
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer select-none transition-all ${
+                useGradientStyling
+                  ? `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor} shadow-2xs`
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+              }`}
+              title="اعمال رنگ‌آمیزی گرادینتی پالت رنگی برنامه روی هدر، جدول و المان‌های پیش‌نمایش فاکتور"
+            >
+              <input
+                type="checkbox"
+                checked={useGradientStyling}
+                onChange={(e) => setUseGradientStyling(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+              />
+              <div className="flex items-center gap-1.5">
+                <div 
+                  className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${theme.hex}, ${theme.secondaryHex || theme.hex})` }}
+                />
+                <span>رنگ‌آمیزی گرادینتی</span>
+                {useGradientStyling && (
+                  <span className="text-[10px] px-1 py-0.2 rounded bg-white/70 dark:bg-slate-900/70 font-mono font-bold">
+                    فعال
+                  </span>
+                )}
+              </div>
             </label>
           )}
 
@@ -1623,6 +1672,28 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                     : 'مدل ۸: هایپر-مینیمال شرکتی'}
                 </span>
               </div>
+
+              {/* Gradient Styling Toggle Option in Export / Print Modal */}
+              {isAppThemeGradient && (
+                <label className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs cursor-pointer select-none">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                      style={{ background: `linear-gradient(135deg, ${theme.hex}, ${theme.secondaryHex || theme.hex})` }}
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">رنگ‌آمیزی گرادینتی فاکتور در خروجی و چاپ</span>
+                      <span className="text-[10px] text-slate-400">با برداشتن تیک، المان‌های فاکتور با رنگ تخت تک‌رنگ چاپ می‌شوند</span>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={useGradientStyling}
+                    onChange={(e) => setUseGradientStyling(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                  />
+                </label>
+              )}
 
               {/* Options */}
               <div className="space-y-2">

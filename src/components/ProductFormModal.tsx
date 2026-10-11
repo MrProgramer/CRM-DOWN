@@ -179,13 +179,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   }, [isOpen, editingProduct]);
 
-  // Lock body scroll when modal is open to prevent page scrolling behind modal
+  // Lock body scroll when modal is open to prevent page scrolling behind modal, while strictly preserving scroll position
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY;
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = prevOverflow;
+        window.scrollTo({ top: scrollY, behavior: 'instant' });
       };
     }
   }, [isOpen]);
