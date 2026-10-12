@@ -205,6 +205,29 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedInvoices = sortedInvoices.slice(startIndex, startIndex + itemsPerPage);
 
+  // Auto-scroll and paginate to highlighted invoice row ONLY if not already in viewport
+  React.useEffect(() => {
+    if (!highlightedInvoiceId) return;
+    const targetIdx = sortedInvoices.findIndex(i => i.id === highlightedInvoiceId);
+    if (targetIdx >= 0) {
+      const targetPage = Math.floor(targetIdx / itemsPerPage) + 1;
+      if (currentPage !== targetPage) {
+        setCurrentPage(targetPage);
+      }
+      setTimeout(() => {
+        const el = document.getElementById(`invoice-row-${highlightedInvoiceId}`);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+          const isVisible = rect.top >= 70 && rect.bottom <= (windowHeight - 30);
+          if (!isVisible) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      }, 300);
+    }
+  }, [highlightedInvoiceId, sortedInvoices, itemsPerPage]);
+
   return (
     <div className="w-full space-y-4 pb-20 no-print transition-colors dir-rtl">
       {/* Executive Header Bar - Flat Commercial */}

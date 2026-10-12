@@ -1903,8 +1903,8 @@ export default function App() {
     setRecentlyUpdatedInvoiceId(savedInvoice.id);
     setTimeout(() => {
       setRecentlyUpdatedInvoiceId(prev => (prev === savedInvoice.id ? null : prev));
-    }, 5500);
-    setCurrentTab('view-invoice');
+    }, 6500);
+    setCurrentTab('invoices');
 
     // Trigger Activity Log Notification
     if (savedInvoice.isDraft) {
@@ -2946,7 +2946,9 @@ export default function App() {
                   setCurrentTab(tab);
                 }}
                 onViewInvoice={handleViewInvoice}
+                onEditInvoice={handleStartEditInvoice}
                 onNewInvoice={handleStartNewInvoice}
+                highlightedInvoiceId={recentlyUpdatedInvoiceId}
               />
             </motion.div>
           )}

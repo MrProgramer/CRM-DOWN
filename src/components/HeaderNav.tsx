@@ -315,29 +315,41 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
           {/* Quick Primary Action: New Invoice CTA Button */}
           <div className="pt-0.5">
-            <button
-              id="sidebar-new-invoice-btn"
-              onClick={() => onTabChange('new-invoice')}
-              title={isSidebarCollapsed ? 'صدور فاکتور جدید' : undefined}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-center gap-2 py-2 px-3'
-              } rounded-lg ${theme.primary} ${theme.primaryHover} text-white font-bold text-xs transition-colors cursor-pointer select-none shadow-xs`}
-            >
-              <PlusCircle className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && (
+            {isSidebarCollapsed ? (
+              <div className="relative group flex justify-center">
+                <button
+                  id="sidebar-new-invoice-btn"
+                  onClick={() => onTabChange('new-invoice')}
+                  className={`w-11 h-11 flex items-center justify-center rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-bold transition-all cursor-pointer select-none shadow-sm hover:scale-105 active:scale-95`}
+                >
+                  <PlusCircle className="w-5 h-5 shrink-0" />
+                </button>
+                {/* Floating RTL Tooltip */}
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center px-3 py-1.5 rounded-xl bg-slate-950/95 dark:bg-slate-800 text-white text-xs font-bold shadow-xl border border-slate-700/80 pointer-events-none z-50 whitespace-nowrap backdrop-blur-md">
+                  <span>صدور فاکتور جدید</span>
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-950/95 dark:bg-slate-800 rotate-45 border-r border-t border-slate-700/80" />
+                </div>
+              </div>
+            ) : (
+              <button
+                id="sidebar-new-invoice-btn"
+                onClick={() => onTabChange('new-invoice')}
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg ${theme.primary} ${theme.primaryHover} text-white font-bold text-xs transition-colors cursor-pointer select-none shadow-xs`}
+              >
+                <PlusCircle className="w-4 h-4 shrink-0" />
                 <span className="truncate whitespace-nowrap tracking-tight font-black">صدور فاکتور جدید</span>
-              )}
-            </button>
+              </button>
+            )}
           </div>
 
           {/* Categorized Professional Navigation Menu */}
-          <nav className="space-y-2.5 overflow-y-auto max-h-[calc(100vh-170px)] pr-0.5 pl-0.5 custom-sidebar-scroll">
+          <nav className="space-y-2 overflow-y-auto max-h-[calc(100vh-170px)] pr-0.5 pl-0.5 custom-sidebar-scroll">
             {navSections.map((section, sIdx) => {
               const visibleItems = section.items.filter(it => !(it.hideInSecretMode && isSecretMode));
               if (visibleItems.length === 0) return null;
 
               return (
-                <div key={`nav-sec-${section.id}-${sIdx}`} className="space-y-0.5">
+                <div key={`nav-sec-${section.id}-${sIdx}`} className="space-y-1">
                   {!isSidebarCollapsed ? (
                     <div className="px-2 py-1 flex items-center justify-between">
                       <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 select-none">
@@ -345,38 +357,79 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                       </span>
                     </div>
                   ) : (
-                    <div className="w-6 h-px bg-slate-200 dark:bg-slate-800 mx-auto my-1" />
+                    <div className="w-8 h-px bg-slate-200/80 dark:border-slate-800 mx-auto my-1.5" />
                   )}
 
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {visibleItems.map((item, iIdx) => {
                       const Icon = item.icon;
                       const isActive = currentTab === item.id;
+
+                      if (isSidebarCollapsed) {
+                        return (
+                          <div key={`sidebar-tab-col-${item.id}-${iIdx}`} className="relative group flex justify-center py-0.5">
+                            <button
+                              id={`sidebar-tab-${item.id}`}
+                              onClick={() => onTabChange(item.id)}
+                              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer relative ${
+                                isActive
+                                  ? `${theme.primaryLight} ${theme.primaryText} ring-1.5 ${theme.borderColor} shadow-xs font-black`
+                                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                              }`}
+                            >
+                              <Icon className={`w-5 h-5 shrink-0 transition-colors ${
+                                isActive ? (theme.activeIcon || 'text-current') : 'text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'
+                              }`} />
+
+                              {/* Active indicator dot */}
+                              {isActive && (
+                                <span 
+                                  className="w-1.5 h-1.5 rounded-full absolute -right-1 top-1/2 -translate-y-1/2 ring-2 ring-white dark:ring-[#090d16]" 
+                                  style={{ backgroundColor: theme.hex }}
+                                />
+                              )}
+
+                              {/* Badge notification counter */}
+                              {item.count !== null && item.count > 0 && (
+                                <span className="absolute -top-1 -left-1 px-1 min-w-[16px] h-4 rounded-full bg-rose-500 text-white text-[9px] font-mono font-black flex items-center justify-center ring-2 ring-white dark:ring-[#090d16] shadow-xs">
+                                  {item.count > 99 ? '۹۹+' : toPersianDigits(item.count)}
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Floating RTL Tooltip on Hover */}
+                            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/95 dark:bg-slate-800 text-white text-xs font-bold shadow-xl border border-slate-700/80 pointer-events-none z-50 whitespace-nowrap backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+                              <span>{item.label}</span>
+                              {item.count !== null && (
+                                <span className={`px-1.5 py-0.2 rounded-md ${theme.badgeBg} ${theme.badgeText} text-[10px] font-mono font-black`}>
+                                  {toPersianDigits(item.count)}
+                                </span>
+                              )}
+                              <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-950/95 dark:bg-slate-800 rotate-45 border-r border-t border-slate-700/80" />
+                            </div>
+                          </div>
+                        );
+                      }
 
                       return (
                         <button
                           key={`sidebar-tab-${item.id}-${iIdx}`}
                           id={`sidebar-tab-${item.id}`}
                           onClick={() => onTabChange(item.id)}
-                          title={isSidebarCollapsed ? `${item.label} (${item.subtitle})` : undefined}
-                          className={`w-full flex items-center ${
-                            isSidebarCollapsed ? 'justify-center py-2 px-1.5' : 'justify-between px-2.5 py-2'
-                          } text-xs font-bold transition-all cursor-pointer text-right group relative ${
+                          className={`w-full flex items-center justify-between px-2.5 py-2 text-xs font-bold transition-all cursor-pointer text-right group relative ${
                             isActive
                               ? `${theme.activeTab} rounded-r-none rounded-l-xl font-black shadow-xs`
                               : 'text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl'
                           }`}
                         >
-                          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0`}>
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <Icon className={`w-4 h-4 shrink-0 transition-colors ${
                               isActive ? (theme.activeIcon || 'text-slate-900 dark:text-white') : 'text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'
                             }`} />
-                            {!isSidebarCollapsed && (
-                              <span className="truncate whitespace-nowrap tracking-tight font-bold text-xs">{item.label}</span>
-                            )}
+                            <span className="truncate whitespace-nowrap tracking-tight font-bold text-xs">{item.label}</span>
                           </div>
 
-                          {!isSidebarCollapsed && item.count !== null && (
+                          {item.count !== null && (
                             <span className={`text-xs font-mono font-black px-2 py-0.5 rounded-lg ${
                               isActive
                                 ? `${theme.badgeBg} ${theme.badgeText}`
@@ -384,13 +437,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                             }`}>
                               {toPersianDigits(item.count)}
                             </span>
-                          )}
-
-                          {isSidebarCollapsed && isActive && (
-                            <span 
-                              className="w-1.5 h-1.5 rounded-full absolute top-2 right-2 ring-1 ring-white/50" 
-                              style={{ backgroundColor: theme.hex }}
-                            />
                           )}
                         </button>
                       );
@@ -405,24 +451,50 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         {/* Footer Actions & Manager Profile Card */}
         <div className="space-y-2 pt-2 border-t border-slate-200/90 dark:border-slate-800">
           {/* User Profile Footer Card */}
-          <div className={`p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-            <div className="flex items-center gap-2 min-w-0">
+          {isSidebarCollapsed ? (
+            <div className="relative group flex justify-center py-1">
               <div 
-                className="w-7 h-7 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0"
-                title={isSidebarCollapsed ? 'مدیریت بازرگانی' : undefined}
+                className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-xs shrink-0 cursor-pointer shadow-2xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                title="مدیریت بازرگانی"
               >
                 م
               </div>
-              {!isSidebarCollapsed && (
+              {/* Floating profile popover */}
+              <div className="absolute right-full mr-3 bottom-0 hidden group-hover:flex flex-col gap-1.5 p-3 rounded-xl bg-slate-950/95 dark:bg-slate-800 text-white text-xs font-bold shadow-xl border border-slate-700/80 pointer-events-auto z-50 whitespace-nowrap backdrop-blur-md min-w-[150px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-black text-xs">مدیریت بازرگانی</span>
+                  {onLockApp && (
+                    <button
+                      onClick={onLockApp}
+                      className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="قفل فوری صفحه"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  {isSecurityLocked ? 'قفل امنیتی فعال' : 'دسترسی مدیریت آزاد'}
+                </span>
+                <div className="absolute bottom-3 -right-1 w-2 h-2 bg-slate-950/95 dark:bg-slate-800 rotate-45 border-r border-t border-slate-700/80" />
+              </div>
+            </div>
+          ) : (
+            <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div 
+                  className="w-7 h-7 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0"
+                  title="مدیریت بازرگانی"
+                >
+                  م
+                </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-bold text-slate-900 dark:text-white truncate whitespace-nowrap">مدیریت بازرگانی</span>
                   <span className="text-[10px] text-slate-400 font-medium truncate whitespace-nowrap">
                     {isSecurityLocked ? 'قفل امنیتی فعال' : 'دسترسی مدیریت'}
                   </span>
                 </div>
-              )}
-            </div>
-            {!isSidebarCollapsed && (
+              </div>
               <div className="flex items-center gap-1 shrink-0">
                 {onLockApp && (
                   <button
@@ -434,8 +506,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   </button>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1036,101 +1108,121 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       </header>
 
       {/* Mobile Drawer Navigation (RTL Slide-in from RIGHT) */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden bg-slate-950/70 backdrop-blur-md">
-          {/* Backdrop click listener */}
-          <div className="absolute inset-0" onClick={() => setIsMobileMenuOpen(false)} />
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop click listener with fade transition */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm cursor-pointer" 
+              onClick={() => setIsMobileMenuOpen(false)} 
+            />
 
-          <div className="fixed top-0 right-0 bottom-0 w-72 sm:w-80 bg-white dark:bg-slate-900 h-full p-4 border-l border-slate-200 dark:border-slate-800 space-y-4 overflow-y-auto shadow-2xl z-10">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-xl ${theme.primary} text-white flex items-center justify-center font-black text-xs shadow-xs`}>
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="font-display font-black text-slate-900 dark:text-white text-sm">منوی بازرگانی</div>
-              </div>
-              
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={onToggleDarkMode}
-                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                  title="تغییر تم"
-                >
-                  {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-                </button>
-                
-                <button 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile New Invoice Quick CTA Button */}
-            <button
-              onClick={() => {
-                onTabChange('new-invoice');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs shadow-xs cursor-pointer transition-all`}
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed top-0 right-0 bottom-0 w-72 sm:w-80 bg-white dark:bg-slate-900 h-full p-4 border-l border-slate-200 dark:border-slate-800 space-y-4 overflow-y-auto shadow-2xl z-10 flex flex-col justify-between"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>صدور فاکتور جدید</span>
-            </button>
-
-            {/* Categorized Navigation Sections */}
-            <div className="space-y-3.5">
-              {navSections.map((section, sIdx) => {
-                const visibleItems = section.items.filter(it => !(it.hideInSecretMode && isSecretMode));
-                if (visibleItems.length === 0) return null;
-
-                return (
-                  <div key={`mob-sec-${section.id}-${sIdx}`} className="space-y-1">
-                    <div className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      {section.title}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-xl ${theme.primary} text-white flex items-center justify-center font-black text-xs shadow-xs`}>
+                      <Sparkles className="w-4 h-4" />
                     </div>
-                    <div className="space-y-1">
-                      {visibleItems.map((item, iIdx) => {
-                        const Icon = item.icon;
-                        const isActive = currentTab === item.id;
-
-                        return (
-                          <button
-                            key={`mob-item-${item.id}-${iIdx}`}
-                            onClick={() => {
-                              onTabChange(item.id);
-                              setIsMobileMenuOpen(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all text-right cursor-pointer ${
-                              isActive
-                                ? `${theme.primary} text-white shadow-xs font-black`
-                                : 'text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <Icon className="w-4 h-4" />
-                              <span>{item.label}</span>
-                            </div>
-                            {item.count !== null && (
-                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                                isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                              }`}>
-                                {toPersianDigits(item.count)}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
+                    <div>
+                      <div className="font-display font-black text-slate-900 dark:text-white text-sm">منوی بازرگانی</div>
+                      <div className="text-[10px] text-slate-400 font-bold">{settings.brandName || 'سامانه مدیریت'}</div>
                     </div>
                   </div>
-                );
-              })}
+                  
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={onToggleDarkMode}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                      title="تغییر تم"
+                    >
+                      {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+                    </button>
+                    
+                    <button 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
-              {/* Mobile Security Mode Toggle Button */}
+                {/* Mobile New Invoice Quick CTA Button */}
+                <button
+                  onClick={() => {
+                    onTabChange('new-invoice');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs shadow-xs cursor-pointer transition-all active:scale-98`}
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>صدور فاکتور جدید</span>
+                </button>
+
+                {/* Categorized Navigation Sections */}
+                <div className="space-y-3.5">
+                  {navSections.map((section, sIdx) => {
+                    const visibleItems = section.items.filter(it => !(it.hideInSecretMode && isSecretMode));
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                      <div key={`mob-sec-${section.id}-${sIdx}`} className="space-y-1">
+                        <div className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          {section.title}
+                        </div>
+                        <div className="space-y-1">
+                          {visibleItems.map((item, iIdx) => {
+                            const Icon = item.icon;
+                            const isActive = currentTab === item.id;
+
+                            return (
+                              <button
+                                key={`mob-item-${item.id}-${iIdx}`}
+                                onClick={() => {
+                                  onTabChange(item.id);
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all text-right cursor-pointer ${
+                                  isActive
+                                    ? `${theme.primary} text-white shadow-xs font-black`
+                                    : 'text-slate-700 dark:text-slate-300 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Icon className="w-4 h-4" />
+                                  <span>{item.label}</span>
+                                </div>
+                                {item.count !== null && (
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
+                                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                  }`}>
+                                    {toPersianDigits(item.count)}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile Security Mode Toggle Button at Bottom */}
               {onToggleSecurityMode && (
-                <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 mt-2">
                   <button
                     onClick={() => {
                       handleAdminModeToggle();
@@ -1154,10 +1246,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   </button>
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Security Auth Modal for Secret Mode Protection */}
       <SecurityAuthModal
