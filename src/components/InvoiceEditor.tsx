@@ -389,7 +389,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
   // Multi-item quick add customizer in picker
   const [activePickingProduct, setActivePickingProduct] = useState<Product | null>(null);
-  const [pickerQuantityMode, setPickerQuantityMode] = useState<'pieces' | 'cartons'>('pieces');
+  const [pickerQuantityMode, setPickerQuantityMode] = useState<'pieces' | 'cartons'>('cartons');
   const [pickCartons, setPickCartons] = useState<number>(1);
   const [pickPacks, setPickPacks] = useState<number>(20);
   const [pickPiecesPerPack, setPickPiecesPerPack] = useState<number>(24);
@@ -746,7 +746,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     }
 
     setActivePickingProduct(prod);
-    setPickerQuantityMode('pieces');
+    setPickerQuantityMode(isUnpackaged ? 'pieces' : 'cartons');
     setPickCartons(defaultCartons);
     setPickPacks(defaultPacks);
     setPickPiecesPerPack(defaultPPP);
@@ -3987,7 +3987,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       type="button"
                       id="btn-quick-add-new-product-picker"
                       onClick={() => setIsNewProductModalOpen(true)}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 cursor-pointer"
+                      className={`px-3.5 py-2 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 cursor-pointer`}
                       title="تعریف کالا و افزودن مستقیم به انبار بدون ترک فاکتور"
                     >
                       <Plus className="w-4 h-4" />
@@ -4259,20 +4259,6 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           ) : (
                             <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold">
                               <button
-                                id="mode-pieces-tab"
-                                type="button"
-                                onClick={() => setPickerQuantityMode('pieces')}
-                                className={`flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                  pickerQuantityMode === 'pieces'
-                                    ? `bg-white dark:bg-slate-900 ${theme.primaryText} shadow-xs font-black`
-                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>فروش بر اساس دانه / عدد (تک فروشی)</span>
-                              </button>
-
-                              <button
                                 id="mode-cartons-tab"
                                 type="button"
                                 onClick={() => setPickerQuantityMode('cartons')}
@@ -4284,6 +4270,20 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                               >
                                 <Boxes className="w-3.5 h-3.5" />
                                 <span>فروش بر اساس کارتن و بسته (عمده)</span>
+                              </button>
+
+                              <button
+                                id="mode-pieces-tab"
+                                type="button"
+                                onClick={() => setPickerQuantityMode('pieces')}
+                                className={`flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                  pickerQuantityMode === 'pieces'
+                                    ? `bg-white dark:bg-slate-900 ${theme.primaryText} shadow-xs font-black`
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>فروش بر اساس دانه / عدد (تک فروشی)</span>
                               </button>
                             </div>
                           )}
@@ -4310,8 +4310,83 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             </div>
                           )}
 
-                          {/* PRIMARY VIEW 1: Direct Pieces / Units Mode */}
-                          {pickerQuantityMode === 'pieces' || isUnpack ? (
+                          {/* PRIMARY VIEW 1: Carton & Packaging Mode (عمده / کارتن - پیش‌فرض) */}
+                          {pickerQuantityMode === 'cartons' && !isUnpack ? (
+                            <div className={`grid grid-cols-2 sm:grid-cols-5 gap-2.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border ${theme.borderColor} shadow-xs`}>
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
+                                  تعداد کارتن
+                                </label>
+                                <input
+                                  id="picker-cartons-input"
+                                  type="number"
+                                  min="0"
+                                  value={pickCartons}
+                                  onChange={(e) => handlePickerCartonsChange(parseInt(e.target.value) || 0)}
+                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-black text-slate-900 dark:text-white text-sm text-center`}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
+                                  تعداد بسته در کارتن
+                                </label>
+                                <input
+                                  id="picker-packs-input"
+                                  type="number"
+                                  min="1"
+                                  value={pickPacks}
+                                  onChange={(e) => handlePickerPacksChange(parseInt(e.target.value) || 1)}
+                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-black text-slate-900 dark:text-white text-sm text-center`}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
+                                  تعداد در هر بسته
+                                </label>
+                                <input
+                                  id="picker-ppp-input"
+                                  type="number"
+                                  min="1"
+                                  value={pickPiecesPerPack}
+                                  onChange={(e) => handlePickerPiecesPerPackChange(parseInt(e.target.value) || 1)}
+                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-bold text-slate-800 dark:text-slate-200 text-sm text-center`}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
+                                  دانه اضافه (تک)
+                                </label>
+                                <input
+                                  id="picker-extra-input"
+                                  type="number"
+                                  min="0"
+                                  value={pickExtraPieces}
+                                  onChange={(e) => handlePickerExtraPiecesChange(parseInt(e.target.value) || 0)}
+                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-bold text-slate-800 dark:text-slate-200 text-sm text-center`}
+                                />
+                              </div>
+
+                              <div>
+                                <label className={`block font-bold ${theme.primaryText} mb-1 text-[11px] flex items-center justify-between`}>
+                                  <span>تعداد کل (دانه/عدد)</span>
+                                  <Sparkles className={`w-3 h-3 ${theme.activeIcon}`} />
+                                </label>
+                                <input
+                                  id="picker-total-pieces-carton-mode-input"
+                                  type="number"
+                                  min="0"
+                                  value={pickTotalPieces}
+                                  onChange={(e) => handlePickerTotalPiecesChange(parseInt(e.target.value) || 0)}
+                                  className={`w-full px-2.5 py-2 rounded-xl ${theme.badgeBg} border-2 ${theme.borderColor} focus:ring-2 ${theme.ring} font-black ${theme.primaryText} text-sm text-center shadow-xs`}
+                                  title="خودکار بر اساس کارتن × ساختار بسته محاسبه می‌شود"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            /* PRIMARY VIEW 2: Direct Pieces / Units Mode (تک فروشی) */
                             <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <label className="block font-black text-slate-900 dark:text-white text-sm">
@@ -4391,86 +4466,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                                   <span className="font-bold text-slate-600 dark:text-slate-400">
                                     وضعیت بسته:
                                   </span>
-                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                  <span className={`font-bold ${theme.primaryText}`}>
                                     فروش مستقیم تکی / بدون کارتن ({toPersianDigits(pickTotalPieces)} {activePickingProduct.unitTitle || 'عدد'})
                                   </span>
                                 </div>
                               )}
-                            </div>
-                          ) : (
-                            /* PRIMARY VIEW 2: Carton & Packaging Mode */
-                            <div className={`grid grid-cols-2 sm:grid-cols-5 gap-2.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border ${theme.borderColor} shadow-xs`}>
-                              <div>
-                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
-                                  تعداد کارتن
-                                </label>
-                                <input
-                                  id="picker-cartons-input"
-                                  type="number"
-                                  min="0"
-                                  value={pickCartons}
-                                  onChange={(e) => handlePickerCartonsChange(parseInt(e.target.value) || 0)}
-                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-black text-slate-900 dark:text-white text-sm text-center`}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
-                                  تعداد بسته در کارتن
-                                </label>
-                                <input
-                                  id="picker-packs-input"
-                                  type="number"
-                                  min="1"
-                                  value={pickPacks}
-                                  onChange={(e) => handlePickerPacksChange(parseInt(e.target.value) || 1)}
-                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-black text-slate-900 dark:text-white text-sm text-center`}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
-                                  تعداد در هر بسته
-                                </label>
-                                <input
-                                  id="picker-ppp-input"
-                                  type="number"
-                                  min="1"
-                                  value={pickPiecesPerPack}
-                                  onChange={(e) => handlePickerPiecesPerPackChange(parseInt(e.target.value) || 1)}
-                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-bold text-slate-800 dark:text-slate-200 text-sm text-center`}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-[11px]">
-                                  دانه اضافه (تک)
-                                </label>
-                                <input
-                                  id="picker-extra-input"
-                                  type="number"
-                                  min="0"
-                                  value={pickExtraPieces}
-                                  onChange={(e) => handlePickerExtraPiecesChange(parseInt(e.target.value) || 0)}
-                                  className={`w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border ${theme.borderColor} focus:ring-2 ${theme.ring} font-bold text-slate-800 dark:text-slate-200 text-sm text-center`}
-                                />
-                              </div>
-
-                              <div>
-                                <label className={`block font-bold ${theme.primaryText} mb-1 text-[11px] flex items-center justify-between`}>
-                                  <span>تعداد کل (دانه/عدد)</span>
-                                  <Sparkles className={`w-3 h-3 ${theme.activeIcon}`} />
-                                </label>
-                                <input
-                                  id="picker-total-pieces-carton-mode-input"
-                                  type="number"
-                                  min="0"
-                                  value={pickTotalPieces}
-                                  onChange={(e) => handlePickerTotalPiecesChange(parseInt(e.target.value) || 0)}
-                                  className={`w-full px-2.5 py-2 rounded-xl ${theme.badgeBg} border-2 ${theme.borderColor} focus:ring-2 ${theme.ring} font-black ${theme.primaryText} text-sm text-center shadow-xs`}
-                                  title="خودکار بر اساس کارتن × ساختار بسته محاسبه می‌شود"
-                                />
-                              </div>
                             </div>
                           )}
 
@@ -4856,14 +4856,14 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             });
                           }
                         }}
-                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        className={`w-4 h-4 rounded ${theme.primaryText} focus:${theme.ring} cursor-pointer`}
                       />
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         تعداد کارتن نامشخص یا فاقد بسته‌بندی کارتنی (مبنای ورود: تعداد کل دانه)
                       </span>
                     </label>
                     {isUnknownCartonMode ? (
-                      <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                      <span className={`text-[11px] font-bold ${theme.primaryText} ${theme.badgeBg} px-2 py-0.5 rounded-lg border ${theme.borderColor}`}>
                         تعداد کل ثابت می‌ماند و کارتن‌ها محاسبه می‌شوند
                       </span>
                     ) : (
@@ -5012,7 +5012,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           تعداد کارتن
                         </label>
                         {isUnknownCartonMode && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                          <span className={`text-[10px] ${theme.primaryText} font-bold`}>
                             محاسبه‌شده
                           </span>
                         )}
@@ -5057,7 +5057,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                           تعداد کل ({editingItem.unitTitle || 'عدد'}) <span className="text-rose-500">*</span>
                         </label>
                         {isUnknownCartonMode && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                          <span className={`text-[10px] ${theme.primaryText} font-bold`}>
                             مبنای اصلی
                           </span>
                         )}
@@ -5078,7 +5078,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                             extraPieces: extra,
                           });
                         }}
-                        className={`w-full px-3 py-2 text-center font-black ${theme.primaryText} bg-white dark:bg-slate-900 border ${isUnknownCartonMode ? 'border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'} rounded-xl text-sm focus:ring-2 ${theme.ring} focus:outline-none`}
+                        className={`w-full px-3 py-2 text-center font-black ${theme.primaryText} bg-white dark:bg-slate-900 border ${isUnknownCartonMode ? `${theme.borderColor} ring-2 ring-current/20` : 'border-slate-200 dark:border-slate-800'} rounded-xl text-sm focus:ring-2 ${theme.ring} focus:outline-none`}
                       />
                     </div>
                   </div>

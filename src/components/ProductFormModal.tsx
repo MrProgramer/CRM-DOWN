@@ -384,7 +384,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     }`}
                   />
                   {autoDetectedCategory && formData.category === autoDetectedCategory && (
-                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
+                    <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-bold ${theme.primaryText} ${theme.badgeBg} px-2.5 py-1 rounded-lg border ${theme.borderColor}`}>
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 animate-pulse" />
                       <span>دسته‌بندی هوشمند: «<b>{autoDetectedCategory}</b>» خودکار انتخاب شد</span>
                     </div>
@@ -534,7 +534,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       }));
                     }
                   }}
-                  className="w-4 h-4 mt-0.5 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600 shrink-0"
+                  className={`w-4 h-4 mt-0.5 rounded ${theme.primaryText} focus:ring-0 cursor-pointer shrink-0`}
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -640,9 +640,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     </div>
                     <div className="text-[11px] font-black text-slate-800 dark:text-slate-200">
                       {(formData.packsPerCarton || 0) > 1 && (formData.piecesPerPack || 0) > 1 ? (
-                        <>۱ کارتن = <span className="underline">{toPersianDigits(formData.packsPerCarton || 1)} بسته</span> {toPersianDigits(formData.piecesPerPack || 1)} عددی = <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{toPersianDigits(formData.piecesPerCarton)} عدد</span></>
+                        <>۱ کارتن = <span className="underline">{toPersianDigits(formData.packsPerCarton || 1)} بسته</span> {toPersianDigits(formData.piecesPerPack || 1)} عددی = <span className={`font-black ${theme.primaryText} text-sm`}>{toPersianDigits(formData.piecesPerCarton)} عدد</span></>
                       ) : (
-                        <>۱ کارتن = <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{toPersianDigits(formData.piecesPerCarton)} عدد</span> مستقیم (بدون زیربسته)</>
+                        <>۱ کارتن = <span className={`font-black ${theme.primaryText} text-sm`}>{toPersianDigits(formData.piecesPerCarton)} عدد</span> مستقیم (بدون زیربسته)</>
                       )}
                     </div>
                   </div>
@@ -811,7 +811,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     onChange={(val) => setFormData({ ...formData, sellingPrice: val })}
                     themeColor={settings.themeColor}
                   />
-                  <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1">
+                  <div className={`text-[10px] font-semibold ${theme.primaryText} mt-1`}>
                     فروش هر کارتن: {toPersianDigits(((formData.sellingPrice || 0) * (formData.piecesPerCarton || 1)).toLocaleString())} تومان
                   </div>
                 </div>
@@ -854,28 +854,28 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
               {/* Financial Intelligence Badge (Profit Margin & Valuation) */}
               {formData.sellingPrice > 0 && formData.purchasePrice > 0 && (
-                <div className="p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/30 space-y-2">
+                <div className={`p-3.5 rounded-2xl border ${theme.borderColor} ${theme.badgeBg} space-y-2`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-black text-emerald-800 dark:text-emerald-300 text-xs">
-                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                    <div className={`flex items-center gap-1.5 font-black ${theme.primaryText} text-xs`}>
+                      <DollarSign className={`w-4 h-4 ${theme.primaryText}`} />
                       <span>تحلیل سودآوری و ارزش کالا:</span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px]">
+                    <span className={`px-2.5 py-0.5 rounded-full ${theme.primary} text-white font-black text-[10px]`}>
                       سوددهی مثبت ✓
                     </span>
                   </div>
 
                   <div className={`grid ${formData.coverPrice > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 text-center text-xs`}>
-                    <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80">
+                    <div className={`p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border ${theme.borderColor}`}>
                       <span className="text-[10px] text-slate-400 font-bold block">سود هر کارتن</span>
-                      <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs">
+                      <span className={`font-black ${theme.primaryText} text-xs`}>
                         {toPersianDigits((((formData.sellingPrice - formData.purchasePrice) * formData.piecesPerCarton) || 0).toLocaleString())} تومان
                       </span>
                     </div>
 
-                    <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80">
+                    <div className={`p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border ${theme.borderColor}`}>
                       <span className="text-[10px] text-slate-400 font-bold block">درصد سود</span>
-                      <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs">
+                      <span className={`font-black ${theme.primaryText} text-xs`}>
                         +{toPersianDigits((((formData.sellingPrice - formData.purchasePrice) / (formData.purchasePrice || 1)) * 100).toFixed(1))}٪
                       </span>
                     </div>
@@ -891,7 +891,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       </div>
                     )}
 
-                    <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80">
+                    <div className={`p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border ${theme.borderColor}`}>
                       <span className="text-[10px] text-slate-400 font-bold block">ارزش انبار این کالا</span>
                       <span className="font-black text-slate-900 dark:text-white text-xs">
                         {toPersianDigits(((formData.stockPieces || 0) * (formData.sellingPrice || 0)).toLocaleString())} تومان

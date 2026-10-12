@@ -904,10 +904,10 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
             {/* Top Metric Cards - 4 Column Modern Analytical Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {/* Card 1: نقدینگی حاضر (صندوق + بانک) */}
-              <div className="bg-white dark:bg-slate-900 border border-emerald-200/70 dark:border-emerald-900/40 rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs">
+              <div className={`bg-white dark:bg-slate-900 border ${theme.borderColor} rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs`}>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                   <span className="text-[11px] font-bold">نقدینگی در دسترس (حاضر)</span>
-                  <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800 flex items-center justify-center shrink-0">
+                  <div className={`w-7 h-7 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} flex items-center justify-center shrink-0`}>
                     <Wallet className="w-4 h-4" />
                   </div>
                 </div>
@@ -922,7 +922,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
               </div>
 
               {/* Card 2: وضعیت بدهی تامین‌کننده */}
-              <div className="bg-white dark:bg-slate-900 border border-blue-200/70 dark:border-blue-900/40 rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs">
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                   <span className="text-[11px] font-bold truncate">
                     {supplierName ? `تراز: ${supplierName}` : 'تراز تامین‌کننده'}
@@ -933,7 +933,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                 </div>
                 <div className="text-base sm:text-lg font-black">
                   {supplierDebtToUs > 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400">
+                    <span className={theme.primaryText}>
                       {formatPrice(supplierDebtToUs)} <span className="text-[10px] font-normal">(بدهکار به شما)</span>
                     </span>
                   ) : ourDebtToSupplier > 0 ? (
@@ -956,17 +956,17 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
               </div>
 
               {/* Card 3: سقف خرید بدون نسیه */}
-              <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white dark:to-slate-900 border border-teal-200/80 dark:border-teal-800/60 rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs">
-                <div className="flex items-center justify-between text-teal-800 dark:text-teal-300">
+              <div className={`bg-gradient-to-br from-white via-slate-50 to-white dark:from-slate-900 dark:to-slate-900 border ${theme.borderColor} rounded-2xl p-3.5 shadow-2xs space-y-1.5 transition-all hover:shadow-xs`}>
+                <div className={`flex items-center justify-between ${theme.primaryText}`}>
                   <span className="text-[11px] font-black">سقف خرید بدون نسیه</span>
-                  <div className="w-7 h-7 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border border-teal-200/80 dark:border-teal-800 flex items-center justify-center shrink-0">
+                  <div className={`w-7 h-7 rounded-xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} flex items-center justify-center shrink-0`}>
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-base sm:text-lg font-black text-teal-700 dark:text-teal-300">
+                <div className={`text-base sm:text-lg font-black ${theme.primaryText}`}>
                   {formatPrice(maxNonCreditPurchasingPower)}
                 </div>
-                <div className="text-[10px] text-teal-700/90 dark:text-teal-400/90 pt-1 border-t border-teal-100 dark:border-teal-900/60 font-bold truncate">
+                <div className={`text-[10px] ${theme.primaryText} opacity-90 pt-1 border-t border-slate-100 dark:border-slate-800 font-bold truncate`}>
                   {supplierDebtToUs > 0 ? 'نقدینگی کل + تهاتر کامل با بدهی تامین‌کننده' : 'خرید ۱۰۰٪ نقدی و بدون ایجاد بدهکاری دفتری'}
                 </div>
               </div>
@@ -994,7 +994,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                   {currentItemEstimatedCost === 0 ? (
                     <span className="text-slate-500">تعداد و فی را تکمیل نمایید</span>
                   ) : !willExceedCashCapacity ? (
-                    <span className="text-emerald-600 dark:text-emerald-400">
+                    <span className={theme.primaryText}>
                       مانده نقدی آزاد: {formatPrice(remainingNonCreditCapacity)}
                     </span>
                   ) : (
@@ -1010,7 +1010,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
             <div className={`p-3 sm:p-3.5 rounded-2xl text-xs space-y-2 border transition-all ${
               willExceedCashCapacity
                 ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
-                : 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200'
+                : `${theme.primaryLight} ${theme.borderColor} ${theme.primaryText}`
             }`}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                 <div className="flex items-start sm:items-center gap-2">
@@ -1039,7 +1039,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
 
                 <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-white/90 dark:bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-[11px] font-black">
                   <span className="text-slate-500">مصرف نقدینگی:</span>
-                  <span className={willExceedCashCapacity ? 'text-amber-600 font-black' : 'text-emerald-600'}>
+                  <span className={willExceedCashCapacity ? 'text-amber-600 font-black' : `${theme.primaryText} font-black`}>
                     %{toPersianDigits(capacityPercent)}
                   </span>
                 </div>
@@ -1051,9 +1051,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                   className={`h-full transition-all duration-300 rounded-full ${
                     willExceedCashCapacity 
                       ? 'bg-amber-500' 
-                      : capacityPercent > 80 
-                        ? 'bg-teal-500' 
-                        : 'bg-emerald-500'
+                      : theme.primary
                   }`}
                   style={{ width: `${capacityPercent}%` }}
                 />
@@ -1073,7 +1071,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       id="search-inward-existing-input"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pr-9 pl-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className={`w-full pr-9 pl-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 ${theme.ring} focus:outline-none`}
                     />
                   </div>
 
@@ -1102,7 +1100,8 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       type="checkbox"
                       checked={hideZeroStock}
                       onChange={(e) => setHideZeroStock(e.target.checked)}
-                      className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600"
+                      style={{ accentColor: theme.hex }}
+                      className={`w-4 h-4 rounded ${theme.primaryText} focus:ring-0 cursor-pointer`}
                     />
                     <span className="whitespace-nowrap">عدم نمایش موجودی صفر</span>
                   </label>
@@ -1117,7 +1116,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setHideZeroStock(false)}
-                          className="mr-2 text-teal-600 dark:text-teal-400 font-bold hover:underline cursor-pointer"
+                          className={`mr-2 ${theme.primaryText} font-bold hover:underline cursor-pointer`}
                         >
                           (نمایش کالاهای با موجودی صفر)
                         </button>
@@ -1211,7 +1210,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                               setExistingPiecesPerCarton(selectedExistingProduct.piecesPerCarton || 480);
                             }
                           }}
-                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                          className={`w-4 h-4 rounded ${theme.primaryText} focus:${theme.ring} border-slate-300 dark:border-slate-700 cursor-pointer`}
                         />
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                           بدون بسته‌بندی یا کارتن نامشخص (تعداد کارتن نامشخص / ورود بر اساس دانه، فله یا کیلویی)
@@ -1228,10 +1227,10 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                     <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                         <span className="flex items-center gap-1.5">
-                          <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <Layers className={`w-4 h-4 ${theme.primaryText}`} />
                           <span>{isExistingUnpackaged ? 'مقدار ورودی کالا (فروش فله / دانه‌ای):' : 'مقدار ورودی و ساختار کارتن:'}</span>
                         </span>
-                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                        <span className={`text-[11px] ${theme.primaryText} font-mono font-bold`}>
                           {isExistingUnpackaged ? 'بدون کارتن (ورود دانه‌ای)' : `هر ۱ کارتن = ${toPersianDigits(typeof existingPiecesPerCarton === 'number' && existingPiecesPerCarton > 0 ? existingPiecesPerCarton : ((typeof existingPacks === 'number' ? existingPacks : 20) * (typeof existingPiecesPerPack === 'number' ? existingPiecesPerPack : 24)))} عدد`}
                         </span>
                       </div>
@@ -1248,7 +1247,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             id="existing-cartons-input"
                             value={isExistingUnpackaged ? 'نامشخص' : (existingCartons === '' ? '' : existingCartons)}
                             onChange={(e) => !isExistingUnpackaged && handleExistingCartonsChange(e.target.value)}
-                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-black text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-black text-sm focus:ring-2 ${theme.ring} focus:outline-none ${
                               isExistingUnpackaged 
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
@@ -1268,7 +1267,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             id="existing-packs-input"
                             value={isExistingUnpackaged ? 1 : (existingPacks === '' ? '' : existingPacks)}
                             onChange={(e) => !isExistingUnpackaged && handleExistingPacksChange(e.target.value)}
-                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 ${theme.ring} focus:outline-none ${
                               isExistingUnpackaged
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
@@ -1288,7 +1287,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             id="existing-ppp-input"
                             value={isExistingUnpackaged ? 1 : (existingPiecesPerPack === '' ? '' : existingPiecesPerPack)}
                             onChange={(e) => !isExistingUnpackaged && handleExistingPiecesPerPackChange(e.target.value)}
-                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 ${theme.ring} focus:outline-none ${
                               isExistingUnpackaged
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
@@ -1308,7 +1307,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             id="existing-extra-pieces-input"
                             value={isExistingUnpackaged ? 0 : (existingExtraPieces === '' ? '' : existingExtraPieces)}
                             onChange={(e) => !isExistingUnpackaged && handleExistingExtraPiecesChange(e.target.value)}
-                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                            className={`w-full px-2.5 py-2 rounded-xl border text-center font-bold text-sm focus:ring-2 ${theme.ring} focus:outline-none ${
                               isExistingUnpackaged
                                 ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                                 : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
@@ -1318,9 +1317,9 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
 
                         {/* Total Pieces (Calculated & Editable) */}
                         <div className="col-span-2 sm:col-span-1">
-                          <label className="block font-black text-emerald-700 dark:text-emerald-400 mb-1 text-[11px] flex items-center justify-between">
+                          <label className={`block font-black ${theme.primaryText} mb-1 text-[11px] flex items-center justify-between`}>
                             <span>تعداد کل (دانه) {isExistingUnpackaged && <span className="text-red-500">*</span>}</span>
-                            <Sparkles className="w-3 h-3 text-emerald-500" />
+                            <Sparkles className={`w-3 h-3 ${theme.activeIcon || theme.primaryText}`} />
                           </label>
                           <input
                             type="number"
@@ -1328,7 +1327,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                             id="existing-total-pieces-input"
                             value={existingTotalPieces === '' ? '' : existingTotalPieces}
                             onChange={(e) => handleExistingTotalPiecesChange(e.target.value)}
-                            className="w-full px-2.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-center font-black text-emerald-800 dark:text-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"
+                            className={`w-full px-2.5 py-2 rounded-xl ${theme.badgeBg} border-2 ${theme.borderColor} text-center font-black ${theme.primaryText} text-sm focus:ring-2 ${theme.ring} focus:outline-none shadow-xs`}
                             title="تعداد کل دانه برای ورود به فاکتور"
                           />
                         </div>
@@ -1350,7 +1349,8 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <SmartPriceInput
                           value={existingPurchasePrice}
                           onChange={(val) => setExistingPurchasePrice(val)}
-                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
+                          themeColor={activeColorKey as ThemeColor}
+                          className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black ${theme.primaryText} focus:ring-2 ${theme.ring} focus:outline-none text-sm`}
                         />
                       </div>
 
@@ -1367,6 +1367,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <SmartPriceInput
                           value={existingSellingPrice}
                           onChange={(val) => setExistingSellingPrice(val)}
+                          themeColor={activeColorKey as ThemeColor}
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                         />
                       </div>
@@ -1384,6 +1385,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         <SmartPriceInput
                           value={existingCoverPrice}
                           onChange={(val) => setExistingCoverPrice(val)}
+                          themeColor={activeColorKey as ThemeColor}
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-indigo-700 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
                         />
                       </div>
@@ -1401,7 +1403,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                 بهای ۱ کارتن خرید ({toPersianDigits(ppc)} تایی)
                               </label>
-                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                              <span className={`text-[10px] ${theme.primaryText} font-bold`}>
                                 کارتن کامل
                               </span>
                             </div>
@@ -1412,7 +1414,8 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                                   setExistingPurchasePrice(Math.round(val / ppc));
                                 }
                               }}
-                              className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm"
+                              themeColor={activeColorKey as ThemeColor}
+                              className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-left font-black ${theme.primaryText} focus:ring-2 ${theme.ring} focus:outline-none text-sm`}
                             />
                           </div>
                         );
@@ -1483,13 +1486,13 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       const totalCost = totalPieces * (existingPurchasePrice || 0);
 
                       return (
-                        <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-800/80 space-y-3 shadow-xs">
+                        <div className={`p-4 rounded-2xl ${theme.badgeBg} border-2 ${theme.borderColor} space-y-3 shadow-xs`}>
                           <div className="flex items-center justify-between text-xs font-black text-slate-800 dark:text-slate-200">
                             <div className="flex items-center gap-2">
-                              <Calculator className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <Calculator className={`w-4 h-4 ${theme.primaryText} shrink-0`} />
                               <span>خلاصه و محاسبات دقیق بار ورودی:</span>
                             </div>
-                            <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                            <span className={`text-[11px] font-mono ${theme.primaryText} bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border ${theme.borderColor}`}>
                               {cartonsNum > 0 
                                 ? `${toPersianDigits(cartonsNum)} کارتن${extraNum > 0 ? ` و ${toPersianDigits(extraNum)} دانه` : ''} (${toPersianDigits(totalPieces.toLocaleString())} عدد)` 
                                 : `${toPersianDigits(totalPieces.toLocaleString())} عدد`}
@@ -1580,15 +1583,15 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
 
                                   <div className={`p-2 rounded-lg border ${
                                     !isLoss 
-                                      ? 'bg-emerald-100/80 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800' 
+                                      ? `${theme.primaryLight} ${theme.borderColor}` 
                                       : 'bg-rose-100/80 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800'
                                   }`}>
                                     <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
                                       {!isLoss ? 'سود خالص کل بار:' : 'زیان خالص کل:'}
                                     </span>
-                                    <div className={`font-black text-xs sm:text-sm font-mono flex items-center gap-1.5 flex-wrap ${!isLoss ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                                    <div className={`font-black text-xs sm:text-sm font-mono flex items-center gap-1.5 flex-wrap ${!isLoss ? theme.primaryText : 'text-rose-700 dark:text-rose-300'}`}>
                                       <span>{!isLoss ? `+${formatPrice(totalPotentialProfit)}` : `-${formatPrice(Math.abs(totalPotentialProfit))}`}</span>
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 border border-emerald-300 dark:border-emerald-700 font-sans">
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 border ${theme.borderColor} font-sans`}>
                                         ({formatAmountScale(Math.abs(totalPotentialProfit))})
                                       </span>
                                     </div>
@@ -1622,13 +1625,13 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
               <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3.5 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="font-black text-slate-800 dark:text-slate-200 text-xs flex items-center gap-2">
-                    <Package className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <Package className={`w-4 h-4 ${theme.primaryText}`} />
                     <span>مشخصات کالا و ساختار بسته‌بندی کارتن</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsCategoryModalOpen(true)}
-                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    className={`text-[11px] font-bold ${theme.primaryText} hover:underline flex items-center gap-1 cursor-pointer`}
                   >
                     <FolderPlus className="w-3.5 h-3.5" />
                     <span>مدیریت دسته‌ها</span>
@@ -1662,7 +1665,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 ${
                         formErrors.name
                           ? 'border-red-500 ring-2 ring-red-500/20'
-                          : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500'
+                          : `border-slate-300 dark:border-slate-700 focus:${theme.ring}`
                       }`}
                       required
                     />
@@ -1677,7 +1680,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         دسته‌بندی کالا <span className="text-red-500">*</span>
                       </label>
                       {autoDetectedCategory && (
-                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 animate-pulse">
+                        <span className={`text-[10px] font-black ${theme.primaryText} ${theme.badgeBg} px-2 py-0.5 rounded-md border ${theme.borderColor} flex items-center gap-1 animate-pulse`}>
                           <Sparkles className="w-3 h-3" />
                           <span>پیشنهاد هوشمند: {autoDetectedCategory}</span>
                         </span>
@@ -1694,7 +1697,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           if (formErrors.category) setFormErrors({ ...formErrors, category: '' });
                         }
                       }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 ${theme.ring} focus:outline-none cursor-pointer`}
                     >
                       {categories.filter(c => c !== 'all').map((cat, idx) => (
                         <option key={`new-cat-opt-${cat || idx}`} value={cat}>{cat}</option>
@@ -1721,7 +1724,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           setNewCartons('');
                         }
                       }}
-                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                      className={`w-4 h-4 rounded ${theme.primaryText} focus:${theme.ring} border-slate-300 dark:border-slate-700 cursor-pointer`}
                     />
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       بدون بسته‌بندی یا کارتن نامشخص (تعداد کارتن نامشخص / ورود بر اساس دانه، فله یا کیلویی)
@@ -1739,10 +1742,10 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                   <div className="p-3 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                        <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+                        <Calculator className={`w-3.5 h-3.5 ${theme.primaryText}`} />
                         فرمول بسته‌بندی ۱ کارتن:
                       </span>
-                      <span className="text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      <span className={`text-[11px] font-mono font-bold ${theme.primaryText}`}>
                         {toPersianDigits(newPacksPerCarton || 1)} بسته × {toPersianDigits(newPiecesPerPack || 1)} تایی = {toPersianDigits(newPiecesPerCarton || 1)} دانه در ۱ کارتن
                       </span>
                     </div>
@@ -1758,7 +1761,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-packs-per-carton-input"
                           value={newPacksPerCarton === '' ? '' : newPacksPerCarton}
                           onChange={(e) => handlePacksPerCartonChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                         />
                       </div>
 
@@ -1772,12 +1775,12 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-pieces-per-pack-input"
                           value={newPiecesPerPack === '' ? '' : newPiecesPerPack}
                           onChange={(e) => handlePiecesPerPackChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-center text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-black text-emerald-800 dark:text-emerald-300 mb-1">
+                        <label className={`block text-[11px] font-black ${theme.primaryText} mb-1`}>
                           کل دانه در ۱ کارتن <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -1787,7 +1790,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           id="new-pieces-per-carton-input"
                           value={newPiecesPerCarton === '' ? '' : newPiecesPerCarton}
                           onChange={(e) => handlePiecesPerCartonChanged(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 font-black text-center text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border-2 ${theme.borderColor} ${theme.primaryText} font-black text-center text-sm focus:ring-2 ${theme.ring} focus:outline-none`}
                         />
                       </div>
                     </div>
@@ -1809,7 +1812,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       type="text"
                       value={newUnitTitle}
                       onChange={(e) => setNewUnitTitle(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                     />
                   </div>
 
@@ -1821,7 +1824,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                       type="text"
                       value={newNotes}
                       onChange={(e) => setNewNotes(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className={`w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 ${theme.ring} focus:outline-none`}
                     />
                   </div>
                 </div>
@@ -1831,7 +1834,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
               <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="font-black text-slate-800 dark:text-slate-200 text-xs flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <Layers className={`w-4 h-4 ${theme.primaryText}`} />
                     <span>تعداد بار ورودی و قیمت‌گذاری (فی خرید و فی فروش)</span>
                   </div>
                   {newPurchasePrice > 0 && newSellingPrice > 0 && (
@@ -1858,7 +1861,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           if (formErrors.cartons) setFormErrors({ ...formErrors, cartons: '' });
                         }
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border text-center font-black text-base focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                      className={`w-full px-3 py-2 rounded-xl border text-center font-black text-base focus:ring-2 ${theme.ring} focus:outline-none ${
                         isNewUnpackaged 
                           ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
                           : 'bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
@@ -1870,7 +1873,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className={`block font-bold text-xs ${isNewUnpackaged ? 'text-emerald-700 dark:text-emerald-400 font-black' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <label className={`block font-bold text-xs ${isNewUnpackaged ? `${theme.primaryText} font-black` : 'text-slate-700 dark:text-slate-300'}`}>
                       {isNewUnpackaged ? `تعداد کل ورودی (${newUnitTitle || 'عدد'})` : 'دانه اضافی (تک)'} {isNewUnpackaged && <span className="text-red-500">*</span>}
                     </label>
                     <input
@@ -1882,9 +1885,9 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         setNewExtraPieces(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0));
                         if (isNewUnpackaged && formErrors.cartons) setFormErrors({ ...formErrors, cartons: '' });
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border text-center font-black text-base focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                      className={`w-full px-3 py-2 rounded-xl border text-center font-black text-base focus:ring-2 ${theme.ring} focus:outline-none ${
                         isNewUnpackaged
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200'
+                          ? `${theme.badgeBg} border-2 ${theme.borderColor} ${theme.primaryText}`
                           : 'bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
                       }`}
                     />
@@ -1903,7 +1906,8 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                         setNewPurchasePrice(val);
                         if (formErrors.purchasePrice) setFormErrors({ ...formErrors, purchasePrice: '' });
                       }}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      themeColor={activeColorKey as ThemeColor}
+                      className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black ${theme.primaryText} focus:ring-2 ${theme.ring} focus:outline-none`}
                     />
                     {formErrors.purchasePrice && (
                       <span className="text-[10px] font-bold text-red-500 block">{formErrors.purchasePrice}</span>
@@ -1917,6 +1921,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                     <SmartPriceInput
                       value={newSellingPrice}
                       onChange={(val) => setNewSellingPrice(val)}
+                      themeColor={activeColorKey as ThemeColor}
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
@@ -1928,6 +1933,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                     <SmartPriceInput
                       value={newCoverPrice}
                       onChange={(val) => setNewCoverPrice(val)}
+                      themeColor={activeColorKey as ThemeColor}
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-left font-black text-indigo-700 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
@@ -1938,11 +1944,11 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-0.5">
                     <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500 dark:text-slate-400 text-[10px] block">بهای خرید ۱ بسته ({toPersianDigits(newPiecesPerPack || 1)} تایی):</span>
-                      <span className="font-bold text-emerald-700 dark:text-emerald-400 text-xs mt-0.5 block">{formatPrice(newPurchasePrice * (newPiecesPerPack || 1))} ت</span>
+                      <span className={`font-bold ${theme.primaryText} text-xs mt-0.5 block`}>{formatPrice(newPurchasePrice * (newPiecesPerPack || 1))} ت</span>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500 dark:text-slate-400 text-[10px] block">بهای خرید ۱ کارتن ({toPersianDigits(newPiecesPerCarton || 1)} تایی):</span>
-                      <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs mt-0.5 block">{formatPrice(newPurchasePrice * (newPiecesPerCarton || 1))} ت</span>
+                      <span className={`font-black ${theme.primaryText} text-xs mt-0.5 block`}>{formatPrice(newPurchasePrice * (newPiecesPerCarton || 1))} ت</span>
                     </div>
                     {newSellingPrice > 0 && (
                       <div className="col-span-2 sm:col-span-1 p-2 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40">
@@ -2022,15 +2028,15 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
 
                           <div className={`p-2 rounded-lg border ${
                             !isLoss 
-                              ? 'bg-emerald-100/80 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800' 
+                              ? `${theme.primaryLight} ${theme.borderColor}` 
                               : 'bg-rose-100/80 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800'
                           }`}>
                             <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
                               {!isLoss ? 'سود خالص کل بار:' : 'زیان خالص کل:'}
                             </span>
-                            <div className={`font-black text-xs sm:text-sm font-mono flex items-center gap-1.5 flex-wrap ${!isLoss ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                            <div className={`font-black text-xs sm:text-sm font-mono flex items-center gap-1.5 flex-wrap ${!isLoss ? theme.primaryText : 'text-rose-700 dark:text-rose-300'}`}>
                               <span>{!isLoss ? `+${formatPrice(totalPotentialProfit)}` : `-${formatPrice(Math.abs(totalPotentialProfit))}`}</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 border border-emerald-300 dark:border-emerald-700 font-sans">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 border ${theme.borderColor} font-sans`}>
                                 ({formatAmountScale(Math.abs(totalPotentialProfit))})
                               </span>
                             </div>
@@ -2048,7 +2054,7 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
                           }
                         </span>
                         <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base">
-                          بهای کل خرید این قلم: <span className="text-emerald-600 dark:text-emerald-400 font-mono">{formatPrice(totalCost)}</span>
+                          بهای کل خرید این قلم: <span className={`${theme.primaryText} font-mono`}>{formatPrice(totalCost)}</span>
                         </span>
                       </div>
 
