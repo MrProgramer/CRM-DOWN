@@ -264,21 +264,21 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         cmp = (a.finalAmount || 0) - (b.finalAmount || 0);
       } else if (salesSortField === 'cost') {
         const aCost = a.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         const bCost = b.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         cmp = aCost - bCost;
       } else if (salesSortField === 'profit') {
         const aCost = a.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         const bCost = b.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         const aExp = (a.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -286,11 +286,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         cmp = ((a.finalAmount || 0) - aCost - aExp) - ((b.finalAmount || 0) - bCost - bExp);
       } else if (salesSortField === 'margin') {
         const aCost = a.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         const bCost = b.items.reduce((s, it) => {
-          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+          const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
           return s + (it.totalPieces > 0 ? it.totalPieces * uCost : (it.totalPurchaseCost || 0));
         }, 0);
         const aMargin = a.finalAmount > 0 ? ((a.finalAmount - aCost) / a.finalAmount) : 0;
@@ -446,7 +446,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       const invExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
       totalSalesExpenses += invExpenses;
       inv.items.forEach(it => {
-        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
         const cost = it.totalPieces > 0 ? (it.totalPieces * itemUnitCost) : (it.totalPurchaseCost || 0);
         totalCost += cost;
         totalItemsCount += it.totalPieces || 0;
@@ -556,7 +556,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         const matchingProduct = getMatchingProduct(it.productId, it.productName);
         const totalPieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
         const rev = (it.totalPrice !== undefined && it.totalPrice > 0) ? it.totalPrice : (totalPieces * (it.unitSellingPrice || 0));
-        const unitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const unitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
         const cost = totalPieces > 0 ? (totalPieces * unitCost) : (it.totalPurchaseCost || 0);
         const profit = rev - cost;
 
@@ -623,7 +623,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       const key = inv.customerId || inv.customerName;
       const invRevenue = inv.finalAmount;
       const invCost = inv.items.reduce((s, it) => {
-        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
         return s + (it.totalPieces > 0 ? (it.totalPieces * itemUnitCost) : (it.totalPurchaseCost || 0));
       }, 0);
       const invProfit = invRevenue - invCost;
@@ -796,7 +796,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       realizedCreditSalesAmount += remainingUnpaid;
 
       (inv.items || []).forEach(it => {
-        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        const itemUnitCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
         const pieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
         realizedPiecesSold += pieces;
         realizedSalesCost += (pieces * itemUnitCost);
@@ -1072,7 +1072,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           unitSellGross = it.unitSellingPrice || 0;
         }
       } else {
-        unitCostGross = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+        unitCostGross = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
 
         unitSellGross = (it.unitSellingPrice !== undefined && it.unitSellingPrice > 0)
           ? it.unitSellingPrice
@@ -1412,45 +1412,45 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
+              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
-                  <th className="p-3.5 text-center w-12 font-black">ردیف</th>
-                  <th className="p-3.5 font-black text-right">شرح کالا و مشخصات کارتن</th>
-                  <th className="p-3.5 text-center font-black">تعداد کل</th>
-                  <th className="p-3.5 text-left font-black">فی خرید</th>
-                  <th className="p-3.5 text-left font-black">{isPurchase ? 'فی فروش مصوب' : 'فی فروش واحد'}</th>
-                  <th className="p-3.5 text-left font-black">{isPurchase ? 'جمع بهای خرید' : 'بهای کل خرید'}</th>
-                  <th className="p-3.5 text-left font-black">{isPurchase ? 'جمع ارزش فروش' : 'مبلغ کل فروش'}</th>
-                  <th className="p-3.5 text-left font-black">سود هر عدد</th>
-                  <th className="p-3.5 text-left font-black">{isPurchase ? 'سود ناخالص سطر' : 'سود کل سطر'}</th>
-                  <th className="p-3.5 text-center font-black">{isPurchase ? 'مارک‌آپ' : 'حاشیه سود'}</th>
-                  <th className="p-3.5 text-center font-black">وضعیت</th>
+                  <th className="py-2.5 px-2 text-center w-12 font-black">ردیف</th>
+                  <th className="py-2.5 px-3 font-black text-right">شرح کالا و مشخصات کارتن</th>
+                  <th className="py-2.5 px-3 text-center font-black">تعداد کل</th>
+                  <th className="py-2.5 px-3 text-left font-black">فی خرید</th>
+                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'فی فروش مصوب' : 'فی فروش واحد'}</th>
+                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'جمع بهای خرید' : 'بهای کل خرید'}</th>
+                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'جمع ارزش فروش' : 'مبلغ کل فروش'}</th>
+                  <th className="py-2.5 px-3 text-left font-black">سود هر عدد</th>
+                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'سود ناخالص سطر' : 'سود کل سطر'}</th>
+                  <th className="py-2.5 px-3 text-center font-black">{isPurchase ? 'مارک‌آپ' : 'حاشیه سود'}</th>
+                  <th className="py-2.5 px-2 text-center font-black">وضعیت</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {displayedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="p-12 text-center text-slate-400 font-medium">
+                    <td colSpan={11} className="py-10 text-center text-slate-400 font-medium">
                       کالایی در این فیلتر سود یافت نشد.
                     </td>
                   </tr>
                 ) : (
                   displayedItems.map((it, itIdx) => (
-                    <tr key={`profit-item-${it.id || 'row'}-${it.idx}-${itIdx}`} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="p-3.5 text-center font-bold text-slate-400 font-mono tabular-nums">
+                    <tr key={`profit-item-${it.id || 'row'}-${it.idx}-${itIdx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-2 px-2 text-center font-bold text-slate-400 font-mono tabular-nums">
                         {toPersianDigits(it.idx + 1)}
                       </td>
-                      <td className="p-3.5 font-bold text-slate-900 dark:text-white">
-                        <div>{it.productName}</div>
-                        <div className={`text-[11px] ${theme.primaryText} font-bold mt-0.5 flex items-center gap-1`}>
-                          <Boxes className="w-3.5 h-3.5 shrink-0" />
+                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">
+                        <div className="text-xs sm:text-[13px]">{it.productName}</div>
+                        <div className={`text-[10.5px] ${theme.primaryText} font-bold mt-0.5 flex items-center gap-1`}>
+                          <Boxes className="w-3 h-3 shrink-0" />
                           <span>{it.cartonFullText}</span>
                         </div>
                       </td>
-                      <td className="p-3.5 text-center font-bold text-slate-800 dark:text-slate-200 font-mono tabular-nums">
+                      <td className="py-2 px-3 text-center font-bold text-slate-800 dark:text-slate-200 font-mono tabular-nums">
                         {toPersianDigits(it.totalPieces.toLocaleString())} {it.unitTitle || 'عدد'}
                       </td>
-                      <td className="p-3.5 text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 text-left dir-ltr font-mono tabular-nums">
                         {hasDiscount && isPurchase && it.itemDiscountSavings > 0 ? (
                           <div>
                             <span className="font-bold text-emerald-600 dark:text-emerald-400">
@@ -1466,10 +1466,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="p-3.5 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
                         {isSecretMode ? '••••' : formatPrice(it.unitSell)}
                       </td>
-                      <td className="p-3.5 text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 text-left dir-ltr font-mono tabular-nums">
                         {hasDiscount && isPurchase && it.itemDiscountSavings > 0 ? (
                           <div>
                             <div className="font-bold text-slate-900 dark:text-white">
@@ -1485,22 +1485,22 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="p-3.5 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
                         {isSecretMode ? '••••••' : formatPrice(it.rowRevenue)}
                       </td>
-                      <td className="p-3.5 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
                         {isSecretMode ? '••••' : `+${formatPrice(it.profitPerPiece)}`}
                       </td>
-                      <td className="p-3.5 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
+                      <td className="py-2 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
                         {isSecretMode ? '••••••' : `+${formatPrice(it.rowProfit)}`}
                       </td>
-                      <td className="p-3.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] border ${it.tierBadge}`}>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10.5px] border ${it.tierBadge}`}>
                           {isSecretMode ? '••٪' : `${toPersianDigits(it.margin.toFixed(1))}٪`}
                         </span>
                       </td>
-                      <td className="p-3.5 text-center">
-                        <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                      <td className="py-2 px-2 text-center">
+                        <span className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400">
                           {it.tierTitle}
                         </span>
                       </td>
@@ -1510,14 +1510,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
               </tbody>
 
               {/* Comprehensive Footer Row */}
-              <tfoot className="bg-slate-50/90 dark:bg-slate-800/70 border-t-2 border-slate-200/90 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <tfoot className="bg-slate-100/90 dark:bg-slate-950 border-t-2 border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                 <tr>
-                  <td className="p-3.5 text-center">
+                  <td className="py-2.5 px-2 text-center">
                     <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
                       جمع کل
                     </span>
                   </td>
-                  <td className="p-3.5">
+                  <td className="py-2.5 px-3">
                     <div className="font-bold text-slate-900 dark:text-white text-xs">
                       {toPersianDigits(analyzedItems.length)} قلم کالا
                     </div>
@@ -1526,20 +1526,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       <span>{toPersianDigits(totalCartonsSum)} کارتن کالا</span>
                     </div>
                   </td>
-                  <td className="p-3.5 text-center font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                     {toPersianDigits(totalPiecesSum.toLocaleString())} عدد
                   </td>
-                  <td className="p-3.5 text-left dir-ltr font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr font-mono tabular-nums">
                     <div className="text-[10px] text-slate-400 font-normal">میانگین خرید:</div>
                     <div className="font-bold text-slate-700 dark:text-slate-300">
                       {isSecretMode ? '••••' : formatPrice(weightedAvgCost)}
                     </div>
                   </td>
-                  <td className="p-3.5 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                     <div className="text-[10px] text-slate-400 font-normal">میانگین فروش:</div>
                     <div>{isSecretMode ? '••••' : formatPrice(weightedAvgSell)}</div>
                   </td>
-                  <td className="p-3.5 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                     <div>{isSecretMode ? '••••••' : formatPrice(totalCost)}</div>
                     {isPurchase && totalExpensesAmount > 0 && (
                       <div className="text-[10px] text-sky-600 dark:text-sky-400 font-bold dir-rtl text-right">
@@ -1552,7 +1552,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       </div>
                     )}
                   </td>
-                  <td className="p-3.5 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                     <div>{isSecretMode ? '••••••' : formatPrice(totalRev)}</div>
                     {hasDiscount && !isPurchase && (
                       <div className="text-[10px] text-amber-600 dark:text-amber-400 font-normal dir-rtl text-right">
@@ -1560,11 +1560,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       </div>
                     )}
                   </td>
-                  <td className="p-3.5 text-left dir-ltr font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
                     <div className="text-[10px] text-emerald-700 font-normal">سود هر عدد:</div>
                     <div>{isSecretMode ? '••••' : `+${formatPrice(weightedAvgProfitPerPiece)}`}</div>
                   </td>
-                  <td className="p-3.5 text-left dir-ltr bg-emerald-500/10 dark:bg-emerald-950/40 border-x border-emerald-300 dark:border-emerald-800 font-mono tabular-nums">
+                  <td className="py-2.5 px-3 text-left dir-ltr bg-emerald-500/10 dark:bg-emerald-950/40 border-x border-emerald-300 dark:border-emerald-800 font-mono tabular-nums">
                     <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">
                       {isPurchase ? 'سود پیش‌بینی کل:' : 'سود خالص قطعی:'}
                     </div>
@@ -1572,10 +1572,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       {isSecretMode ? '••••••' : `+${formatPrice(totalProfit)}`}
                     </div>
                   </td>
-                  <td className={`p-3.5 text-center font-bold ${theme.primaryText} dir-ltr text-xs font-mono tabular-nums`}>
+                  <td className={`py-2.5 px-3 text-center font-bold ${theme.primaryText} dir-ltr text-xs font-mono tabular-nums`}>
                     {isSecretMode ? '••٪' : `${toPersianDigits(overallMargin.toFixed(1))}٪`}
                   </td>
-                  <td className="p-3.5 text-center">
+                  <td className="py-2.5 px-2 text-center">
                     <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-[11px]">
                       بازدهی: {isSecretMode ? '••٪' : `${toPersianDigits(roiPercentage.toFixed(0))}٪`}
                     </span>
@@ -1873,7 +1873,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="right"
-                    className="p-3.5"
+                    className="py-2.5 px-3"
                   >
                     شماره سند
                   </SortableTableHeader>
@@ -1884,7 +1884,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="right"
-                    className="p-3.5"
+                    className="py-2.5 px-3"
                   >
                     تاریخ صدور
                   </SortableTableHeader>
@@ -1895,7 +1895,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="right"
-                    className="p-3.5"
+                    className="py-2.5 px-3"
                   >
                     خریدار / مشتری
                   </SortableTableHeader>
@@ -1906,7 +1906,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left"
                   >
                     مبلغ کل فاکتور
                   </SortableTableHeader>
@@ -1917,7 +1917,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left"
                   >
                     بهای خرید (هزینه)
                   </SortableTableHeader>
@@ -1928,7 +1928,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="left"
-                    className="p-3.5 text-left"
+                    className="py-2.5 px-3 text-left"
                   >
                     سود ناخالص فاکتور
                   </SortableTableHeader>
@@ -1939,25 +1939,25 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="center"
-                    className="p-3.5 text-center"
+                    className="py-2.5 px-3 text-center"
                   >
                     حاشیه سود
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center font-black text-xs sm:text-[13px]">عملیات</th>
+                  <th className="py-2.5 px-3 text-center font-black text-xs sm:text-[13px]">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedSalesInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-slate-400 font-medium">
+                    <td colSpan={8} className="py-10 text-center text-slate-400 font-medium">
                       هیچ فاکتور فروشی با شرایط فیلتر انتخاب شده یافت نشد.
                     </td>
                   </tr>
                 ) : (
                   paginatedSalesInvoices.map((inv, idx) => {
                     const invCost = inv.items.reduce((sum, it) => {
-                      const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0);
+                      const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
                       return sum + (it.totalPieces > 0 ? (it.totalPieces * uCost) : (it.totalPurchaseCost || 0));
                     }, 0);
                     const invRevenue = inv.finalAmount;
@@ -1967,22 +1967,22 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     const hasInvDiscount = Boolean(inv.hasDiscount || (inv.discount && inv.discount > 0));
 
                     return (
-                      <tr key={`profit-sales-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="p-3.5 font-bold">
+                      <tr key={`profit-sales-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="py-2.5 px-3 font-bold">
                           <span className="font-mono text-xs text-slate-900 dark:text-slate-100 font-black px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
                             #{toPersianDigits(inv.invoiceNumber)}
                           </span>
                         </td>
-                        <td className="p-3.5 text-slate-600 dark:text-slate-300 font-bold font-mono">
+                        <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-bold font-mono">
                           {toPersianDigits(inv.date)}
                         </td>
-                        <td className="p-3.5 font-bold text-slate-900 dark:text-white">
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
                           <div>{inv.customerName}</div>
                           {inv.customerCity && (
                             <span className="text-[11px] text-slate-500 font-medium">{inv.customerCity}</span>
                           )}
                         </td>
-                        <td className="p-3.5 font-bold text-slate-900 dark:text-white text-left dir-ltr">
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr">
                           <div>{formatPrice(invRevenue)}</div>
                           {hasInvDiscount && inv.discount && inv.discount > 0 && (
                             <div className="flex items-center justify-end gap-1 mt-0.5 dir-rtl">
@@ -1999,18 +1999,18 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                             </div>
                           )}
                         </td>
-                        <td className="p-3.5 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr">
+                        <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr">
                           {isSecretMode ? '••••••' : formatPrice(invCost)}
                         </td>
-                        <td className="p-3.5 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr">
+                        <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr">
                           {isSecretMode ? '••••••' : `+${formatPrice(invProfit)}`}
                         </td>
-                        <td className="p-3.5 text-center">
+                        <td className="py-2.5 px-3 text-center">
                           <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800">
                             {isSecretMode ? '••٪' : `${toPersianDigits(invMargin.toFixed(1))}٪`}
                           </span>
                         </td>
-                        <td className="p-3.5 text-center">
+                        <td className="py-2.5 px-3 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setSelectedInvoiceForDetail(inv)}
@@ -2037,24 +2037,24 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
 
               {/* Summary Footer Row for Sales Tab */}
               {paginatedSalesInvoices.length > 0 && (
-                <tfoot className="bg-slate-50/90 dark:bg-slate-800/70 border-t-2 border-slate-200/90 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+                <tfoot className="bg-slate-100/90 dark:bg-slate-950 border-t-2 border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                   <tr>
-                    <td colSpan={3} className="p-3.5">
+                    <td colSpan={3} className="py-2.5 px-3">
                       <span>جمع کل فاکتورهای فروش این دوره ({toPersianDigits(filteredSalesInvoices.length)} فاکتور)</span>
                     </td>
-                    <td className="p-3.5 text-left dir-ltr font-black">
+                    <td className="py-2.5 px-3 text-left dir-ltr font-black">
                       {formatPrice(summaryMetrics.totalRevenue)}
                     </td>
-                    <td className="p-3.5 text-left dir-ltr font-bold text-slate-700 dark:text-slate-300">
+                    <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-700 dark:text-slate-300">
                       {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalCost)}
                     </td>
-                    <td className="p-3.5 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
                       {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
                     </td>
-                    <td className="p-3.5 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
                       {isSecretMode ? '••٪' : `${toPersianDigits(summaryMetrics.overallMargin.toFixed(1))}٪`}
                     </td>
-                    <td className="p-3.5 text-center text-[11px] text-slate-500 font-medium">
+                    <td className="py-2.5 px-3 text-center text-[11px] text-slate-500 font-medium">
                       میانگین سود هر فاکتور: {formatPrice(summaryMetrics.avgProfitPerInvoice)}
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-import { Invoice, InvoiceItem, ProductReturn } from '../types';
+import { Invoice, InvoiceItem, ProductReturn, Product } from '../types';
 
 export interface InvoiceCalculatedTotals {
   matchedReturns: ProductReturn[];
@@ -140,3 +140,74 @@ export function getInvoiceCalculatedTotals(
     hasReturns: totalReturnsAmount > 0,
   };
 }
+
+/**
+ * Normalizes Persian string for accurate comparison
+ */
+export function normalizePersianStr(str?: string): string {
+  if (!str) return '';
+  return str
+    .trim()
+    .toLowerCase()
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[\s\-_]+/g, ' ');
+}
+
+/**
+ * Calculates the effective acquisition/purchase cost for a product,
+ * taking into account any supplier purchase discounts recorded in purchase invoices.
+ */
+export function getProductDiscountedPurchasePrice(
+  productId?: string,
+  productName?: string,
+  fallbackPrice: number = 0,
+  invoices: Invoice[] = [],
+  products: Product[] = []
+): number {
+  let matchingProduct: Product | undefined;
+  if (productId && products && products.length > 0) {
+    matchingProduct = products.find(p => p.id === productId);
+  }
+  if (!matchingProduct && productName && products && products.length > 0) {
+    const target = normalizePersianStr(productName);
+    matchingProduct = products.find(p => {
+      const pName = normalizePersianStr(p.name);
+      return pName === target || pName.includes(target) || target.includes(pName);
+    });
+  }
+
+  const basePrice = (matchingProduct && matchingProduct.purchasePrice > 0) ? matchingProduct.purchasePrice : fallbackPrice;
+
+  if (!invoices || invoices.length === 0) {
+    return basePrice;
+  }
+
+  // Search finalized purchase invoices for the exact acquisition cost including supplier invoice discount
+  const purchaseInvs = invoices.filter(inv => inv.type === 'purchase' && !inv.isDraft && inv.items);
+  // Sort to inspect latest purchase invoices first
+  const sortedPurchases = [...purchaseInvs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  for (const pInv of sortedPurchases) {
+    const found = pInv.items.find(pi => 
+      (productId && pi.productId === productId) || 
+      (productName && pi.productName && normalizePersianStr(pi.productName) === normalizePersianStr(productName))
+    );
+    if (found) {
+      const hasDiscount = Boolean(pInv.hasDiscount || (pInv.discount && pInv.discount > 0));
+      const grossSubtotal = (pInv.items || []).reduce((s, it) => s + (it.totalPrice || (it.totalPieces * (it.unitPurchasePrice || it.unitPrice || 0))), 0);
+      const discountPercent = pInv.discountPercent || (grossSubtotal > 0 && pInv.discount ? (pInv.discount / grossSubtotal) * 100 : 0);
+      
+      let rawUnitCost = found.unitPurchasePrice || (found.totalPieces > 0 && found.totalPurchaseCost ? Math.round(found.totalPurchaseCost / found.totalPieces) : (found.unitPrice || 0));
+      if (rawUnitCost > 0) {
+        if (hasDiscount && discountPercent > 0) {
+          return Math.round(rawUnitCost * (1 - (discountPercent / 100)));
+        }
+        return rawUnitCost;
+      }
+    }
+  }
+
+  return basePrice;
+}
+

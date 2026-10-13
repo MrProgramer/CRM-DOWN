@@ -3074,6 +3074,7 @@ export default function App() {
             >
               <InventoryManager
                 products={products}
+                invoices={invoices}
                 settings={settings}
                 isSecretMode={isSecretMode}
                 onToggleSecretMode={handleToggleSecretMode}

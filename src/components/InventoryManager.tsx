@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Product, StoreSettings } from '../types';
+import { Product, StoreSettings, Invoice } from '../types';
 import { 
   formatPrice, 
   formatCartonText, 
@@ -10,6 +10,7 @@ import {
   isProductUnpackaged,
   getProductEffectiveCartonSize
 } from '../utils/formatters';
+import { getProductDiscountedPurchasePrice } from '../utils/invoiceCalculations';
 import { themes, getThemeBadges } from './ThemeConfig';
 import { CategoryManagerModal } from './CategoryManagerModal';
 import { InventoryAuditReport } from './InventoryAuditReport';
@@ -57,7 +58,8 @@ import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
   CreditCard,
-  Coins
+  Coins,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Pagination } from './Pagination';
@@ -79,6 +81,7 @@ const isDefaultPackagingNote = (notes: string): boolean => {
 
 interface InventoryManagerProps {
   products: Product[];
+  invoices?: Invoice[];
   settings: StoreSettings;
   isSecretMode: boolean;
   onToggleSecretMode: () => void;
@@ -106,6 +109,7 @@ interface InventoryManagerProps {
 
 export const InventoryManager: React.FC<InventoryManagerProps> = ({
   products,
+  invoices = [],
   settings,
   isSecretMode,
   onToggleSecretMode,
@@ -150,6 +154,129 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   const [editingCategoryOld, setEditingCategoryOld] = useState<string | null>(null);
   const [editingCategoryNew, setEditingCategoryNew] = useState('');
   const [categoryActionSuccess, setCategoryActionSuccess] = useState<string | null>(null);
+
+  const [salesFilter, setSalesFilter] = useState<'all' | 'has_sales' | 'top_sellers' | 'no_sales'>('all');
+
+  // Product sales stats from invoices (incorporating discounted purchase prices)
+  const productSalesStats = useMemo(() => {
+    const map = new Map<string, { totalSoldPieces: number; totalSoldCartons: number; totalSoldLoose: number; totalRevenue: number; totalCost: number; totalProfit: number; invoiceCount: number }>();
+    if (!invoices) return map;
+
+    for (const inv of invoices) {
+      if (inv.type !== 'sale' || inv.isDraft) continue;
+      for (const item of inv.items || []) {
+        const pId = item.productId;
+        if (!pId) continue;
+        const current = map.get(pId) || { totalSoldPieces: 0, totalSoldCartons: 0, totalSoldLoose: 0, totalRevenue: 0, totalCost: 0, totalProfit: 0, invoiceCount: 0 };
+        
+        const pieces = item.totalPieces ?? ((item.cartonsCount || 0) * (item.piecesPerCarton || 1) + (item.extraPieces || 0));
+        const ppc = item.piecesPerCarton || 1;
+        const cartons = item.cartonsCount ?? (ppc > 1 ? Math.floor(pieces / ppc) : 0);
+        const loose = item.extraPieces ?? (ppc > 1 ? pieces % ppc : pieces);
+
+        const rev = (item.totalPrice !== undefined && item.totalPrice > 0) ? item.totalPrice : (pieces * (item.unitSellingPrice || item.unitPrice || 0));
+        // Effective acquisition cost taking purchase invoice discounts into account
+        const unitDiscCost = getProductDiscountedPurchasePrice(pId, item.productName, item.unitPurchasePrice || 0, invoices, products);
+        const cost = pieces * unitDiscCost;
+        const prof = rev - cost;
+
+        current.totalSoldPieces += pieces;
+        current.totalSoldCartons += cartons;
+        current.totalSoldLoose += loose;
+        current.totalRevenue += rev;
+        current.totalCost += cost;
+        current.totalProfit += prof;
+        current.invoiceCount += 1;
+
+        map.set(pId, current);
+      }
+    }
+    return map;
+  }, [invoices, products]);
+
+  // Max sold cartons across all products to determine top seller
+  const maxSoldCartons = useMemo(() => {
+    let max = 0;
+    for (const p of products) {
+      const stats = productSalesStats.get(p.id);
+      if (!stats || stats.totalSoldPieces <= 0) continue;
+      const isUnpack = isProductUnpackaged(p);
+      const ppc = getProductEffectiveCartonSize(p);
+      const cartons = (!isUnpack && ppc > 1) ? Math.floor(stats.totalSoldPieces / ppc) : (stats?.totalSoldCartons || 0);
+      if (cartons > max) {
+        max = cartons;
+      }
+    }
+    return max;
+  }, [products, productSalesStats]);
+
+  // Max sold pieces across all products to determine top seller if all cartons are 0
+  const maxSoldPieces = useMemo(() => {
+    let max = 0;
+    for (const p of products) {
+      const stats = productSalesStats.get(p.id);
+      if (!stats || stats.totalSoldPieces <= 0) continue;
+      if (stats.totalSoldPieces > max) {
+        max = stats.totalSoldPieces;
+      }
+    }
+    return max;
+  }, [products, productSalesStats]);
+
+  // Overall sales summary across all products and invoices (including out-of-stock items & discounted purchase costs)
+  const overallSalesSummary = useMemo(() => {
+    let totalPiecesSum = 0;
+    let totalRevenueSum = 0;
+    let totalPurchaseCostSum = 0;
+    let totalProfitSum = 0;
+    let sumCartons = 0;
+    let sumLoose = 0;
+
+    for (const [pId, stats] of productSalesStats.entries()) {
+      totalPiecesSum += stats.totalSoldPieces;
+      totalRevenueSum += stats.totalRevenue;
+      
+      const prod = products.find(p => p.id === pId);
+      const isUnpack = prod ? isProductUnpackaged(prod) : false;
+      const ppc = prod ? getProductEffectiveCartonSize(prod) : 1;
+      
+      const cartonsSold = (!isUnpack && ppc > 1) ? Math.floor(stats.totalSoldPieces / ppc) : (stats.totalSoldCartons || 0);
+      const looseSold = (!isUnpack && ppc > 1) ? (stats.totalSoldPieces % ppc) : (stats.totalSoldLoose || 0);
+      sumCartons += cartonsSold;
+      sumLoose += looseSold;
+
+      const unitDiscCost = getProductDiscountedPurchasePrice(pId, prod?.name, prod?.purchasePrice || 0, invoices, products);
+      const cost = stats.totalCost > 0 ? stats.totalCost : (stats.totalSoldPieces * unitDiscCost);
+      totalPurchaseCostSum += cost;
+      totalProfitSum += (stats.totalRevenue - cost);
+    }
+
+    return {
+      sumCartons,
+      sumLoose,
+      totalPiecesSum,
+      totalRevenueSum,
+      totalPurchaseCostSum,
+      totalProfitSum
+    };
+  }, [productSalesStats, products, invoices]);
+
+  // Overall current warehouse stock totals
+  const totalStockCartons = useMemo(() => {
+    return products.reduce((acc, p) => {
+      if (isProductUnpackaged(p)) return acc;
+      const ppc = getProductEffectiveCartonSize(p);
+      return acc + (ppc > 1 ? Math.floor(p.stockPieces / ppc) : 0);
+    }, 0);
+  }, [products]);
+
+  const totalStockLoose = useMemo(() => {
+    return products.reduce((acc, p) => {
+      if (isProductUnpackaged(p)) return acc;
+      const ppc = getProductEffectiveCartonSize(p);
+      return acc + (ppc > 1 ? (p.stockPieces % ppc) : 0);
+    }, 0);
+  }, [products]);
 
   // Sync customCategories to localStorage
   React.useEffect(() => {
@@ -595,7 +722,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   }, [products]);
 
   // Sorting state
-  type ProductSortField = 'index' | 'name' | 'price' | 'stock';
+  type ProductSortField = 'index' | 'name' | 'price' | 'stock' | 'sold';
   const [sortField, setSortField] = useState<ProductSortField>('index');
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const productSortOrder = sortDirection;
@@ -621,7 +748,26 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     if (hideZeroStock && p.stockPieces <= 0) return false;
     const matchesSearch = p.name.includes(searchQuery) || (p.notes && p.notes.includes(searchQuery));
     const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
-    return matchesSearch && matchesCat;
+    if (!matchesSearch || !matchesCat) return false;
+
+    if (salesFilter === 'has_sales') {
+      const stats = productSalesStats.get(p.id);
+      return stats && stats.totalSoldPieces > 0;
+    }
+    if (salesFilter === 'no_sales') {
+      const stats = productSalesStats.get(p.id);
+      return !stats || stats.totalSoldPieces <= 0;
+    }
+    if (salesFilter === 'top_sellers') {
+      const stats = productSalesStats.get(p.id);
+      if (!stats || stats.totalSoldPieces <= 0) return false;
+      const ppc = getProductEffectiveCartonSize(p);
+      const isUnpack = isProductUnpackaged(p);
+      const cartons = (!isUnpack && ppc > 1) ? Math.floor(stats.totalSoldPieces / ppc) : 0;
+      return (maxSoldCartons > 0 && cartons === maxSoldCartons) || (maxSoldCartons === 0 && stats.totalSoldPieces === maxSoldPieces);
+    }
+
+    return true;
   });
 
   // Sort products
@@ -634,6 +780,22 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         cmp = a.sellingPrice - b.sellingPrice;
       } else if (sortField === 'stock') {
         cmp = a.stockPieces - b.stockPieces;
+      } else if (sortField === 'sold') {
+        const ppcA = getProductEffectiveCartonSize(a);
+        const ppcB = getProductEffectiveCartonSize(b);
+        const statsA = productSalesStats.get(a.id);
+        const statsB = productSalesStats.get(b.id);
+        const piecesA = statsA?.totalSoldPieces || 0;
+        const piecesB = statsB?.totalSoldPieces || 0;
+        const isUnpackA = isProductUnpackaged(a);
+        const isUnpackB = isProductUnpackaged(b);
+        const cartonsA = (!isUnpackA && ppcA > 1) ? Math.floor(piecesA / ppcA) : (statsA?.totalSoldCartons || 0);
+        const cartonsB = (!isUnpackB && ppcB > 1) ? Math.floor(piecesB / ppcB) : (statsB?.totalSoldCartons || 0);
+        if (cartonsA !== cartonsB) {
+          cmp = cartonsA - cartonsB;
+        } else {
+          cmp = piecesA - piecesB;
+        }
       } else {
         // index / time
         const aTime = (a as any).createdAt || (a.id.startsWith('prod-') ? Number(a.id.replace('prod-', '')) : 0);
@@ -648,12 +810,12 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       }
       return sortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [filteredProducts, sortField, sortDirection, products]);
+  }, [filteredProducts, sortField, sortDirection, products, productSalesStats]);
 
-  // Reset page when category, search, hideZeroStock or sort changes
+  // Reset page when category, search, hideZeroStock, salesFilter or sort changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, searchQuery, hideZeroStock, sortField, sortDirection]);
+  }, [selectedCategory, searchQuery, hideZeroStock, salesFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -677,6 +839,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     return (
       <InventoryAuditReport
         products={products}
+        invoices={invoices}
         settings={settings}
         isSecretMode={isSecretMode}
         onBack={() => setIsAuditView(false)}
@@ -775,14 +938,14 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         </div>
       </div>
 
-      {/* Warehouse Summary Cards - Cohesive Rounded-3xl Style like ReturnsManager */}
+      {/* Warehouse Summary Cards - Flat Modern Theme-Aligned */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
         {/* Card 1: Total Items */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">تعداد اقلام تعریف شده</span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">تعداد اقلام تعریف شده</span>
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
               <Layers className="w-4 h-4" />
             </div>
           </div>
@@ -791,44 +954,40 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>مجموع موجودی عددی:</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+            <span className="font-bold text-slate-900 dark:text-slate-200 font-mono">
               {toPersianDigits(totalStockPieces.toLocaleString())} عدد
             </span>
           </div>
         </div>
 
         {/* Card 2: Total Cartons */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-amber-200/70 dark:border-amber-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">کارتن‌های فیزیکی انبار</span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">کارتن‌های فیزیکی انبار</span>
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
               <Boxes className="w-4 h-4" />
             </div>
           </div>
           <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(products.reduce((acc, p) => {
-              if (isProductUnpackaged(p)) return acc;
-              const ppc = getProductEffectiveCartonSize(p);
-              return acc + (ppc > 1 ? Math.floor(p.stockPieces / ppc) : 0);
-            }, 0))} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">کارتن کامل</span>
+            {toPersianDigits(totalStockCartons)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">کارتن کامل</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>آماده بارگیری و توزیع:</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
+            <span className="font-bold text-slate-900 dark:text-slate-200 font-mono">
               {toPersianDigits(products.filter(p => p.stockPieces > 0).length)} قلم موجود
             </span>
           </div>
         </div>
 
         {/* Card 3: Total Inventory Value */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">ارزش کل انبار (قیمت خرید)</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
-              <Package className="w-4 h-4" />
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">ارزش کل انبار (قیمت خرید)</span>
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+              <Coins className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {!isSecretMode ? formatPrice(totalInventoryValue) : '••••••••'}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -840,20 +999,20 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         </div>
 
         {/* Card 4: Potential Sales Revenue */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-purple-200/70 dark:border-purple-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-700 dark:text-purple-400">پتانسیل فروش کل انبار</span>
-            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">پتانسیل فروش کل انبار</span>
+            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-purple-700 dark:text-purple-300 mt-3 dir-ltr text-right">
+          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalPotentialRevenue)}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>سود پیش‌بینی توزیع:</span>
-            <span className="font-bold text-purple-600 dark:text-purple-400 font-mono">
-              {!isSecretMode ? formatPrice(totalPotentialRevenue - totalInventoryValue) : 'نرخ مصوب'}
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+              {!isSecretMode ? `+${formatPrice(totalPotentialRevenue - totalInventoryValue)}` : 'نرخ مصوب'}
             </span>
           </div>
         </div>
@@ -918,6 +1077,56 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
               </span>
             )}
           </label>
+        </div>
+
+        {/* Sales Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs">
+          <span className="text-slate-400 dark:text-slate-500 text-[11px] font-bold shrink-0 ml-1">فیلتر فروش:</span>
+          <button
+            type="button"
+            onClick={() => setSalesFilter('all')}
+            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all cursor-pointer border ${
+              salesFilter === 'all'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            همه اقلام ({toPersianDigits(products.length)})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSalesFilter('top_sellers')}
+            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all cursor-pointer border flex items-center gap-1 ${
+              salesFilter === 'top_sellers'
+                ? 'bg-amber-500 text-white border-transparent shadow-xs font-black'
+                : 'bg-slate-50 dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5" />
+            <span>پرفروش‌ترین‌ها</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSalesFilter('has_sales')}
+            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all cursor-pointer border ${
+              salesFilter === 'has_sales'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            دارای فروش ({toPersianDigits(products.filter(p => (productSalesStats.get(p.id)?.totalSoldPieces || 0) > 0).length)})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSalesFilter('no_sales')}
+            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all cursor-pointer border ${
+              salesFilter === 'no_sales'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            بدون فروش ({toPersianDigits(products.filter(p => (productSalesStats.get(p.id)?.totalSoldPieces || 0) <= 0).length)})
+          </button>
         </div>
 
         <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto text-xs">
@@ -987,13 +1196,24 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   موجودی کالا
                 </SortableTableHeader>
 
+                <SortableTableHeader
+                  field="sold"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[160px]"
+                >
+                  تعداد کارتن و مبلغ فروش‌رفته
+                </SortableTableHeader>
+
                 <th className="py-3.5 px-3 text-center w-28 text-xs sm:text-[13px] font-bold text-slate-700 dark:text-slate-300">عملیات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-[13px]">
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs sm:text-sm">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs sm:text-sm">
                     <Boxes className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
                     <span>کالایی با فیلترها و معیارهای انتخاب‌شده یافت نشد.</span>
                     {hideZeroStock && (
@@ -1162,15 +1382,99 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             {toPersianDigits(remainderInStock)} دانه (&lt; ۱ کارتن)
                           </div>
                         )}
+
+                        {/* Total inventory values based on purchase and selling price */}
+                        {prod.stockPieces > 0 && (
+                          <div className="flex flex-col items-center gap-0.5 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] font-mono">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold" title="ارزش کل موجودی بر اساس قیمت خرید">
+                              خرید: {formatPrice(prod.stockPieces * prod.purchasePrice)}
+                            </span>
+                            <span className="text-blue-600 dark:text-blue-400 font-bold" title="ارزش کل موجودی بر اساس قیمت فروش">
+                              فروش: {formatPrice(prod.stockPieces * prod.sellingPrice)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </td>
 
-                    {/* Flat Modern Action buttons */}
-                    <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                      <div className="inline-flex items-center justify-center gap-1.5 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                    {/* Sold Cartons & Total Revenue Column */}
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      {(() => {
+                        const stats = productSalesStats.get(prod.id) || { totalSoldPieces: 0, totalSoldCartons: 0, totalSoldLoose: 0, totalRevenue: 0, totalCost: 0, totalProfit: 0, invoiceCount: 0 };
+                        const isUnpack = isProductUnpackaged(prod);
+                        const ppc = getProductEffectiveCartonSize(prod);
+                        const cartonsSold = (!isUnpack && ppc > 1) ? Math.floor(stats.totalSoldPieces / ppc) : (stats.totalSoldCartons || 0);
+                        const looseSold = (!isUnpack && ppc > 1) ? (stats.totalSoldPieces % ppc) : (stats.totalSoldLoose || 0);
+
+                        const isTopCartonSeller = maxSoldCartons > 0 && cartonsSold === maxSoldCartons && stats.totalSoldPieces > 0;
+                        const isTopPieceSeller = maxSoldCartons === 0 && maxSoldPieces > 0 && stats.totalSoldPieces === maxSoldPieces;
+                        const isZeroSold = stats.totalSoldPieces <= 0;
+                        const isWeakSeller = !isZeroSold && !isTopCartonSeller && !isTopPieceSeller && (
+                          (maxSoldCartons > 0 && cartonsSold === 0) ||
+                          (maxSoldPieces > 10 && stats.totalSoldPieces <= Math.max(3, Math.round(maxSoldPieces * 0.15)))
+                        );
+
+                        return (
+                          <div className="flex flex-col items-center justify-center gap-1 font-mono">
+                            {isZeroSold ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-sans text-[10px] font-bold border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                                  بدون فروش (فروش نرفته)
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-sans">
+                                  ۰ عدد فروخته شده
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                  <span className="font-black text-slate-900 dark:text-white text-xs">
+                                    {cartonsSold > 0 ? `${toPersianDigits(cartonsSold)} کارتن` : ''}
+                                    {cartonsSold > 0 && looseSold > 0 ? ' + ' : ''}
+                                    {looseSold > 0 || cartonsSold === 0 ? `${toPersianDigits(looseSold)} عدد` : ''}
+                                  </span>
+                                  {isTopCartonSeller && (
+                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${theme.primary} text-white font-black text-[9px] shadow-xs whitespace-nowrap`} title={`پرفروش‌ترین کالا بر اساس تعداد کارتن (${toPersianDigits(cartonsSold)} کارتن)`}>
+                                      <Flame className="w-3 h-3 fill-white shrink-0" />
+                                      بیشترین فروش (کارتن)
+                                    </span>
+                                  )}
+                                  {isTopPieceSeller && (
+                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md ${theme.primary} text-white font-black text-[9px] shadow-xs whitespace-nowrap`} title={`پرفروش‌ترین کالا بر اساس تعداد (${toPersianDigits(stats.totalSoldPieces)} دانه)`}>
+                                      <Flame className="w-3 h-3 fill-white shrink-0" />
+                                      بیشترین فروش
+                                    </span>
+                                  )}
+                                  {isWeakSeller && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold text-[9px] border border-amber-200 dark:border-amber-800/60 whitespace-nowrap" title="فروش ضعیف نسبت به سایر کالاها">
+                                      فروش ضعیف
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-sans">
+                                  کل دانه‌ها: <b className="font-mono text-slate-600 dark:text-slate-300">{toPersianDigits(stats.totalSoldPieces.toLocaleString())}</b> عدد
+                                </div>
+                                <div className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px] pt-1 mt-0.5 border-t border-slate-100 dark:border-slate-800 w-full text-center">
+                                  فروش: {formatPrice(stats.totalRevenue)}
+                                </div>
+                                {stats.totalProfit > 0 && !isSecretMode && (
+                                  <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-sans">
+                                    سود: <b className="font-mono">+{formatPrice(stats.totalProfit)}</b> ({toPersianDigits(stats.invoiceCount)} فاکتور)
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
+
+                    {/* Compact Modern Action buttons */}
+                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
+                      <div className="inline-flex items-center justify-center gap-1 p-1 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
                         <button
                           onClick={() => handleOpenRestock(prod)}
-                          className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                           title="شارژ موجودی (خرید مجدد)"
                         >
                           <PlusCircle className="w-3.5 h-3.5 shrink-0" />
@@ -1178,28 +1482,26 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                         {prod.stockPieces > 0 ? (
                           <button
                             onClick={() => handleTriggerZeroConfirm(prod)}
-                            className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-                            title="صفر کردن موجودی کالا با تأیید"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            title="صفر کردن موجودی کالا"
                           >
                             <RotateCcw className="w-3.5 h-3.5 shrink-0" />
                           </button>
                         ) : (
-                          <span className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 text-[10px] font-black border border-rose-200 dark:border-rose-900/60 whitespace-nowrap shrink-0">
+                          <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-[9px] font-black" title="موجودی این کالا در انبار صفر است">
                             صفر
                           </span>
                         )}
                         <button
                           onClick={() => handleOpenEdit(prod)}
-                          className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-                          title="ویرایش کالا و تنظیم موجودی"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                          title="ویرایش کالا و مشخصات"
                         >
                           <Edit className="w-3.5 h-3.5 shrink-0" />
                         </button>
                         <button
-                          onClick={() => {
-                            onDeleteProduct(prod.id);
-                          }}
-                          className="p-1.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+                          onClick={() => onDeleteProduct(prod.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-500 dark:text-rose-400 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                           title="حذف کالا از انبار"
                         >
                           <Trash2 className="w-3.5 h-3.5 shrink-0" />
@@ -1210,10 +1512,158 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 );
               }))}
             </tbody>
+            {/* Professional 6-Column Aligned Table Footer */}
+            <tfoot className="bg-slate-100/90 dark:bg-slate-950 font-black border-t-2 border-slate-300 dark:border-slate-800 text-xs">
+              <tr>
+                {/* Col 1 & 2: Row & Product Summary */}
+                <td colSpan={2} className="py-4 px-4 text-right">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shrink-0`}>
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
+                        جمع کل آمار انبار و فروش بازرگانی
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
+                        محاسبه زنده شامل تمام فاکتورها (حتی اقلام ناموجود)
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Col 3: Items Count & Status */}
+                <td className="py-4 px-3 text-left whitespace-nowrap">
+                  {(() => {
+                    const inStockCount = products.filter(p => p.stockPieces > 0).length;
+                    const zeroStockCount = products.filter(p => p.stockPieces <= 0).length;
+                    const totalCount = products.length;
+
+                    return (
+                      <div className="flex flex-col items-start gap-1 font-sans text-xs">
+                        <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span>{toPersianDigits(inStockCount)} قلم دارای موجودی</span>
+                          {!hideZeroStock && (
+                            <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                              (از کل {toPersianDigits(totalCount)} قلم)
+                            </span>
+                          )}
+                        </span>
+                        {!hideZeroStock ? (
+                          <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                            <span>{toPersianDigits(zeroStockCount)} قلم موجودی صفر (اتمام موجودی)</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                            ({toPersianDigits(zeroStockCount)} قلم موجودی صفر فیلتر شده)
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </td>
+
+                {/* Col 4: Warehouse Current Inventory */}
+                <td className="py-4 px-3 text-center whitespace-nowrap">
+                  <div className="flex flex-col items-center justify-center gap-1 font-mono">
+                    <div className="font-black text-slate-900 dark:text-white text-xs">
+                      {toPersianDigits(totalStockCartons)} کارتن کامل
+                      {totalStockLoose > 0 ? ` + ${toPersianDigits(totalStockLoose)} دانه` : ''}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      موجودی فیزیکی: {toPersianDigits(totalStockPieces.toLocaleString())} عدد
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5 pt-1 mt-0.5 border-t border-slate-200 dark:border-slate-800 text-[10.5px]">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold" title="ارزش کل سرمایه خرید موجودی">
+                        سرمایه خرید: {!isSecretMode ? formatPrice(totalInventoryValue) : '••••••••'}
+                      </span>
+                      <span className="text-blue-600 dark:text-blue-400 font-bold" title="ارزش کل فروش بالقوه موجودی">
+                        ارزش فروش: {formatPrice(totalPotentialRevenue)}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Col 5: Total Sold Cartons & Revenue (All Invoices including Out of Stock) */}
+                <td className="py-4 px-3 text-center whitespace-nowrap">
+                  <div className="flex flex-col items-center justify-center gap-1 font-mono">
+                    <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                      {toPersianDigits(overallSalesSummary.sumCartons)} کارتن فروش‌رفته
+                      {overallSalesSummary.sumLoose > 0 ? ` + ${toPersianDigits(overallSalesSummary.sumLoose)} دانه` : ''}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      کل دانه‌های فروش‌رفته: {toPersianDigits(overallSalesSummary.totalPiecesSum.toLocaleString())} عدد
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5 pt-1 mt-0.5 border-t border-slate-200 dark:border-slate-800 text-[10.5px] w-full">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        کل مبلغ فروش: {formatPrice(overallSalesSummary.totalRevenueSum)}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">
+                        بهای خرید اقلام: {formatPrice(overallSalesSummary.totalPurchaseCostSum)}
+                      </span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-black">
+                        سود ناخالص کل: +{formatPrice(overallSalesSummary.totalProfitSum)}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Col 6: Actions */}
+                <td className="py-4 px-2 text-center text-slate-400 font-bold">
+                  —
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
 
-        {/* Pagination Controls */}
+        {/* Sales & Inventory Quick Summary Ribbon */}
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span>کل کارتن‌های فروش‌رفته:</span>
+              <Boxes className="w-3.5 h-3.5 text-amber-500" />
+            </div>
+            <div className="text-sm font-black text-slate-900 dark:text-white mt-1 font-mono">
+              {toPersianDigits(overallSalesSummary.sumCartons)} کارتن <span className="text-[10px] text-slate-400 font-sans">({toPersianDigits(overallSalesSummary.sumLoose)} دانه)</span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span>درآمد ناخالص فروش:</span>
+              <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+            </div>
+            <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+              {formatPrice(overallSalesSummary.totalRevenueSum)}
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span>بهای خرید فروش‌رفته:</span>
+              <Coins className="w-3.5 h-3.5 text-amber-500" />
+            </div>
+            <div className="text-sm font-black text-slate-700 dark:text-slate-300 mt-1 font-mono">
+              {!isSecretMode ? formatPrice(overallSalesSummary.totalPurchaseCostSum) : '••••••••'}
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span>سود ناخالص فروش:</span>
+              <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+            </div>
+            <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1 font-mono">
+              {!isSecretMode ? `+${formatPrice(overallSalesSummary.totalProfitSum)}` : '••••••••'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -1228,7 +1678,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           itemName="کالا"
           themeColor={settings.themeColor}
         />
-      </div>
 
       {/* Add / Edit Product Modal */}
       <ProductFormModal

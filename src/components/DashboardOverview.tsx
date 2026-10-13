@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { formatPrice, toPersianDigits, getCurrentPersianDate, getCurrentPersianTime, isDateInPeriod, TimePeriodFilter, getNetReturnAmount, getSavedTimePeriod, saveTimePeriod } from '../utils/formatters';
 import { calculateTotalMarketReceivables, calculateCustomerLiveBalance } from '../utils/customerBalanceCalculations';
+import { getProductDiscountedPurchasePrice } from '../utils/invoiceCalculations';
 import { 
   TrendingUp, 
   Boxes, 
@@ -105,6 +106,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const [copiedIban, setCopiedIban] = useState(false);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriodFilter>(() => getSavedTimePeriod('month'));
+  const [executiveViewSection, setExecutiveViewSection] = useState<'all' | 'performance' | 'risk_radar' | 'liquidity_stream'>('all');
 
   // Sales Target State (Persisted)
   const [monthlyTarget, setMonthlyTarget] = useState<number>(() => {
@@ -148,10 +150,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const totalSalesRevenue = salesInvoices.reduce((sum, inv) => sum + inv.finalAmount, 0);
   const totalSalesCost = salesInvoices.reduce((sum, inv) => {
     return sum + inv.items.reduce((s, it) => {
-      const prod = products.find(p => p.id === it.productId || p.name === it.productName);
-      const uCost = (prod?.purchasePrice && prod.purchasePrice > 0)
-        ? prod.purchasePrice
-        : (it.unitPurchasePrice || 0);
+      // Acquisition cost incorporating purchase discounts
+      const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
       return s + (it.totalPieces * uCost);
     }, 0);
   }, 0);
@@ -366,7 +366,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   // Top fast-selling & profitable products
   const topProducts = React.useMemo(() => {
-    const map = new Map<string, { product: Product; totalQuantity: number; totalRevenue: number; totalProfit: number }>();
+    const map = new Map<string, { product: Product; totalQuantity: number; totalRevenue: number; totalProfit: number; cartons: number; loose: number }>();
     salesInvoices.forEach(inv => {
       inv.items.forEach(it => {
         const prod = products.find(p => p.id === it.productId || p.name === it.productName);
@@ -378,7 +378,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             name: it.productName, 
             category: 'عمومی', 
             purchasePrice: it.unitPurchasePrice || 0, 
-            sellingPrice: it.unitPrice || 0, 
+            sellingPrice: it.unitSellingPrice || it.unitPrice || 0, 
             stockPieces: 0, 
             piecesPerCarton: it.piecesPerCarton || 1, 
             packsPerCarton: 1, 
@@ -390,20 +390,30 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           totalQuantity: 0,
           totalRevenue: 0,
           totalProfit: 0,
+          cartons: 0,
+          loose: 0,
         };
-        const uCost = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0)
-          ? it.unitPurchasePrice
-          : ((prod?.purchasePrice && prod.purchasePrice > 0) ? prod.purchasePrice : 0);
-        const itemRev = it.totalPieces * (it.unitPrice || 0);
-        const itemProfit = itemRev - (it.totalPieces * uCost);
+        const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || 0, invoices, products);
+        const itemRev = (it.totalPrice !== undefined && it.totalPrice > 0)
+          ? it.totalPrice
+          : (it.totalPieces * (it.unitSellingPrice || it.unitPrice || prod?.sellingPrice || 0));
+        const itemCost = it.totalPieces * uCost;
+        const itemProfit = itemRev - itemCost;
+
+        const ppc = it.piecesPerCarton || prod?.piecesPerCarton || 1;
+        const cCount = it.cartonsCount !== undefined ? it.cartonsCount : (ppc > 1 ? Math.floor(it.totalPieces / ppc) : 0);
+        const lCount = it.extraPieces !== undefined ? it.extraPieces : (ppc > 1 ? it.totalPieces % ppc : it.totalPieces);
+
         cur.totalQuantity += it.totalPieces;
         cur.totalRevenue += itemRev;
         cur.totalProfit += itemProfit;
+        cur.cartons += cCount;
+        cur.loose += lCount;
         map.set(key, cur);
       });
     });
-    return Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 4);
-  }, [salesInvoices, products]);
+    return Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
+  }, [salesInvoices, products, invoices]);
 
   // Top active trading partners / customers
   const topCustomers = React.useMemo(() => {
@@ -1042,369 +1052,453 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </div>
       </div>
-      <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-none transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <span className={`p-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
-              <Banknote className="w-4 h-4" />
-            </span>
-            <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                نبض نقدینگی حاضر و سرمایه در گردش بازرگانی
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                تراز زنده موجودی وجوه نقد، سپرده‌های بانکی و تفکیک جریان ورودی/خروجی
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onNavigateToTab('liquidity')}
-              className={`px-3 py-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor} text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5`}
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              <span>مدیریت خزانه‌داری ←</span>
-            </button>
+      {/* 2.3 EXECUTIVE HUB CONTROLS & SECTION TABS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-2">
+          <span className={`p-1.5 rounded-lg ${currentTheme.badgeBg} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
+            <BarChart2 className="w-4 h-4" />
+          </span>
+          <div>
+            <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+              دیده‌بان تحلیلی و عملیاتی بازرگانی
+            </h2>
+            <p className="text-[10px] text-slate-400">
+              دسترسی سریع به عملکرد فروش کالاها، ریسک وصول مطالبات و گردش نقدینگی
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Liquidity Metric 1: Cash Safe */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
-              <span>موجودی صندوق نقد</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            </div>
-            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono">
-              {formatPrice(cashBalance)}
-            </div>
-            <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-              <span>وجوه فیزیکی حاضر</span>
-              <span className="text-slate-600 dark:text-slate-300 font-bold">صندوق اصلی</span>
-            </div>
-          </div>
-
-          {/* Liquidity Metric 2: Bank Accounts */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
-              <span>موجودی حساب‌های بانکی</span>
-              <CreditCard className="w-3.5 h-3.5 text-blue-500" />
-            </div>
-            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono">
-              {formatPrice(bankBalance)}
-            </div>
-            <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-              <span>کارت‌ها و پوز بانکی</span>
-              <span className="text-blue-600 dark:text-blue-400 font-bold font-mono dir-ltr">{settings.bankName?.split('-')[0]?.trim() || 'بانکی'}</span>
-            </div>
-          </div>
-
-          {/* Liquidity Metric 3: Total Liquid Funds */}
-          <div className={`p-3.5 rounded-xl ${currentTheme.badgeBg} border ${currentTheme.borderColor} space-y-1.5`}>
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className={currentTheme.primaryText}>مجموع نقدینگی آنی (صندوق + بانک)</span>
-              <Zap className={`w-3.5 h-3.5 ${currentTheme.primaryText}`} />
-            </div>
-            <div className={`text-base sm:text-lg font-black ${currentTheme.primaryText} font-mono`}>
-              {formatPrice(totalLiquidityNow)}
-            </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-              <span>توان پرداخت نقدی بدون نسیه</span>
-              <span className="font-bold">۱۰۰٪ آماده</span>
-            </div>
-          </div>
-
-          {/* Liquidity Metric 4: Market Receivables */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
-              <span>طلب تسویه نشده از خریداران</span>
-              <Users className="w-3.5 h-3.5 text-purple-500" />
-            </div>
-            <div className="text-base sm:text-lg font-black text-purple-700 dark:text-purple-300 font-mono">
-              {formatPrice(totalCustomerReceivables || totalCreditAmount)}
-            </div>
-            <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-              <span>تعداد فاکتورهای نسیه:</span>
-              <span className="text-purple-600 dark:text-purple-400 font-bold">{toPersianDigits(creditSales.length)} سند</span>
-            </div>
-          </div>
+        {/* Segmented Filter Pills */}
+        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 gap-1 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setExecutiveViewSection('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              executiveViewSection === 'all'
+                ? `${currentTheme.primary} text-white shadow-xs`
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            همه بخش‌ها
+          </button>
+          <button
+            type="button"
+            onClick={() => setExecutiveViewSection('performance')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              executiveViewSection === 'performance'
+                ? `${currentTheme.primary} text-white shadow-xs`
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-500" />
+            <span>پرفروش‌ترین‌ها و خریداران</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setExecutiveViewSection('risk_radar')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              executiveViewSection === 'risk_radar'
+                ? `${currentTheme.primary} text-white shadow-xs`
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-purple-500" />
+            <span>رادار ریسک و مطالبات</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setExecutiveViewSection('liquidity_stream')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              executiveViewSection === 'liquidity_stream'
+                ? `${currentTheme.primary} text-white shadow-xs`
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Wallet className="w-3.5 h-3.5 text-emerald-500" />
+            <span>نبض نقدینگی و بانک</span>
+          </button>
         </div>
       </div>
 
-      {/* 2.45 TOP PERFORMING PRODUCTS & TOP TRADING PARTNERS EXECUTIVE DUAL GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Products Card */}
-        <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                <Flame className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  پرفروش‌ترین و سودآورترین کالاها
-                </h3>
-                <p className="text-[10px] text-slate-400">بیشترین حجم فروش دوره جاری</p>
-              </div>
-            </div>
-            <button
-              onClick={() => onNavigateToTab('inventory')}
-              className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              مشاهده انبار ←
-            </button>
-          </div>
-
-          {topProducts.length === 0 ? (
-            <div className="py-6 text-center text-slate-400 text-xs font-bold">
-              هنوز فاکتور فروشی در این دوره ثبت نشده است.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {topProducts.map((item, pIdx) => (
-                <div
-                  key={`top-prod-${item.product.id || pIdx}`}
-                  className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
-                      {toPersianDigits(pIdx + 1)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[170px] sm:max-w-[220px]">
-                        {item.product.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        تعداد فروش: <strong className="text-slate-700 dark:text-slate-300">{toPersianDigits(item.totalQuantity)} عدد</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-left shrink-0">
-                    <div className="font-black text-slate-900 dark:text-white text-xs font-mono">
-                      {formatPrice(item.totalRevenue)}
-                    </div>
-                    {!isSecretMode && item.totalProfit > 0 && (
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                        +{formatPrice(item.totalProfit)} سود
-                      </div>
-                    )}
-                  </div>
+      {/* 2.4 TOP PERFORMING PRODUCTS & TOP TRADING PARTNERS */}
+      {(executiveViewSection === 'all' || executiveViewSection === 'performance') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Top Products Card */}
+          <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                  <Flame className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    پرفروش‌ترین و سودآورترین کالاها
+                  </h3>
+                  <p className="text-[10px] text-slate-400">بیشترین حجم فروش دوره جاری بر اساس قیمت فروش</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Top Trading Partners Card */}
-        <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                <Users className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  برترین خریداران و طرف‌حساب‌های تجاری
-                </h3>
-                <p className="text-[10px] text-slate-400">مشتریان با بالاترین گردش مالی دوره</p>
               </div>
+              <button
+                onClick={() => onNavigateToTab('inventory')}
+                className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                مشاهده انبار ←
+              </button>
             </div>
-            <button
-              onClick={() => onNavigateToTab('customers')}
-              className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              دفتر حساب‌ها ←
-            </button>
+
+            {topProducts.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-xs font-bold">
+                هنوز فاکتور فروشی در این دوره ثبت نشده است.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topProducts.map((item, pIdx) => (
+                  <div
+                    key={`top-prod-${item.product.id || pIdx}`}
+                    className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-black text-xs flex items-center justify-center shrink-0">
+                        {toPersianDigits(pIdx + 1)}
+                      </span>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate max-w-[170px] sm:max-w-[240px]">
+                          {item.product.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                          <span>حجم فروش:</span>
+                          <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                            {item.cartons > 0 ? `${toPersianDigits(item.cartons)} کارتن` : ''}
+                            {item.cartons > 0 && item.loose > 0 ? ' + ' : ''}
+                            {item.loose > 0 || item.cartons === 0 ? `${toPersianDigits(item.loose)} دانه` : ''}
+                          </strong>
+                          <span className="text-slate-400">({toPersianDigits(item.totalQuantity)} عدد)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-left shrink-0">
+                      <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm font-mono dir-ltr" title="مبلغ فروش رفته کالا بر اساس قیمت فروش">
+                        {formatPrice(item.totalRevenue)}
+                      </div>
+                      <div className="text-[9.5px] text-slate-400 dir-rtl text-right">
+                        مبلغ فروش رفته
+                      </div>
+                      {!isSecretMode && item.totalProfit > 0 && (
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-mono dir-ltr">
+                          +{formatPrice(item.totalProfit)} سود خالص
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {topCustomers.length === 0 ? (
-            <div className="py-6 text-center text-slate-400 text-xs font-bold">
-              هنوز خریدی در این دوره ثبت نشده است.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {topCustomers.map((c, cIdx) => (
-                <div
-                  key={`top-cust-${c.name}-${cIdx}`}
-                  className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
-                      {toPersianDigits(cIdx + 1)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[170px] sm:max-w-[220px]">
-                        {c.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {c.city ? `${c.city} • ` : ''}{toPersianDigits(c.count)} فقره فاکتور
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-left shrink-0">
-                    <div className="font-black text-slate-900 dark:text-white text-xs font-mono">
-                      {formatPrice(c.totalAmount)}
-                    </div>
-                    <span className="text-[9.5px] text-blue-600 dark:text-blue-400 font-bold">
-                      مشتری خوش‌حساب
-                    </span>
-                  </div>
+          {/* Top Trading Partners Card */}
+          <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                  <Users className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    برترین خریداران و طرف‌حساب‌های تجاری
+                  </h3>
+                  <p className="text-[10px] text-slate-400">مشتریان با بالاترین گردش مالی دوره</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 2.46 EXECUTIVE DUAL RADAR: OVERDUE DEBTORS RADAR & DEAD STOCK RADAR */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Radar 1: Overdue Debtors & Receivables Risk Radar */}
-        <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
-                <Users className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  رادار وصول مطالبات و بدهکاران بازار
-                </h3>
-                <p className="text-[10px] text-slate-400">مشتریان با بالاترین مانده بدهی باز نیازمند پیگیری</p>
               </div>
+              <button
+                onClick={() => onNavigateToTab('customers')}
+                className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                دفتر حساب‌ها ←
+              </button>
             </div>
-            <button
-              onClick={() => onNavigateToTab('customers')}
-              className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
-            >
-              دفتر مشتریان ←
-            </button>
-          </div>
 
-          {topDebtors.length === 0 ? (
-            <div className="py-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
-              <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
-              هیچ مانده بدهی بازی در حساب مشتریان وجود ندارد.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {topDebtors.map((d, dIdx) => (
-                <div
-                  key={`debtor-${d.customer.id || dIdx}`}
-                  className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
-                      {toPersianDigits(dIdx + 1)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[150px] sm:max-w-[200px]">
-                        {d.customer.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate flex items-center gap-1.5">
-                        {d.customer.city && <span>{d.customer.city}</span>}
-                        {d.lastDate && <span>• آخرین سند: {toPersianDigits(d.lastDate)}</span>}
+            {topCustomers.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-xs font-bold">
+                هنوز خریدی در این دوره ثبت نشده است.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topCustomers.map((c, cIdx) => (
+                  <div
+                    key={`top-cust-${c.name}-${cIdx}`}
+                    className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-black text-xs flex items-center justify-center shrink-0">
+                        {toPersianDigits(cIdx + 1)}
+                      </span>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate max-w-[170px] sm:max-w-[220px]">
+                          {c.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate">
+                          {c.city ? `${c.city} • ` : ''}{toPersianDigits(c.count)} فقره فاکتور
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-left">
-                      <div className="font-black text-purple-700 dark:text-purple-300 text-xs font-mono">
-                        {formatPrice(d.balance)}
+                    <div className="text-left shrink-0">
+                      <div className="font-black text-slate-900 dark:text-white text-xs sm:text-sm font-mono dir-ltr">
+                        {formatPrice(c.totalAmount)}
                       </div>
-                      <span className={`text-[9.5px] font-bold ${d.riskLevel === 'high' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {d.riskLevel === 'high' ? 'پیگیری فوری' : 'بدهی جاری'}
+                      <span className="text-[9.5px] text-blue-600 dark:text-blue-400 font-bold">
+                        گردش خرید
                       </span>
                     </div>
-
-                    {d.customer.phone && (
-                      <button
-                        onClick={() => handleCopyPhone(d.customer.phone, d.customer.id)}
-                        className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-                        title={`کپی شماره: ${d.customer.phone}`}
-                      >
-                        {copiedPhoneId === d.customer.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        ) : (
-                          <Phone className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
-        {/* Radar 2: Dead Stock & Capital Trapped Radar */}
-        <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                <Package className="w-4 h-4" />
+      {/* 2.5 LIVE LIQUIDITY & EXECUTIVE CASH SAFE */}
+      {(executiveViewSection === 'all' || executiveViewSection === 'liquidity_stream') && (
+        <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-none transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <span className={`p-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor}`}>
+                <Banknote className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  دیده‌بان کالاهای راکد و خواب سرمایه
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  نبض نقدینگی حاضر و سرمایه در گردش بازرگانی
                 </h3>
-                <p className="text-[10px] text-slate-400">اقلام موجود با صفر فروش در دوره جاری ({formatPrice(totalDeadStockCapital)} سرمایه راکد)</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  تراز زنده موجودی وجوه نقد، سپرده‌های بانکی و تفکیک جریان ورودی/خروجی
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => onNavigateToTab('inventory')}
-              className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
-            >
-              کاردکس کالاها ←
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onNavigateToTab('liquidity')}
+                className={`px-3 py-1.5 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} border ${currentTheme.borderColor} text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5`}
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                <span>مدیریت خزانه‌داری ←</span>
+              </button>
+            </div>
           </div>
 
-          {deadStockProducts.length === 0 ? (
-            <div className="py-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
-              <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
-              گردش انبار عالی است و هیچ کالای خوابیده‌ای در این دوره یافت نشد.
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Liquidity Metric 1: Cash Safe */}
+            <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+                <span>موجودی صندوق نقد</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
+              <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono">
+                {formatPrice(cashBalance)}
+              </div>
+              <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                <span>وجوه فیزیکی حاضر</span>
+                <span className="text-slate-600 dark:text-slate-300 font-bold">صندوق اصلی</span>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {deadStockProducts.map((item, dsIdx) => (
-                <div
-                  key={`dead-stock-${item.product.id || dsIdx}`}
-                  className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
-                      {toPersianDigits(dsIdx + 1)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[150px] sm:max-w-[200px]">
-                        {item.product.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        موجودی انبار: <strong className="text-slate-700 dark:text-slate-300">{toPersianDigits(item.cartons)} کارتن</strong> ({toPersianDigits(item.product.stockPieces)} عدد)
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="text-left shrink-0">
-                    <div className="font-black text-amber-700 dark:text-amber-400 text-xs font-mono">
-                      {formatPrice(item.tiedUpCapital)}
-                    </div>
-                    <span className="text-[9.5px] text-slate-400 font-medium">
-                      ارزش سرمایه خوابیده
-                    </span>
-                  </div>
-                </div>
-              ))}
+            {/* Liquidity Metric 2: Bank Accounts */}
+            <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+                <span>موجودی حساب‌های بانکی</span>
+                <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono">
+                {formatPrice(bankBalance)}
+              </div>
+              <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                <span>کارت‌ها و پوز بانکی</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold font-mono dir-ltr">{settings.bankName?.split('-')[0]?.trim() || 'بانکی'}</span>
+              </div>
             </div>
-          )}
+
+            {/* Liquidity Metric 3: Total Liquid Funds */}
+            <div className={`p-3.5 rounded-xl ${currentTheme.badgeBg} border ${currentTheme.borderColor} space-y-1.5`}>
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className={currentTheme.primaryText}>مجموع نقدینگی آنی (صندوق + بانک)</span>
+                <Zap className={`w-3.5 h-3.5 ${currentTheme.primaryText}`} />
+              </div>
+              <div className={`text-base sm:text-lg font-black ${currentTheme.primaryText} font-mono`}>
+                {formatPrice(totalLiquidityNow)}
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                <span>توان پرداخت نقدی بدون نسیه</span>
+                <span className="font-bold">۱۰۰٪ آماده</span>
+              </div>
+            </div>
+
+            {/* Liquidity Metric 4: Market Receivables */}
+            <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+                <span>طلب تسویه نشده از خریداران</span>
+                <Users className="w-3.5 h-3.5 text-purple-500" />
+              </div>
+              <div className="text-base sm:text-lg font-black text-purple-700 dark:text-purple-300 font-mono">
+                {formatPrice(totalCustomerReceivables || totalCreditAmount)}
+              </div>
+              <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                <span>تعداد فاکتورهای نسیه:</span>
+                <span className="text-purple-600 dark:text-purple-400 font-bold">{toPersianDigits(creditSales.length)} سند</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 2.47 LIVE TREASURY ACTIVITY & SETTLEMENTS STREAM */}
-      {recentTreasury.length > 0 && (
+      {/* 2.6 EXECUTIVE DUAL RADAR: OVERDUE DEBTORS RADAR & DEAD STOCK RADAR */}
+      {(executiveViewSection === 'all' || executiveViewSection === 'risk_radar') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Radar 1: Overdue Debtors & Receivables Risk Radar */}
+          <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+                  <Users className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    رادار وصول مطالبات و بدهکاران بازار
+                  </h3>
+                  <p className="text-[10px] text-slate-400">مشتریان با بالاترین مانده بدهی باز نیازمند پیگیری</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigateToTab('customers')}
+                className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
+              >
+                دفتر مشتریان ←
+              </button>
+            </div>
+
+            {topDebtors.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
+                هیچ مانده بدهی بازی در حساب مشتریان وجود ندارد.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topDebtors.map((d, dIdx) => (
+                  <div
+                    key={`debtor-${d.customer.id || dIdx}`}
+                    className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-5 h-5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
+                        {toPersianDigits(dIdx + 1)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[150px] sm:max-w-[200px]">
+                          {d.customer.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate flex items-center gap-1.5">
+                          {d.customer.city && <span>{d.customer.city}</span>}
+                          {d.lastDate && <span>• آخرین سند: {toPersianDigits(d.lastDate)}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-left">
+                        <div className="font-black text-purple-700 dark:text-purple-300 text-xs font-mono">
+                          {formatPrice(d.balance)}
+                        </div>
+                        <span className={`text-[9.5px] font-bold ${d.riskLevel === 'high' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                          {d.riskLevel === 'high' ? 'پیگیری فوری' : 'بدهی جاری'}
+                        </span>
+                      </div>
+
+                      {d.customer.phone && (
+                        <button
+                          onClick={() => handleCopyPhone(d.customer.phone, d.customer.id)}
+                          className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                          title={`کپی شماره: ${d.customer.phone}`}
+                        >
+                          {copiedPhoneId === d.customer.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : (
+                            <Phone className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Radar 2: Dead Stock & Capital Trapped Radar */}
+          <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Package className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    دیده‌بان کالاهای راکد و خواب سرمایه
+                  </h3>
+                  <p className="text-[10px] text-slate-400">اقلام موجود با صفر فروش در دوره جاری ({formatPrice(totalDeadStockCapital)} سرمایه راکد)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigateToTab('inventory')}
+                className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+              >
+                کاردکس کالاها ←
+              </button>
+            </div>
+
+            {deadStockProducts.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
+                گردش انبار عالی است و هیچ کالای خوابیده‌ای در این دوره یافت نشد.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {deadStockProducts.map((item, dsIdx) => (
+                  <div
+                    key={`dead-stock-${item.product.id || dsIdx}`}
+                    className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-5 h-5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-mono font-black text-[11px] flex items-center justify-center shrink-0">
+                        {toPersianDigits(dsIdx + 1)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[150px] sm:max-w-[200px]">
+                          {item.product.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate">
+                          موجودی انبار: <strong className="text-slate-700 dark:text-slate-300">{toPersianDigits(item.cartons)} کارتن</strong> ({toPersianDigits(item.product.stockPieces)} عدد)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-left shrink-0">
+                      <div className="font-black text-amber-700 dark:text-amber-400 text-xs font-mono">
+                        {formatPrice(item.tiedUpCapital)}
+                      </div>
+                      <span className="text-[9.5px] text-slate-400 font-medium">
+                        ارزش سرمایه خوابیده
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2.7 LIVE TREASURY ACTIVITY & SETTLEMENTS STREAM */}
+      {(executiveViewSection === 'all' || executiveViewSection === 'liquidity_stream') && recentTreasury.length > 0 && (
         <div className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-3.5 shadow-none transition-colors">
           <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">

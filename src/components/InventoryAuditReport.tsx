@@ -9,6 +9,7 @@ import {
 } from '../utils/formatters';
 import { themes } from './ThemeConfig';
 import { Pagination } from './Pagination';
+import { SortableTableHeader } from './SortableTableHeader';
 import { 
   BarChart3, 
   ArrowRight, 
@@ -29,22 +30,28 @@ import {
   Percent,
   Sparkles,
   SlidersHorizontal,
-  Info
+  Info,
+  Flame,
+  RotateCcw
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Invoice } from '../types';
+import { getProductDiscountedPurchasePrice } from '../utils/invoiceCalculations';
 
 interface InventoryAuditReportProps {
   products: Product[];
+  invoices?: Invoice[];
   settings: StoreSettings;
   isSecretMode: boolean;
   onBack: () => void;
 }
 
 type StockFilterType = 'all' | 'in_stock' | 'low_stock' | 'zero' | 'packaged' | 'unpackaged';
-type SortFieldType = 'default' | 'profit_desc' | 'profit_asc' | 'purchase_val_desc' | 'sales_val_desc' | 'stock_desc' | 'stock_asc' | 'cartons_desc' | 'margin_desc' | 'name_asc';
+type SortFieldType = 'default' | 'name' | 'stock' | 'cartons' | 'sold' | 'purchase_val' | 'sales_val' | 'profit' | 'margin';
 
 export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
   products,
+  invoices,
   settings,
   isSecretMode,
   onBack,
@@ -55,9 +62,19 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<StockFilterType>('all');
   const [sortField, setSortField] = useState<SortFieldType>('default');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [copied, setCopied] = useState(false);
+
+  const handleSort = (field: SortFieldType) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'name' ? 'asc' : 'desc');
+    }
+  };
 
   // Hide zero-stock products state (persisted to localStorage, default true)
   const [hideZeroStock, setHideZeroStock] = useState<boolean>(() => {
@@ -117,6 +134,97 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
   const totalProfit = totalSalesValue - totalPurchaseValue;
   const overallMarkup = totalPurchaseValue > 0 ? (totalProfit / totalPurchaseValue) * 100 : 0;
   const overallMargin = totalSalesValue > 0 ? (totalProfit / totalSalesValue) * 100 : 0;
+
+  // Sales statistics calculation from invoices incorporating supplier discounts
+  const { productSalesStats, maxSoldCartons, maxSoldPieces, overallSalesSummary } = useMemo(() => {
+    const map = new Map<string, {
+      totalSoldPieces: number;
+      totalSoldCartons: number;
+      totalSoldLoose: number;
+      totalRevenue: number;
+      totalCost: number;
+      totalProfit: number;
+      invoiceCount: number;
+    }>();
+
+    const finalizedSales = (invoices || []).filter(inv => inv.type === 'sale' && !inv.isDraft);
+
+    let maxCartons = 0;
+    let maxPieces = 0;
+    let sumCartons = 0;
+    let sumLoose = 0;
+    let totalPiecesSum = 0;
+    let totalRevenueSum = 0;
+    let totalPurchaseCostSum = 0;
+    let totalProfitSum = 0;
+
+    finalizedSales.forEach(inv => {
+      inv.items.forEach(it => {
+        const prod = products.find(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
+        const key = prod?.id || it.productId || it.productName;
+        if (!key) return;
+
+        const ppc = it.piecesPerCarton || (prod ? getProductEffectiveCartonSize(prod) : 1);
+        const totalPieces = it.totalPieces || ((it.cartonsCount || 0) * ppc + (it.extraPieces || 0));
+        const cCount = it.cartonsCount !== undefined ? it.cartonsCount : (ppc > 1 ? Math.floor(totalPieces / ppc) : 0);
+        const lCount = it.extraPieces !== undefined ? it.extraPieces : (ppc > 1 ? totalPieces % ppc : totalPieces);
+
+        const rev = (it.totalPrice !== undefined && it.totalPrice > 0)
+          ? it.totalPrice
+          : (totalPieces * (it.unitSellingPrice || it.unitPrice || prod?.sellingPrice || 0));
+
+        const uCost = getProductDiscountedPurchasePrice(it.productId, it.productName, it.unitPurchasePrice || prod?.purchasePrice || 0, invoices || [], products);
+        const cost = totalPieces * uCost;
+        const profit = rev - cost;
+
+        const cur = map.get(key) || {
+          totalSoldPieces: 0,
+          totalSoldCartons: 0,
+          totalSoldLoose: 0,
+          totalRevenue: 0,
+          totalCost: 0,
+          totalProfit: 0,
+          invoiceCount: 0,
+        };
+
+        cur.totalSoldPieces += totalPieces;
+        cur.totalSoldCartons += cCount;
+        cur.totalSoldLoose += lCount;
+        cur.totalRevenue += rev;
+        cur.totalCost += cost;
+        cur.totalProfit += profit;
+        cur.invoiceCount += 1;
+
+        map.set(key, cur);
+
+        totalPiecesSum += totalPieces;
+        sumCartons += cCount;
+        sumLoose += lCount;
+        totalRevenueSum += rev;
+        totalPurchaseCostSum += cost;
+        totalProfitSum += profit;
+      });
+    });
+
+    map.forEach(val => {
+      if (val.totalSoldCartons > maxCartons) maxCartons = val.totalSoldCartons;
+      if (val.totalSoldPieces > maxPieces) maxPieces = val.totalSoldPieces;
+    });
+
+    return {
+      productSalesStats: map,
+      maxSoldCartons: maxCartons,
+      maxSoldPieces: maxPieces,
+      overallSalesSummary: {
+        sumCartons,
+        sumLoose,
+        totalPiecesSum,
+        totalRevenueSum,
+        totalPurchaseCostSum,
+        totalProfitSum,
+      }
+    };
+  }, [invoices, products]);
 
   // Categories list - strictly deduplicated
   const categories = useMemo(() => {
@@ -187,48 +295,47 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
   // Sort filtered products
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
+    const mult = sortDirection === 'asc' ? 1 : -1;
     switch (sortField) {
-      case 'profit_desc':
-        return list.sort((a, b) => {
-          const profA = (a.sellingPrice - a.purchasePrice) * a.stockPieces;
-          const profB = (b.sellingPrice - b.purchasePrice) * b.stockPieces;
-          return profB - profA;
-        });
-      case 'profit_asc':
-        return list.sort((a, b) => {
-          const profA = (a.sellingPrice - a.purchasePrice) * a.stockPieces;
-          const profB = (b.sellingPrice - b.purchasePrice) * b.stockPieces;
-          return profA - profB;
-        });
-      case 'purchase_val_desc':
-        return list.sort((a, b) => (b.purchasePrice * b.stockPieces) - (a.purchasePrice * a.stockPieces));
-      case 'sales_val_desc':
-        return list.sort((a, b) => (b.sellingPrice * b.stockPieces) - (a.sellingPrice * a.stockPieces));
-      case 'stock_desc':
-        return list.sort((a, b) => b.stockPieces - a.stockPieces);
-      case 'stock_asc':
-        return list.sort((a, b) => a.stockPieces - b.stockPieces);
-      case 'cartons_desc':
+      case 'name':
+        return list.sort((a, b) => mult * a.name.localeCompare(b.name, 'fa'));
+      case 'stock':
+        return list.sort((a, b) => mult * (a.stockPieces - b.stockPieces));
+      case 'cartons':
         return list.sort((a, b) => {
           const ppcA = getProductEffectiveCartonSize(a);
           const ppcB = getProductEffectiveCartonSize(b);
           const cA = (!isProductUnpackaged(a) && ppcA > 1) ? Math.floor(a.stockPieces / ppcA) : 0;
           const cB = (!isProductUnpackaged(b) && ppcB > 1) ? Math.floor(b.stockPieces / ppcB) : 0;
-          return cB - cA;
+          return mult * (cA - cB);
         });
-      case 'margin_desc':
+      case 'sold':
+        return list.sort((a, b) => {
+          const sA = productSalesStats.get(a.id)?.totalSoldPieces || 0;
+          const sB = productSalesStats.get(b.id)?.totalSoldPieces || 0;
+          return mult * (sA - sB);
+        });
+      case 'purchase_val':
+        return list.sort((a, b) => mult * ((a.purchasePrice * a.stockPieces) - (b.purchasePrice * b.stockPieces)));
+      case 'sales_val':
+        return list.sort((a, b) => mult * ((a.sellingPrice * a.stockPieces) - (b.sellingPrice * b.stockPieces)));
+      case 'profit':
+        return list.sort((a, b) => {
+          const profA = (a.sellingPrice - a.purchasePrice) * a.stockPieces;
+          const profB = (b.sellingPrice - b.purchasePrice) * b.stockPieces;
+          return mult * (profA - profB);
+        });
+      case 'margin':
         return list.sort((a, b) => {
           const mA = a.purchasePrice > 0 ? ((a.sellingPrice - a.purchasePrice) / a.purchasePrice) : 0;
           const mB = b.purchasePrice > 0 ? ((b.sellingPrice - b.purchasePrice) / b.purchasePrice) : 0;
-          return mB - mA;
+          return mult * (mA - mB);
         });
-      case 'name_asc':
-        return list.sort((a, b) => a.name.localeCompare(b.name, 'fa'));
       case 'default':
       default:
         return list;
     }
-  }, [filteredProducts, sortField]);
+  }, [filteredProducts, sortField, sortDirection, productSalesStats]);
 
   // Reset page when filters change
   React.useEffect(() => {
@@ -245,6 +352,10 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
     let pieces = 0;
     let purchaseVal = 0;
     let salesVal = 0;
+    let soldCartons = 0;
+    let soldPieces = 0;
+    let soldRevenue = 0;
+    let soldProfit = 0;
 
     for (const p of filteredProducts) {
       const isUnpack = isProductUnpackaged(p);
@@ -255,6 +366,14 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       pieces += (p.stockPieces || 0);
       purchaseVal += (p.stockPieces || 0) * (p.purchasePrice || 0);
       salesVal += (p.stockPieces || 0) * (p.sellingPrice || 0);
+
+      const stats = productSalesStats.get(p.id);
+      if (stats) {
+        soldCartons += stats.totalSoldCartons;
+        soldPieces += stats.totalSoldPieces;
+        soldRevenue += stats.totalRevenue;
+        soldProfit += stats.totalProfit;
+      }
     }
 
     const profit = salesVal - purchaseVal;
@@ -267,9 +386,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
       purchaseVal,
       salesVal,
       profit,
-      markup
+      markup,
+      soldCartons,
+      soldPieces,
+      soldRevenue,
+      soldProfit
     };
-  }, [filteredProducts]);
+  }, [filteredProducts, productSalesStats]);
 
   const handleCopySummary = () => {
     const text = `📊 گزارش ارزش و موجودی انبار:
@@ -354,129 +477,127 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
       </div>
 
-      {/* 4 Financial & Volume KPI Cards */}
+      {/* 4 Financial & Volume KPI Cards - Flat Executive Design */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
         {/* Card 1: Total Volume Breakdown */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">📦 موجودی کارتن‌ها و انبار</span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50">
+            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">موجودی کارتن‌ها و انبار</span>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
               <Boxes className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5 font-mono">
               <span>{toPersianDigits(totalPackagedCartons)}</span>
-              <span className="text-xs text-slate-500 font-bold">کارتن کامل</span>
+              <span className="text-xs text-slate-500 font-sans font-bold">کارتن کامل</span>
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 space-y-0.5">
+            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
               <div className="flex items-center justify-between">
                 <span>دانه‌های تک در کارتن باز:</span>
-                <b className="text-blue-600 dark:text-blue-400 font-bold">{toPersianDigits(totalPackagedLoosePieces)} عدد</b>
+                <b className="font-bold text-slate-800 dark:text-slate-200 font-mono">{toPersianDigits(totalPackagedLoosePieces)} عدد</b>
               </div>
               {totalUnpackagedPieces > 0 && (
                 <div className="flex items-center justify-between">
                   <span>کالای بدون کارتن / فله:</span>
-                  <b className="text-slate-700 dark:text-slate-300 font-bold">{toPersianDigits(totalUnpackagedPieces.toLocaleString())} عدد</b>
+                  <b className="text-slate-800 dark:text-slate-200 font-bold font-mono">{toPersianDigits(totalUnpackagedPieces.toLocaleString())} عدد</b>
                 </div>
               )}
               <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400">
-                <span>کل شمارش فیزیکی:</span>
-                <b className="text-slate-800 dark:text-slate-200">{toPersianDigits(totalPieces.toLocaleString())} عدد</b>
+                <span>کل شمارش فیزیکی انبار:</span>
+                <b className="text-slate-900 dark:text-slate-100 font-mono font-bold">{toPersianDigits(totalPieces.toLocaleString())} عدد</b>
               </div>
             </div>
           </div>
         </div>
 
         {/* Card 2: Purchase Value / Capital */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">💰 کل سرمایه خرید انبار</span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/50">
+            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">کل سرمایه خرید انبار</span>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
               {!isSecretMode ? formatPrice(totalPurchaseValue) : '🔒 محرمانه'}
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 space-y-0.5">
+            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
               <div className="flex items-center justify-between">
                 <span>ارزش خرید کارتن‌دار:</span>
-                <span className="font-bold text-slate-700 dark:text-slate-300 dir-ltr text-[10px]">
+                <span className="font-bold text-slate-800 dark:text-slate-200 dir-ltr text-[10px] font-mono">
                   {!isSecretMode ? formatPrice(products.filter(p => !isProductUnpackaged(p) && getProductEffectiveCartonSize(p) > 1).reduce((s, p) => s + (p.stockPieces * p.purchasePrice), 0)) : '🔒'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>ارزش خرید کالای فله:</span>
-                <span className="font-bold text-slate-700 dark:text-slate-300 dir-ltr text-[10px]">
+                <span className="font-bold text-slate-800 dark:text-slate-200 dir-ltr text-[10px] font-mono">
                   {!isSecretMode ? formatPrice(products.filter(p => isProductUnpackaged(p) || getProductEffectiveCartonSize(p) <= 1).reduce((s, p) => s + (p.stockPieces * p.purchasePrice), 0)) : '🔒'}
                 </span>
               </div>
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold pt-1 border-t border-slate-100 dark:border-slate-800">
-                مجموع بهای تمام‌شده خرید موجودی
+              <p className="text-[10px] font-bold pt-1 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                مجموع بهای تمام‌شده موجودی فعلی
               </p>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Potential Revenue / Sales Value */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        {/* Card 3: Realized Sales / All Invoices */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">📈 ارزش کل فروش انبار</span>
-            <div className={`p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800`}>
+            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">گردش فروش کل کالاها</span>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right">
-              {formatPrice(totalSalesValue)}
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
+              {formatPrice(overallSalesSummary.totalRevenueSum)}
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 space-y-0.5">
+            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
               <div className="flex items-center justify-between">
-                <span>میانگین ارزش هر قلم کالا:</span>
-                <span className="font-bold text-slate-700 dark:text-slate-300 dir-ltr text-[10px]">
-                  {products.length > 0 ? formatPrice(Math.round(totalSalesValue / products.length)) : '۰'}
-                </span>
+                <span>کارتن‌های فروش‌رفته:</span>
+                <b className="font-bold text-slate-800 dark:text-slate-200 font-mono">{toPersianDigits(overallSalesSummary.sumCartons)} کارتن</b>
               </div>
               <div className="flex items-center justify-between">
-                <span>تعداد کل اقلام قابل عرضه:</span>
-                <b className="text-emerald-600 dark:text-emerald-400 font-bold">{toPersianDigits(inStockCount)} از {toPersianDigits(products.length)} کالا</b>
+                <span>دانه‌های فروش‌رفته:</span>
+                <b className="font-bold text-slate-800 dark:text-slate-200 font-mono">{toPersianDigits(overallSalesSummary.totalPiecesSum.toLocaleString())} عدد</b>
               </div>
-              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold pt-1 border-t border-slate-100 dark:border-slate-800">
-                درآمد ناخالص حاصل از تخلیه کامل موجودی
+              <p className="text-[10px] font-bold pt-1 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                سود ناخالص فروش: +{formatPrice(overallSalesSummary.totalProfitSum)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Potential Gross Profit */}
-        <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2">
+        {/* Card 4: Potential Sales Value & Gross Profit */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">✨ سود ناخالص بالقوه</span>
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-900/50">
+            <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">ارزش کل فروش بالقوه موجودی</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-right">
-              {!isSecretMode ? (totalProfit >= 0 ? `+${formatPrice(totalProfit)}` : `-${formatPrice(Math.abs(totalProfit))}`) : '🔒 محرمانه'}
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
+              {formatPrice(totalSalesValue)}
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 space-y-0.5">
+            <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
               <div className="flex items-center justify-between">
-                <span>ضریب سود بر خرید (Markup):</span>
-                <b className="text-emerald-600 dark:text-emerald-400 font-black text-xs">
-                  +{toPersianDigits(overallMarkup.toFixed(1))}٪
+                <span>سود ناخالص بالقوه موجودی:</span>
+                <b className={`font-bold font-mono text-xs ${totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                  {!isSecretMode ? (totalProfit >= 0 ? `+${formatPrice(totalProfit)}` : `-${formatPrice(Math.abs(totalProfit))}`) : '🔒'}
                 </b>
               </div>
               <div className="flex items-center justify-between">
-                <span>حاشیه سود از فروش (Margin):</span>
-                <b className="text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                <span>حاشیه سود موجودی:</span>
+                <b className="font-bold text-xs text-slate-800 dark:text-slate-200 font-mono">
                   {toPersianDigits(overallMargin.toFixed(1))}٪
                 </b>
               </div>
               <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                اختلاف کل ارزش فروش منهای کل ارزش خرید
+                اقلام دارای موجودی: {toPersianDigits(inStockCount)} از {toPersianDigits(products.length)} کالا
               </p>
             </div>
           </div>
@@ -563,7 +684,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
               stockFilter === 'all'
                 ? `${theme.primary} text-white border-transparent shadow-xs font-black`
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
             <span>همه اقلام</span>
@@ -573,12 +694,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
           <button
             type="button"
             onClick={() => setStockFilter('in_stock')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
               stockFilter === 'in_stock'
-                ? 'bg-emerald-600 text-white border-transparent shadow-xs font-black'
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             <span>دارای موجودی</span>
             <span className="mr-1 text-[10px] opacity-80">({toPersianDigits(inStockCount)})</span>
           </button>
@@ -586,12 +708,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
           <button
             type="button"
             onClick={() => setStockFilter('low_stock')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
               stockFilter === 'low_stock'
-                ? 'bg-amber-500 text-white border-transparent shadow-xs font-black'
-                : 'bg-slate-50 dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
             <span>کسری انبار (&lt; ۵ کارتن)</span>
             <span className="mr-1 text-[10px] opacity-80">({toPersianDigits(lowStockCount)})</span>
           </button>
@@ -602,12 +725,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
               setStockFilter('zero');
               setHideZeroStock(false);
             }}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
               stockFilter === 'zero'
-                ? 'bg-rose-600 text-white border-transparent shadow-xs font-black'
-                : 'bg-slate-50 dark:bg-slate-800 text-rose-700 dark:text-rose-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
+            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <span>موجودی صفر / ناموجود</span>
             <span className="mr-1 text-[10px] opacity-80">({toPersianDigits(zeroStockCount)})</span>
           </button>
@@ -617,12 +741,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
           <button
             type="button"
             onClick={() => setStockFilter('packaged')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
               stockFilter === 'packaged'
-                ? 'bg-blue-600 text-white border-transparent shadow-xs font-black'
-                : 'bg-slate-50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
+            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
             <span>کارتن‌دار</span>
             <span className="mr-1 text-[10px] opacity-80">({toPersianDigits(packagedCount)})</span>
           </button>
@@ -630,12 +755,13 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
           <button
             type="button"
             onClick={() => setStockFilter('unpackaged')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
               stockFilter === 'unpackaged'
-                ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent shadow-xs font-black'
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                ? `${theme.primary} text-white border-transparent shadow-xs font-black`
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
             }`}
           >
+            <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
             <span>بدون کارتن / فله</span>
             <span className="mr-1 text-[10px] opacity-80">({toPersianDigits(unpackagedCount)})</span>
           </button>
@@ -676,18 +802,64 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-black border-b border-slate-200 dark:border-slate-800 text-xs sm:text-[13px] select-none">
                 <th className="py-3 px-2 text-center w-12 font-black">ردیف</th>
-                <th className="py-3 px-3 min-w-[160px] font-black text-right">شرح و نام کالا</th>
-                <th className="py-3 px-3 text-center min-w-[140px] font-black">موجودی، کارتن و بسته‌بندی</th>
-                <th className="py-3 px-3 text-center min-w-[130px] font-black">نرخ خرید و فروش</th>
-                <th className="py-3 px-3 text-center min-w-[140px] font-black">سود و زیان هر قلم</th>
-                <th className="py-3 px-3 text-center min-w-[140px] font-black">ارزش کل موجودی</th>
+                <SortableTableHeader
+                  field="name"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="right"
+                  className="min-w-[160px]"
+                >
+                  شرح و نام کالا
+                </SortableTableHeader>
+                <SortableTableHeader
+                  field="cartons"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[130px]"
+                >
+                  موجودی و کارتن
+                </SortableTableHeader>
+                <SortableTableHeader
+                  field="sold"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[145px]"
+                >
+                  آمار و رکورد فروش
+                </SortableTableHeader>
+                <th className="py-3 px-3 text-center min-w-[125px] font-black">نرخ خرید و فروش</th>
+                <SortableTableHeader
+                  field="profit"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[135px]"
+                >
+                  سود هر قلم
+                </SortableTableHeader>
+                <SortableTableHeader
+                  field="purchase_val"
+                  currentField={sortField}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  align="center"
+                  className="min-w-[135px]"
+                >
+                  ارزش سرمایه انبار
+                </SortableTableHeader>
                 <th className="py-3 px-3 text-center w-24 font-black">وضعیت</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
                     <Boxes className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
                     <span>کالایی با فیلترها و معیارهای انتخاب‌شده یافت نشد.</span>
                     {hideZeroStock && zeroStockCount > 0 && (
@@ -723,11 +895,30 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
                   const purchasePrice = prod.purchasePrice || 0;
                   const sellingPrice = prod.sellingPrice || 0;
                   const unitProfit = sellingPrice - purchasePrice;
-                  const cartonProfit = (!isUnpack && ppc > 1) ? unitProfit * ppc : 0;
                   const itemPurchaseVal = stockPieces * purchasePrice;
                   const itemSalesVal = stockPieces * sellingPrice;
                   const itemTotalProfit = stockPieces * unitProfit;
                   const markupPercent = purchasePrice > 0 ? (unitProfit / purchasePrice) * 100 : 0;
+
+                  // Sales stats for this product
+                  const sStats = productSalesStats.get(prod.id) || {
+                    totalSoldPieces: 0,
+                    totalSoldCartons: 0,
+                    totalSoldLoose: 0,
+                    totalRevenue: 0,
+                    totalCost: 0,
+                    totalProfit: 0,
+                    invoiceCount: 0,
+                  };
+                  const cartonsSold = sStats.totalSoldCartons;
+                  const looseSold = sStats.totalSoldLoose;
+                  const isTopCartonSeller = maxSoldCartons > 0 && cartonsSold === maxSoldCartons && sStats.totalSoldPieces > 0;
+                  const isTopPieceSeller = maxSoldCartons === 0 && maxSoldPieces > 0 && sStats.totalSoldPieces === maxSoldPieces;
+                  const isZeroSold = sStats.totalSoldPieces <= 0;
+                  const isWeakSeller = !isZeroSold && !isTopCartonSeller && !isTopPieceSeller && (
+                    (maxSoldCartons > 0 && cartonsSold === 0) ||
+                    (maxSoldPieces > 10 && sStats.totalSoldPieces <= Math.max(3, Math.round(maxSoldPieces * 0.15)))
+                  );
 
                   return (
                     <tr 
@@ -735,195 +926,162 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                     >
                       {/* Row Index */}
-                      <td className="py-2 px-2 text-center font-bold text-slate-400 text-[11px]">
+                      <td className="py-2.5 px-2 text-center font-bold text-slate-400 text-xs">
                         {toPersianDigits(startIndex + idx + 1)}
                       </td>
 
                       {/* Product Name & Details */}
-                      <td className="py-2 px-2.5">
-                        <div className="flex items-start justify-between gap-1.5">
-                          <div>
-                            <div className="font-black text-slate-900 dark:text-white text-xs">
-                              {prod.name}
-                            </div>
-                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                              <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-[9px] border border-slate-200 dark:border-slate-700">
-                                {prod.category || 'سایر'}
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                            {prod.name}
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-[10px] border border-slate-200/80 dark:border-slate-700/80">
+                              {prod.category || 'سایر'}
+                            </span>
+                            {prod.code && (
+                              <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">
+                                کد: {toPersianDigits(prod.code)}
                               </span>
-                              {prod.code && (
-                                <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500">
-                                  کد: {toPersianDigits(prod.code)}
-                                </span>
-                              )}
-                            </div>
-                            {prod.notes && (
-                              <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[160px]" title={prod.notes}>
-                                {prod.notes}
-                              </div>
                             )}
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                              · {formatProductPackagingSpec(prod)}
+                            </span>
                           </div>
+                          {prod.notes && (
+                            <span className="text-[10px] text-slate-400 truncate max-w-[200px]" title={prod.notes}>
+                              {prod.notes}
+                            </span>
+                          )}
                         </div>
                       </td>
 
                       {/* Unified Stock, Carton & Packaging Cell */}
-                      <td className="py-2 px-2">
-                        <div className="flex flex-col items-center justify-center gap-1 text-center min-w-[125px]">
-                          {/* Total Stock Count */}
-                          <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-xs font-black text-slate-900 dark:text-white">
-                              {toPersianDigits(stockPieces.toLocaleString())}
-                            </span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                              {prod.unitTitle || 'عدد'}
-                            </span>
-                          </div>
-
-                          {/* Carton Breakdown Badge */}
-                          {stockPieces <= 0 ? (
-                            <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 font-bold text-[9px] whitespace-nowrap">
-                              موجودی صفر
-                            </span>
-                          ) : isUnpack || ppc <= 1 ? (
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-[9px] whitespace-nowrap">
-                              بدون کارتن (دانه‌ای)
-                            </span>
-                          ) : cartons > 0 && remainderPieces > 0 ? (
-                            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 font-black text-[10px] whitespace-nowrap">
-                              {toPersianDigits(cartons)} کارتن + {toPersianDigits(remainderPieces)} دانه
-                            </span>
-                          ) : cartons > 0 ? (
-                            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 font-black text-[10px] whitespace-nowrap">
-                              {toPersianDigits(cartons)} کارتن کامل
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 font-black text-[9px] whitespace-nowrap">
-                              {toPersianDigits(remainderPieces)} دانه (&lt; ۱ کارتن)
-                            </span>
-                          )}
-
-                          {/* Packaging Spec */}
-                          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800/60 px-1.5 py-0.2 rounded border border-slate-200/60 dark:border-slate-700/60 max-w-[145px] truncate" title={formatProductPackagingSpec(prod)}>
-                            {formatProductPackagingSpec(prod)}
-                          </div>
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                          <span className="text-xs font-black text-slate-900 dark:text-white">
+                            {stockPieces <= 0 ? (
+                              <span className="text-rose-600 dark:text-rose-400 font-sans font-bold">۰ عدد</span>
+                            ) : isUnpack || ppc <= 1 ? (
+                              `${toPersianDigits(stockPieces.toLocaleString())} عدد (بدون کارتن)`
+                            ) : cartons > 0 && remainderPieces > 0 ? (
+                              `${toPersianDigits(cartons)} کارتن + ${toPersianDigits(remainderPieces)} عدد`
+                            ) : cartons > 0 ? (
+                              `${toPersianDigits(cartons)} کارتن کامل`
+                            ) : (
+                              `${toPersianDigits(remainderPieces)} عدد (< ۱ کارتن)`
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            جمعاً {toPersianDigits(stockPieces.toLocaleString())} {prod.unitTitle || 'عدد'}
+                          </span>
                         </div>
                       </td>
 
-                      {/* Buy Price & Sell Price Unified Cell */}
-                      <td className="py-2 px-2">
-                        <div className="flex flex-col gap-0.5 min-w-[115px] max-w-[140px] mx-auto text-[11px]">
-                          {/* Purchase Price */}
-                          <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70">
-                            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">خرید:</span>
-                            <span className="font-extrabold text-slate-800 dark:text-slate-200 dir-ltr text-[10px]">
-                              {!isSecretMode ? formatPrice(purchasePrice) : '🔒'}
+                      {/* Sales Stats Column with Theme-palette Badges */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        {isZeroSold ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-sans text-[9.5px] font-bold border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                              فروش نرفته
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-sans">
+                              ۰ عدد
                             </span>
                           </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                              <span className="font-black text-slate-900 dark:text-white text-xs">
+                                {cartonsSold > 0 ? `${toPersianDigits(cartonsSold)} کارتن` : ''}
+                                {cartonsSold > 0 && looseSold > 0 ? ' + ' : ''}
+                                {looseSold > 0 || cartonsSold === 0 ? `${toPersianDigits(looseSold)} عدد` : ''}
+                              </span>
+                              {isTopCartonSeller && (
+                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md ${theme.primary} text-white font-black text-[9px] shadow-xs whitespace-nowrap`} title="پرفروش‌ترین کالا بر اساس کارتن">
+                                  <Flame className="w-2.5 h-2.5 fill-white shrink-0" />
+                                  بیشترین فروش
+                                </span>
+                              )}
+                              {isTopPieceSeller && (
+                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md ${theme.primary} text-white font-black text-[9px] shadow-xs whitespace-nowrap`} title="پرفروش‌ترین کالا بر اساس تعداد">
+                                  <Flame className="w-2.5 h-2.5 fill-white shrink-0" />
+                                  بیشترین فروش
+                                </span>
+                              )}
+                              {isWeakSeller && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold text-[9px] border border-amber-200 dark:border-amber-800/60 whitespace-nowrap" title="فروش ضعیف نسبت به سایر کالاها">
+                                  فروش ضعیف
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-emerald-600 dark:text-emerald-400 font-bold text-[10.5px]">
+                              فروش: {formatPrice(sStats.totalRevenue)}
+                            </div>
+                            {!isSecretMode && sStats.totalProfit > 0 && (
+                              <div className="text-[9.5px] text-indigo-600 dark:text-indigo-400 font-sans">
+                                سود: +{formatPrice(sStats.totalProfit)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
 
-                          {/* Selling Price */}
-                          <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50">
-                            <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400">فروش:</span>
-                            <span className="font-black text-emerald-800 dark:text-emerald-300 dir-ltr text-[10px]">
-                              {formatPrice(sellingPrice)}
-                            </span>
-                          </div>
+                      {/* Buy Price & Sell Price Unified Cell */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                          <span className="text-xs font-black text-slate-900 dark:text-white">
+                            {formatPrice(sellingPrice)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            خرید: {!isSecretMode ? formatPrice(purchasePrice) : '🔒'}
+                          </span>
                         </div>
                       </td>
 
                       {/* Profit & Margin Column */}
-                      <td className="py-2 px-2">
-                        <div className="flex flex-col gap-0.5 min-w-[130px] max-w-[160px] mx-auto text-[11px]">
-                          {/* Per-Unit Profit */}
-                          <div className={`flex items-center justify-between gap-1 px-1.5 py-0.5 rounded border text-[10px] ${
-                            unitProfit > 0 
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' 
-                              : unitProfit < 0
-                                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                          }`}>
-                            <span className="text-[9px] font-bold opacity-80">سود دانه:</span>
-                            <span className="font-black dir-ltr text-[10px]">
-                              {!isSecretMode ? (
-                                unitProfit > 0 
-                                  ? `+${formatPrice(unitProfit)}` 
-                                  : unitProfit < 0 
-                                    ? `-${formatPrice(Math.abs(unitProfit))}` 
-                                    : '۰'
-                              ) : '🔒'}
-                            </span>
-                          </div>
-
-                          {/* Total Potential Profit for Current Stock */}
-                          <div className={`flex items-center justify-between gap-1 px-1.5 py-0.5 rounded border text-[10px] ${
-                            itemTotalProfit > 0 
-                              ? 'bg-emerald-100/70 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700' 
-                              : itemTotalProfit < 0
-                                ? 'bg-rose-100/70 dark:bg-rose-900/40 text-rose-900 dark:text-rose-200 border-rose-300 dark:border-rose-700'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                          }`}>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[9px] font-bold">کل:</span>
-                              {!isSecretMode && (
-                                <span className={`text-[8px] font-black px-1 py-0.2 rounded ${unitProfit >= 0 ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100' : 'bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-100'}`}>
-                                  {markupPercent >= 0 ? '+' : ''}{toPersianDigits(markupPercent.toFixed(0))}٪
-                                </span>
-                              )}
-                            </div>
-                            <span className="font-black dir-ltr text-[11px]">
-                              {!isSecretMode ? (
-                                itemTotalProfit > 0 
-                                  ? `+${formatPrice(itemTotalProfit)}` 
-                                  : itemTotalProfit < 0 
-                                    ? `-${formatPrice(Math.abs(itemTotalProfit))}` 
-                                    : '۰'
-                              ) : '🔒'}
-                            </span>
-                          </div>
-
-                          {/* Per Carton Profit if applicable */}
-                          {!isUnpack && ppc > 1 && !isSecretMode && (
-                            <div className="text-[9px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between px-1">
-                              <span>سود کارتن:</span>
-                              <span className="font-bold text-slate-700 dark:text-slate-300 dir-ltr text-[9px]">
-                                {cartonProfit >= 0 ? `+${formatPrice(cartonProfit)}` : `-${formatPrice(Math.abs(cartonProfit))}`}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                          {!isSecretMode ? (
+                            <>
+                              <span className={`text-xs font-black ${unitProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {unitProfit >= 0 ? `+${formatPrice(unitProfit)}` : `-${formatPrice(Math.abs(unitProfit))}`}
                               </span>
-                            </div>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                ضریب: {markupPercent >= 0 ? '+' : ''}{toPersianDigits(markupPercent.toFixed(0))}٪ · کل: {itemTotalProfit >= 0 ? `+${formatPrice(itemTotalProfit)}` : `-${formatPrice(Math.abs(itemTotalProfit))}`}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-slate-400">🔒 محرمانه</span>
                           )}
                         </div>
                       </td>
 
                       {/* Total Capital (Purchase & Sales) */}
-                      <td className="py-2 px-2">
-                        <div className="flex flex-col gap-0.5 min-w-[120px] max-w-[145px] mx-auto text-[10px]">
-                          {/* Total Purchase Capital */}
-                          <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40">
-                            <span className="font-bold text-amber-700 dark:text-amber-400">سرمایه:</span>
-                            <span className="font-black text-amber-900 dark:text-amber-200 dir-ltr text-[10px]">
-                              {!isSecretMode ? formatPrice(itemPurchaseVal) : '🔒'}
-                            </span>
-                          </div>
-
-                          {/* Total Sales Value */}
-                          <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40">
-                            <span className="font-bold text-blue-700 dark:text-blue-400">فروش:</span>
-                            <span className="font-black text-blue-900 dark:text-blue-200 dir-ltr text-[10px]">
-                              {formatPrice(itemSalesVal)}
-                            </span>
-                          </div>
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            سرمایه: {!isSecretMode ? formatPrice(itemPurchaseVal) : '🔒'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            فروش: {formatPrice(itemSalesVal)}
+                          </span>
                         </div>
                       </td>
 
-                      {/* Stock Status Pill */}
-                      <td className="py-2 px-2 text-center">
+                      {/* Stock Status */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         {stockPieces <= 0 ? (
-                          <span className="px-2 py-0.5 rounded-lg text-[9px] font-black bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 block whitespace-nowrap">
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
                             ناموجود
                           </span>
                         ) : (!isUnpack && ppc > 1 ? cartons < 5 : stockPieces < 20) ? (
-                          <span className="px-2 py-0.5 rounded-lg text-[9px] font-black bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60 block whitespace-nowrap">
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
                             کسری انبار
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-lg text-[9px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 block whitespace-nowrap">
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60">
                             موجود
                           </span>
                         )}
@@ -946,7 +1104,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
                       </div>
                       <div className="leading-tight">
                         <div className="font-black text-slate-900 dark:text-white text-xs">
-                          مجموع ردیف‌های فیلترشده
+                          مجموع ردیف‌های گزارش
                         </div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
                           ({toPersianDigits(filteredTotals.count)} قلم کالا)
@@ -957,7 +1115,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
 
                   {/* Col 3: Total Stock & Cartons */}
                   <td className="py-3 px-2 text-center">
-                    <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex flex-col items-center justify-center gap-1 font-mono">
                       <div className="flex items-baseline justify-center gap-1 font-black text-slate-900 dark:text-white">
                         <span className="text-xs">{toPersianDigits(filteredTotals.pieces.toLocaleString())}</span>
                         <span className="text-[10px] text-slate-500 font-bold">دانه کل</span>
@@ -968,52 +1126,56 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
                     </div>
                   </td>
 
-                  {/* Col 4: Rates label */}
+                  {/* Col 4: Total Sold Volume */}
+                  <td className="py-3 px-2 text-center whitespace-nowrap">
+                    <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                      <span className="font-black text-xs text-slate-900 dark:text-white">
+                        {toPersianDigits(filteredTotals.soldCartons)} کارتن فروش
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        {formatPrice(filteredTotals.soldRevenue)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Col 5: Rates label */}
                   <td className="py-3 px-2 text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold">
                     میانگین انبار
                   </td>
 
-                  {/* Col 5: Total Profit & Markup */}
-                  <td className="py-3 px-2 text-center">
+                  {/* Col 6: Total Profit & Markup */}
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
                     {!isSecretMode ? (
-                      <div className="flex flex-col items-center justify-center gap-1">
-                        <div className="flex items-center justify-center gap-1 font-black text-xs text-emerald-700 dark:text-emerald-400 dir-ltr">
-                          <span>
-                            {filteredTotals.profit >= 0 
-                              ? `+${formatPrice(filteredTotals.profit)}` 
-                              : `-${formatPrice(Math.abs(filteredTotals.profit))}`}
-                          </span>
-                        </div>
-                        <span className="text-[9px] font-black text-emerald-800 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                          سود میانگین: +{toPersianDigits(filteredTotals.markup.toFixed(1))}٪
+                      <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                        <span className="font-black text-xs text-emerald-600 dark:text-emerald-400">
+                          {filteredTotals.profit >= 0 
+                            ? `+${formatPrice(filteredTotals.profit)}` 
+                            : `-${formatPrice(Math.abs(filteredTotals.profit))}`}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          میانگین سود: +{toPersianDigits(filteredTotals.markup.toFixed(1))}٪
                         </span>
                       </div>
                     ) : (
-                      <span className="text-slate-400">🔒</span>
+                      <span className="text-slate-400">🔒 محرمانه</span>
                     )}
                   </td>
 
-                  {/* Col 6: Total Capital (Purchase & Sales) */}
-                  <td className="py-3 px-2">
-                    <div className="flex flex-col gap-1 text-[10px] min-w-[120px] max-w-[145px] mx-auto">
-                      <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-900 dark:text-amber-200">
-                        <span className="font-bold text-amber-700 dark:text-amber-400">سرمایه:</span>
-                        <span className="font-black dir-ltr text-[10px]">
-                          {!isSecretMode ? formatPrice(filteredTotals.purchaseVal) : '🔒'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-1 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-900 dark:text-blue-200">
-                        <span className="font-bold text-blue-700 dark:text-blue-400">فروش:</span>
-                        <span className="font-black dir-ltr text-[10px]">
-                          {formatPrice(filteredTotals.salesVal)}
-                        </span>
-                      </div>
+                  {/* Col 7: Total Capital (Purchase & Sales) */}
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
+                    <div className="flex flex-col items-center justify-center gap-0.5 font-mono">
+                      <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+                        سرمایه: {!isSecretMode ? formatPrice(filteredTotals.purchaseVal) : '🔒'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        فروش: {formatPrice(filteredTotals.salesVal)}
+                      </span>
                     </div>
                   </td>
 
-                  {/* Col 7: Status column */}
-                  <td className="py-3 px-2 text-center">
-                    <span className="px-2 py-1 rounded-lg text-[10px] font-black bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 block whitespace-nowrap">
+                  {/* Col 8: Status column */}
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
+                    <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700">
                       تراز کل
                     </span>
                   </td>
