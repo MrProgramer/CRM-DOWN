@@ -196,7 +196,13 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
   };
 
   // Helper to get effective discounted purchase price for any product/item
-  const getProductDiscountedPurchasePrice = (productId?: string, productName?: string, fallbackPrice: number = 0) => {
+  const getProductDiscountedPurchasePrice = (
+    productId?: string, 
+    productName?: string, 
+    fallbackPrice: number = 0,
+    _invoices: Invoice[] = invoices,
+    _products: Product[] = products
+  ) => {
     const matchingProduct = getMatchingProduct(productId, productName);
     let basePrice = (matchingProduct && matchingProduct.purchasePrice > 0) ? matchingProduct.purchasePrice : fallbackPrice;
 
@@ -1408,177 +1414,179 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           </span>
         </div>
 
-        {/* 5. Clean Detailed Table */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
+        {/* 5. Streamlined Compact Detailed Table */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs border-collapse">
-              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs select-none">
                 <tr>
-                  <th className="py-2.5 px-2 text-center w-12 font-black">ردیف</th>
-                  <th className="py-2.5 px-3 font-black text-right">شرح کالا و مشخصات کارتن</th>
-                  <th className="py-2.5 px-3 text-center font-black">تعداد کل</th>
-                  <th className="py-2.5 px-3 text-left font-black">فی خرید</th>
-                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'فی فروش مصوب' : 'فی فروش واحد'}</th>
-                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'جمع بهای خرید' : 'بهای کل خرید'}</th>
-                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'جمع ارزش فروش' : 'مبلغ کل فروش'}</th>
-                  <th className="py-2.5 px-3 text-left font-black">سود هر عدد</th>
-                  <th className="py-2.5 px-3 text-left font-black">{isPurchase ? 'سود ناخالص سطر' : 'سود کل سطر'}</th>
-                  <th className="py-2.5 px-3 text-center font-black">{isPurchase ? 'مارک‌آپ' : 'حاشیه سود'}</th>
-                  <th className="py-2.5 px-2 text-center font-black">وضعیت</th>
+                  <th className="py-2.5 px-2.5 text-center w-12 font-black">#</th>
+                  <th className="py-2.5 px-3 font-black text-right min-w-[200px]">شرح کالا و مشخصات کارتن</th>
+                  <th className="py-2.5 px-3 text-center font-black whitespace-nowrap min-w-[120px]">تعداد و حجم</th>
+                  <th className="py-2.5 px-3 text-center font-black whitespace-nowrap min-w-[180px]">مبالغ کل و فی (فروش و خرید)</th>
+                  <th className="py-2.5 px-3 text-center font-black whitespace-nowrap min-w-[170px]">{isPurchase ? 'سود پیش‌بینی و مارک‌آپ' : 'سود خالص و حاشیه سود'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {displayedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-10 text-center text-slate-400 font-medium">
+                    <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
                       کالایی در این فیلتر سود یافت نشد.
                     </td>
                   </tr>
                 ) : (
                   displayedItems.map((it, itIdx) => (
-                    <tr key={`profit-item-${it.id || 'row'}-${it.idx}-${itIdx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-2 px-2 text-center font-bold text-slate-400 font-mono tabular-nums">
+                    <tr key={`profit-item-${it.id || 'row'}-${it.idx}-${itIdx}`} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                      {/* 1. Index */}
+                      <td className="py-2.5 px-2.5 text-center font-bold text-slate-400 font-mono tabular-nums text-xs">
                         {toPersianDigits(it.idx + 1)}
                       </td>
-                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">
-                        <div className="text-xs sm:text-[13px]">{it.productName}</div>
-                        <div className={`text-[10.5px] ${theme.primaryText} font-bold mt-0.5 flex items-center gap-1`}>
-                          <Boxes className="w-3 h-3 shrink-0" />
-                          <span>{it.cartonFullText}</span>
+
+                      {/* 2. Product Name & Packaging Specs */}
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
+                        <div className="text-xs sm:text-[13px] font-black leading-snug">{it.productName}</div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold ${theme.light} ${theme.primaryText} border ${theme.borderColor}`}>
+                            <Boxes className="w-3 h-3 shrink-0" />
+                            <span>{it.cartonFullText}</span>
+                          </span>
+                          {it.piecesPerCarton > 1 && (
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              (هر کارتن: {toPersianDigits(it.piecesPerCarton)} {it.unitTitle || 'عدد'})
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-center font-bold text-slate-800 dark:text-slate-200 font-mono tabular-nums">
-                        {toPersianDigits(it.totalPieces.toLocaleString())} {it.unitTitle || 'عدد'}
-                      </td>
-                      <td className="py-2 px-3 text-left dir-ltr font-mono tabular-nums">
-                        {hasDiscount && isPurchase && it.itemDiscountSavings > 0 ? (
-                          <div>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                              {isSecretMode ? '••••' : formatPrice(it.unitCost)}
-                            </span>
-                            <span className="text-[10px] text-slate-400 line-through mr-1 font-normal">
-                              {isSecretMode ? '••••' : formatPrice(it.unitCostGross)}
-                            </span>
+
+                      {/* 3. Total Pieces & Units (Centered) */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="font-black text-slate-900 dark:text-white font-mono tabular-nums text-xs sm:text-[13px]">
+                          {toPersianDigits(it.totalPieces.toLocaleString())}
+                          <span className="text-[10.5px] font-bold text-slate-500 mr-1">{it.unitTitle || 'عدد'}</span>
+                        </div>
+                        {it.cartonsCount > 0 && (
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            {toPersianDigits(it.cartonsCount)} کارتن{it.extraPieces > 0 ? ` + ${toPersianDigits(it.extraPieces)} دانه` : ''}
                           </div>
-                        ) : (
-                          <span className="text-slate-600 dark:text-slate-400 font-medium">
-                            {isSecretMode ? '••••' : formatPrice(it.unitCost)}
-                          </span>
                         )}
                       </td>
-                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
-                        {isSecretMode ? '••••' : formatPrice(it.unitSell)}
-                      </td>
-                      <td className="py-2 px-3 text-left dir-ltr font-mono tabular-nums">
-                        {hasDiscount && isPurchase && it.itemDiscountSavings > 0 ? (
-                          <div>
-                            <div className="font-bold text-slate-900 dark:text-white">
-                              {isSecretMode ? '••••••' : formatPrice(it.rowCost)}
-                            </div>
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal dir-rtl text-right">
-                              تخفیف: -{formatPrice(it.itemDiscountSavings)}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-600 dark:text-slate-400 font-medium">
+
+                      {/* 4. Combined Total Amounts & Unit Prices (Centered in Column) */}
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 font-sans">فروش:</span>
+                          <span className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                            {isSecretMode ? '••••••' : formatPrice(it.rowRevenue)}
+                          </span>
+                          <span className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                            (فی: {isSecretMode ? '••••' : formatPrice(it.unitSell)})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-1.5 text-[11px] mt-0.5">
+                          <span className="text-[10px] text-slate-400 font-sans">خرید:</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300">
                             {isSecretMode ? '••••••' : formatPrice(it.rowCost)}
                           </span>
+                          <span className="text-[10px] text-slate-400">
+                            (فی: {isSecretMode ? '••••' : formatPrice(it.unitCost)})
+                          </span>
+                        </div>
+
+                        {hasDiscount && isPurchase && it.itemDiscountSavings > 0 && (
+                          <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                            تخفیف سطر: -{formatPrice(it.itemDiscountSavings)}
+                          </div>
                         )}
                       </td>
-                      <td className="py-2 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr font-mono tabular-nums">
-                        {isSecretMode ? '••••••' : formatPrice(it.rowRevenue)}
-                      </td>
-                      <td className="py-2 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
-                        {isSecretMode ? '••••' : `+${formatPrice(it.profitPerPiece)}`}
-                      </td>
-                      <td className="py-2 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums">
-                        {isSecretMode ? '••••••' : `+${formatPrice(it.rowProfit)}`}
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10.5px] border ${it.tierBadge}`}>
-                          {isSecretMode ? '••٪' : `${toPersianDigits(it.margin.toFixed(1))}٪`}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-center">
-                        <span className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400">
-                          {it.tierTitle}
-                        </span>
+
+                      {/* 5. Combined Row Profit & Margin (Centered in Column) */}
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-[13px]">
+                            {isSecretMode ? '••••••' : `+${formatPrice(it.rowProfit)}`}
+                          </span>
+                          <span className={`inline-block px-2 py-0.5 rounded-md font-black text-[11px] border shrink-0 ${it.tierBadge}`}>
+                            {isSecretMode ? '••٪' : `${toPersianDigits(it.margin.toFixed(1))}٪`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
+                          <span>فی سود: {isSecretMode ? '••••' : `+${formatPrice(it.profitPerPiece)}`}</span>
+                          <span className="text-slate-400 font-normal mr-1">({it.tierTitle})</span>
+                        </div>
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
 
-              {/* Comprehensive Footer Row */}
-              <tfoot className="bg-slate-100/90 dark:bg-slate-950 border-t-2 border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              {/* Robust Fixed Footer Row (Cleanly Aligned and Centered) */}
+              <tfoot className="bg-slate-100/95 dark:bg-slate-950 border-t-2 border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                 <tr>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
-                      جمع کل
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="font-bold text-slate-900 dark:text-white text-xs">
-                      {toPersianDigits(analyzedItems.length)} قلم کالا
-                    </div>
-                    <div className={`text-[11px] ${theme.primaryText} font-bold mt-0.5 flex items-center gap-1`}>
-                      <Boxes className="w-3.5 h-3.5" />
-                      <span>{toPersianDigits(totalCartonsSum)} کارتن کالا</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-                    {toPersianDigits(totalPiecesSum.toLocaleString())} عدد
-                  </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr font-mono tabular-nums">
-                    <div className="text-[10px] text-slate-400 font-normal">میانگین خرید:</div>
-                    <div className="font-bold text-slate-700 dark:text-slate-300">
-                      {isSecretMode ? '••••' : formatPrice(weightedAvgCost)}
+                  {/* Col 1 & 2 Combined: Total Label, Items & Cartons */}
+                  <td colSpan={2} className="py-3 px-3.5 text-right">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2.5 py-1 rounded-md ${theme.primary} text-white text-xs font-black shadow-xs`}>
+                        جمع کل فاکتور
+                      </span>
+                      <span className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                        {toPersianDigits(analyzedItems.length)} قلم کالا
+                      </span>
+                      <span className="text-slate-400">·</span>
+                      <span className={`text-xs ${theme.primaryText} font-bold flex items-center gap-1`}>
+                        <Boxes className="w-3.5 h-3.5 shrink-0" />
+                        <span>{toPersianDigits(totalCartonsSum)} کارتن کالا</span>
+                      </span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-                    <div className="text-[10px] text-slate-400 font-normal">میانگین فروش:</div>
-                    <div>{isSecretMode ? '••••' : formatPrice(weightedAvgSell)}</div>
+
+                  {/* Col 3: Total Physical Pieces (Centered) */}
+                  <td className="py-3 px-3 text-center font-black text-slate-900 dark:text-white font-mono tabular-nums whitespace-nowrap">
+                    <div className="text-xs sm:text-[13px]">{toPersianDigits(totalPiecesSum.toLocaleString())} عدد</div>
+                    <div className="text-[10px] text-slate-400 font-normal mt-0.5">کل قطعات فاکتور</div>
                   </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-                    <div>{isSecretMode ? '••••••' : formatPrice(totalCost)}</div>
-                    {isPurchase && totalExpensesAmount > 0 && (
-                      <div className="text-[10px] text-sky-600 dark:text-sky-400 font-bold dir-rtl text-right">
-                        کرایه بار: +{formatPrice(totalExpensesAmount)}
+
+                  {/* Col 4: Combined Total Cost, Revenue and Averages (Centered) */}
+                  <td className="py-3 px-3 text-center font-mono tabular-nums whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-[10px] text-slate-400 font-sans">فروش کل:</span>
+                      <span className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                        {isSecretMode ? '••••••' : formatPrice(totalRev)}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-sans">
+                        (م.فروش: {isSecretMode ? '••••' : formatPrice(weightedAvgSell)})
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] mt-0.5">
+                      <span className="text-[10px] text-slate-400 font-sans">خرید کل:</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">
+                        {isSecretMode ? '••••••' : formatPrice(totalCost)}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-sans">
+                        (م.خرید: {isSecretMode ? '••••' : formatPrice(weightedAvgCost)})
+                      </span>
+                    </div>
+                    {hasDiscount && isPurchase && invoiceDiscountAmount > 0 && (
+                      <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                        تخفیف کل خرید: -{formatPrice(invoiceDiscountAmount)}
                       </div>
                     )}
-                    {hasDiscount && isPurchase && (
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal dir-rtl text-right">
-                        تخفیف: -{formatPrice(invoiceDiscountAmount)}
-                      </div>
-                    )}
                   </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-900 dark:text-white font-mono tabular-nums">
-                    <div>{isSecretMode ? '••••••' : formatPrice(totalRev)}</div>
-                    {hasDiscount && !isPurchase && (
-                      <div className="text-[10px] text-amber-600 dark:text-amber-400 font-normal dir-rtl text-right">
-                        تخفیف فروش: -{formatPrice(invoiceDiscountAmount)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                    <div className="text-[10px] text-emerald-700 font-normal">سود هر عدد:</div>
-                    <div>{isSecretMode ? '••••' : `+${formatPrice(weightedAvgProfitPerPiece)}`}</div>
-                  </td>
-                  <td className="py-2.5 px-3 text-left dir-ltr bg-emerald-500/10 dark:bg-emerald-950/40 border-x border-emerald-300 dark:border-emerald-800 font-mono tabular-nums">
-                    <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">
-                      {isPurchase ? 'سود پیش‌بینی کل:' : 'سود خالص قطعی:'}
+
+                  {/* Col 5: Combined Net Profit & Margin (Centered with Accent) */}
+                  <td className="py-3 px-3 text-center bg-emerald-500/10 dark:bg-emerald-950/40 border-r border-emerald-300 dark:border-emerald-800 font-mono tabular-nums whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-300">
+                        {isSecretMode ? '••••••' : `+${formatPrice(totalProfit)}`}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-[11px] font-mono shrink-0">
+                        {isSecretMode ? '••٪' : `${toPersianDigits(overallMargin.toFixed(1))}٪`}
+                      </span>
                     </div>
-                    <div className="text-sm font-black text-emerald-700 dark:text-emerald-300">
-                      {isSecretMode ? '••••••' : `+${formatPrice(totalProfit)}`}
+                    <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mt-0.5 flex items-center justify-center gap-1">
+                      <span>میانگین فی سود: {isSecretMode ? '••••' : `+${formatPrice(weightedAvgProfitPerPiece)}`}</span>
+                      <span className="text-slate-400 font-normal">| بازده: {isSecretMode ? '••٪' : `${toPersianDigits(roiPercentage.toFixed(0))}٪`}</span>
                     </div>
-                  </td>
-                  <td className={`py-2.5 px-3 text-center font-bold ${theme.primaryText} dir-ltr text-xs font-mono tabular-nums`}>
-                    {isSecretMode ? '••٪' : `${toPersianDigits(overallMargin.toFixed(1))}٪`}
-                  </td>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-[11px]">
-                      بازدهی: {isSecretMode ? '••٪' : `${toPersianDigits(roiPercentage.toFixed(0))}٪`}
-                    </span>
                   </td>
                 </tr>
               </tfoot>
@@ -1868,25 +1876,14 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
               <thead className="bg-slate-50/90 dark:bg-slate-800/70 border-b border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-[13px] select-none">
                 <tr>
                   <SortableTableHeader
-                    field="invoiceNumber"
-                    currentField={salesSortField}
-                    currentDirection={salesSortDirection}
-                    onSort={handleSalesSort}
-                    align="right"
-                    className="py-2.5 px-3"
-                  >
-                    شماره سند
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
                     field="date"
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="right"
-                    className="py-2.5 px-3"
+                    className="py-2.5 px-3 min-w-[130px]"
                   >
-                    تاریخ صدور
+                    تاریخ و شماره سند
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1895,9 +1892,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
                     align="right"
-                    className="py-2.5 px-3"
+                    className="py-2.5 px-3 min-w-[170px]"
                   >
-                    خریدار / مشتری
+                    طرف‌حساب / مشتری
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1905,21 +1902,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
-                    align="left"
-                    className="py-2.5 px-3 text-left"
+                    align="center"
+                    className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    مبلغ کل فاکتور
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="cost"
-                    currentField={salesSortField}
-                    currentDirection={salesSortDirection}
-                    onSort={handleSalesSort}
-                    align="left"
-                    className="py-2.5 px-3 text-left"
-                  >
-                    بهای خرید (هزینه)
+                    مبلغ فروش و بهای خرید
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -1927,30 +1913,19 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={salesSortField}
                     currentDirection={salesSortDirection}
                     onSort={handleSalesSort}
-                    align="left"
-                    className="py-2.5 px-3 text-left"
-                  >
-                    سود ناخالص فاکتور
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="margin"
-                    currentField={salesSortField}
-                    currentDirection={salesSortDirection}
-                    onSort={handleSalesSort}
                     align="center"
-                    className="py-2.5 px-3 text-center"
+                    className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    حاشیه سود
+                    سود خالص و حاشیه سود
                   </SortableTableHeader>
 
-                  <th className="py-2.5 px-3 text-center font-black text-xs sm:text-[13px]">عملیات</th>
+                  <th className="py-2.5 px-3 text-center font-black text-xs sm:text-[13px] whitespace-nowrap w-24">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedSalesInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-slate-400 font-medium">
+                    <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
                       هیچ فاکتور فروشی با شرایط فیلتر انتخاب شده یافت نشد.
                     </td>
                   </tr>
@@ -1965,60 +1940,79 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     const invProfit = invRevenue - invCost - allSalesExpenses;
                     const invMargin = invRevenue > 0 ? (invProfit / invRevenue) * 100 : 0;
                     const hasInvDiscount = Boolean(inv.hasDiscount || (inv.discount && inv.discount > 0));
+                    const totalCartons = (inv.items || []).reduce((s, it) => s + (it.cartonsCount || 0), 0);
 
                     return (
                       <tr key={`profit-sales-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-2.5 px-3 font-bold">
-                          <span className="font-mono text-xs text-slate-900 dark:text-slate-100 font-black px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
+                        {/* 1. Combined Date & Document Number */}
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className={`font-mono text-xs font-black px-2 py-0.5 rounded-md ${theme.light} ${theme.primaryText} border ${theme.borderColor} inline-block`}>
                             #{toPersianDigits(inv.invoiceNumber)}
                           </span>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                            {toPersianDigits(inv.date)}
+                          </div>
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-bold font-mono">
-                          {toPersianDigits(inv.date)}
-                        </td>
+
+                        {/* 2. Customer & Items count */}
                         <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
                           <div>{inv.customerName}</div>
-                          {inv.customerCity && (
-                            <span className="text-[11px] text-slate-500 font-medium">{inv.customerCity}</span>
-                          )}
+                          <div className="text-[10.5px] text-slate-400 font-normal mt-0.5 flex items-center gap-1">
+                            {inv.customerCity && <span>{inv.customerCity} · </span>}
+                            <span>{toPersianDigits(inv.items.length)} قلم ({toPersianDigits(totalCartons)} کارتن)</span>
+                          </div>
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white text-left dir-ltr">
-                          <div>{formatPrice(invRevenue)}</div>
+
+                        {/* 3. Combined Sales Revenue & Purchase Cost (Centered) */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] font-mono tabular-nums">
+                            {formatPrice(invRevenue)}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center justify-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-sans">بهای خرید:</span>
+                            <span className="font-bold">{isSecretMode ? '••••••' : formatPrice(invCost)}</span>
+                          </div>
                           {hasInvDiscount && inv.discount && inv.discount > 0 && (
-                            <div className="flex items-center justify-end gap-1 mt-0.5 dir-rtl">
-                              <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-[10px] border border-amber-300 dark:border-amber-700">
+                            <div className="flex items-center justify-center gap-1 mt-0.5">
+                              <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-[9.5px] border border-amber-300 dark:border-amber-700">
                                 تخفیف: {formatPrice(inv.discount)}
                               </span>
                             </div>
                           )}
                           {allSalesExpenses > 0 && (
-                            <div className="flex items-center justify-end gap-1 mt-0.5 dir-rtl">
-                              <span className="px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 font-bold text-[10px] border border-rose-200 dark:border-rose-900">
-                                کسر کرایه/هزینه از سود: -{formatPrice(allSalesExpenses)}
+                            <div className="flex items-center justify-center gap-1 mt-0.5">
+                              <span className="px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 font-bold text-[9.5px] border border-rose-200 dark:border-rose-900">
+                                کسر کرایه: -{formatPrice(allSalesExpenses)}
                               </span>
                             </div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 font-bold text-left dir-ltr">
-                          {isSecretMode ? '••••••' : formatPrice(invCost)}
+
+                        {/* 4. Combined Net Profit & Profit Margin (Centered & Cleanly Balanced) */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-[13px] font-mono tabular-nums">
+                              {isSecretMode ? '••••••' : `+${formatPrice(invProfit)}`}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 font-mono shrink-0">
+                              {isSecretMode ? '••٪' : `${toPersianDigits(invMargin.toFixed(1))}٪`}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-sans text-center mt-0.5">
+                            سود خالص قطعی فاکتور
+                          </div>
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-left dir-ltr">
-                          {isSecretMode ? '••••••' : `+${formatPrice(invProfit)}`}
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800">
-                            {isSecretMode ? '••٪' : `${toPersianDigits(invMargin.toFixed(1))}٪`}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
+
+                        {/* 5. Actions */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setSelectedInvoiceForDetail(inv)}
-                              className={`px-3 py-1.5 ${theme.primaryLight} ${theme.primaryText} hover:opacity-85 rounded-xl text-xs font-bold transition-all cursor-pointer border ${theme.borderColor} shadow-2xs flex items-center gap-1`}
+                              className={`px-2.5 py-1.5 ${theme.primaryLight} ${theme.primaryText} hover:opacity-85 rounded-xl text-xs font-bold transition-all cursor-pointer border ${theme.borderColor} shadow-2xs flex items-center gap-1`}
                               title="محاسبه دقیق اقلام و ریز سود در همین صفحه"
                             >
                               <Calculator className="w-3.5 h-3.5" />
-                              <span>محاسبه دقیق اقلام</span>
+                              <span>ریز اقلام</span>
                             </button>
                             <button
                               onClick={() => onViewInvoice(inv)}
@@ -2035,27 +2029,39 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                 )}
               </tbody>
 
-              {/* Summary Footer Row for Sales Tab */}
+              {/* Summary Footer Row for Sales Tab (Centered Columns) */}
               {paginatedSalesInvoices.length > 0 && (
                 <tfoot className="bg-slate-100/90 dark:bg-slate-950 border-t-2 border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                   <tr>
-                    <td colSpan={3} className="py-2.5 px-3">
-                      <span>جمع کل فاکتورهای فروش این دوره ({toPersianDigits(filteredSalesInvoices.length)} فاکتور)</span>
+                    <td colSpan={2} className="py-2.5 px-3">
+                      <span className="font-black text-slate-900 dark:text-white">
+                        جمع کل ({toPersianDigits(filteredSalesInvoices.length)} فاکتور فروش)
+                      </span>
                     </td>
-                    <td className="py-2.5 px-3 text-left dir-ltr font-black">
-                      {formatPrice(summaryMetrics.totalRevenue)}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] font-mono tabular-nums">
+                        {formatPrice(summaryMetrics.totalRevenue)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center justify-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-sans">جمع خرید:</span>
+                        <span className="font-bold">{isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalCost)}</span>
+                      </div>
                     </td>
-                    <td className="py-2.5 px-3 text-left dir-ltr font-bold text-slate-700 dark:text-slate-300">
-                      {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalCost)}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-[13px] font-mono tabular-nums">
+                          {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-[11px] font-mono shrink-0">
+                          {isSecretMode ? '••٪' : `${toPersianDigits(summaryMetrics.overallMargin.toFixed(1))}٪`}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-sans text-center mt-0.5">
+                        میانگین هر فاکتور: {formatPrice(summaryMetrics.avgProfitPerInvoice)}
+                      </div>
                     </td>
-                    <td className="py-2.5 px-3 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
-                      {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
-                      {isSecretMode ? '••٪' : `${toPersianDigits(summaryMetrics.overallMargin.toFixed(1))}٪`}
-                    </td>
-                    <td className="py-2.5 px-3 text-center text-[11px] text-slate-500 font-medium">
-                      میانگین سود هر فاکتور: {formatPrice(summaryMetrics.avgProfitPerInvoice)}
+                    <td className="py-2.5 px-3 text-center text-[10.5px] text-slate-400 font-bold">
+                      —
                     </td>
                   </tr>
                 </tfoot>
@@ -2076,9 +2082,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="right"
-                    className="p-3.5 whitespace-nowrap"
+                    className="py-2.5 px-3 whitespace-nowrap min-w-[130px]"
                   >
-                    شماره و تاریخ
+                    تاریخ و شماره سند
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -2087,44 +2093,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
                     align="right"
-                    className="p-3.5"
+                    className="py-2.5 px-3 min-w-[170px]"
                   >
-                    تأمین‌کننده
+                    تأمین‌کننده و اقلام
                   </SortableTableHeader>
-
-                  <th className="p-3.5 text-center font-black">اقلام و کارتن</th>
 
                   <SortableTableHeader
                     field="cost"
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    align="left"
-                    className="p-3.5 text-left whitespace-nowrap"
+                    align="center"
+                    className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    بهای خرید فاکتور
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="expenses"
-                    currentField={purchaseSortField}
-                    currentDirection={purchaseSortDirection}
-                    onSort={handlePurchaseSort}
-                    align="left"
-                    className="p-3.5 text-left whitespace-nowrap"
-                  >
-                    کرایه بار (تفکیکی)
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="projectedSales"
-                    currentField={purchaseSortField}
-                    currentDirection={purchaseSortDirection}
-                    onSort={handlePurchaseSort}
-                    align="left"
-                    className="p-3.5 text-left whitespace-nowrap"
-                  >
-                    ارزش فروش اقلام
+                    بهای خرید و ارزش فروش
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -2132,30 +2114,19 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     currentField={purchaseSortField}
                     currentDirection={purchaseSortDirection}
                     onSort={handlePurchaseSort}
-                    align="left"
-                    className="p-3.5 text-left whitespace-nowrap"
-                  >
-                    سود پیش‌بینی‌شده
-                  </SortableTableHeader>
-
-                  <SortableTableHeader
-                    field="markup"
-                    currentField={purchaseSortField}
-                    currentDirection={purchaseSortDirection}
-                    onSort={handlePurchaseSort}
                     align="center"
-                    className="p-3.5 text-center whitespace-nowrap"
+                    className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    مارک‌آپ
+                    سود پیش‌بینی و مارک‌آپ
                   </SortableTableHeader>
 
-                  <th className="p-3.5 text-center whitespace-nowrap w-24 font-black">عملیات</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap w-24 font-black">عملیات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedPurchaseInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-12 text-center text-slate-400 font-medium">
+                    <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
                       هیچ فاکتور ورود کالا در این بازه زمانی یافت نشد.
                     </td>
                   </tr>
@@ -2165,8 +2136,8 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     return (
                       <tr key={`profit-pur-inv-${inv.id || idx}-${idx}`} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors">
                         {/* 1. Number & Date */}
-                        <td className="p-3.5 whitespace-nowrap">
-                          <span className={`font-mono text-xs font-black px-2 py-0.5 rounded-lg ${theme.light} ${theme.primaryText} border ${theme.borderColor} inline-block`}>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className={`font-mono text-xs font-black px-2 py-0.5 rounded-md ${theme.light} ${theme.primaryText} border ${theme.borderColor} inline-block`}>
                             #{toPersianDigits(inv.invoiceNumber)}
                           </span>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
@@ -2174,80 +2145,68 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                           </div>
                         </td>
 
-                        {/* 2. Supplier */}
-                        <td className="p-3.5 font-bold text-slate-900 dark:text-white">
+                        {/* 2. Supplier & Items */}
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
                           <div>{inv.customerName}</div>
-                          {inv.customerCity && (
-                            <div className="text-[10.5px] text-slate-400 font-normal">
-                              {inv.customerCity}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* 3. Items & Cartons */}
-                        <td className="p-3.5 text-center font-bold text-slate-800 dark:text-slate-200 font-mono tabular-nums">
-                          <div>{toPersianDigits(inv.items.length)} قلم</div>
-                          <div className="text-[10.5px] text-slate-500 dark:text-slate-400 font-normal">
-                            {toPersianDigits(totalCartons)} کارتن · {toPersianDigits(inv.totalItemsPieces.toLocaleString())} عدد
+                          <div className="text-[10.5px] text-slate-400 font-normal mt-0.5 flex items-center gap-1">
+                            {inv.customerCity && <span>{inv.customerCity} · </span>}
+                            <span>{toPersianDigits(inv.items.length)} قلم ({toPersianDigits(totalCartons)} کارتن · {toPersianDigits(inv.totalItemsPieces.toLocaleString())} عدد)</span>
                           </div>
                         </td>
 
-                        {/* 4. Net Purchase Cost */}
-                        <td className="p-3.5 text-left dir-ltr whitespace-nowrap">
-                          <div className="font-black text-slate-900 dark:text-white font-mono tabular-nums">
+                        {/* 3. Net Purchase Cost & Projected Sales (Centered) */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] font-mono tabular-nums">
                             {isSecretMode ? '••••••' : formatPrice(inv.netPurchaseCost)}
                           </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center justify-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-sans">ارزش فروش:</span>
+                            <span className="font-bold">{isSecretMode ? '••••••' : formatPrice(inv.totalProjectedSalesValue)}</span>
+                          </div>
                           {inv.hasDiscount && inv.discountAmount > 0 && (
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal dir-rtl text-right">
+                            <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-normal text-center mt-0.5">
                               تخفیف: -{formatPrice(inv.discountAmount)}
                             </div>
                           )}
-                        </td>
-
-                        {/* 5. Freight (Informational) */}
-                        <td className="p-3.5 text-left dir-ltr font-bold text-sky-700 dark:text-sky-300 font-mono tabular-nums whitespace-nowrap">
-                          <div>{isSecretMode ? '••••••' : (inv.totalExpensesAmount > 0 ? `+${formatPrice(inv.totalExpensesAmount)}` : '۰ تومان')}</div>
                           {inv.totalExpensesAmount > 0 && (
-                            <div className="text-[10px] text-sky-600 dark:text-sky-400 font-normal dir-rtl text-right">
-                              هزینه باربری
+                            <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-normal text-center mt-0.5">
+                              کرایه بار: +{formatPrice(inv.totalExpensesAmount)}
                             </div>
                           )}
                         </td>
 
-                        {/* 6. Projected Sales */}
-                        <td className="p-3.5 text-slate-800 dark:text-slate-200 font-bold text-left dir-ltr font-mono tabular-nums whitespace-nowrap">
-                          {isSecretMode ? '••••••' : formatPrice(inv.totalProjectedSalesValue)}
+                        {/* 4. Projected Profit & Markup (Centered & Balanced) */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-[13px] font-mono tabular-nums">
+                              {isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 font-mono shrink-0">
+                              {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(1))}٪`}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-sans text-center mt-0.5">
+                            سود پیش‌بینی‌شده بار
+                          </div>
                         </td>
 
-                        {/* 7. Projected Profit */}
-                        <td className="p-3.5 font-black text-emerald-600 dark:text-emerald-400 text-left dir-ltr font-mono tabular-nums whitespace-nowrap">
-                          {isSecretMode ? '••••••' : `+${formatPrice(inv.projectedProfit)}`}
-                        </td>
-
-                        {/* 8. Markup */}
-                        <td className="p-3.5 text-center whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 font-mono">
-                            {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(1))}٪`}
-                          </span>
-                        </td>
-
-                        {/* 9. Actions */}
-                        <td className="p-3.5 text-center whitespace-nowrap">
+                        {/* 5. Actions */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setSelectedInvoiceForDetail(inv)}
-                              className={`px-2.5 py-1 ${theme.light} ${theme.primaryText} hover:opacity-85 rounded-lg text-xs font-bold transition-all cursor-pointer border ${theme.borderColor} shadow-2xs flex items-center gap-1`}
+                              className={`px-2.5 py-1.5 ${theme.light} ${theme.primaryText} hover:opacity-85 rounded-xl text-xs font-bold transition-all cursor-pointer border ${theme.borderColor} shadow-2xs flex items-center gap-1`}
                               title="محاسبه دقیق اقلام در همین صفحه"
                             >
                               <Calculator className="w-3.5 h-3.5" />
-                              <span>اقلام</span>
+                              <span>ریز اقلام</span>
                             </button>
                             <button
                               onClick={() => onViewInvoice(inv)}
-                              className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+                              className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
                               title="مشاهده فاکتور خرید"
                             >
-                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              <ArrowUpRight className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -2257,34 +2216,48 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                 )}
               </tbody>
 
-              {/* Summary Footer Row for Purchase Tab */}
+              {/* Summary Footer Row for Purchase Tab (Centered Columns) */}
               {paginatedPurchaseInvoices.length > 0 && (
                 <tfoot className="bg-slate-50/90 dark:bg-slate-800/70 border-t-2 border-slate-200/90 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
                   <tr>
-                    <td colSpan={3} className="py-3.5 px-3.5">
-                      <span>جمع ({toPersianDigits(purchaseInvoicesProfitability.length)} فاکتور ورود کالا)</span>
+                    <td colSpan={2} className="py-2.5 px-3">
+                      <span className="font-black text-slate-900 dark:text-white">
+                        جمع کل ({toPersianDigits(purchaseInvoicesProfitability.length)} فاکتور ورود کالا)
+                      </span>
                     </td>
-                    <td className="py-3.5 px-3.5 text-left dir-ltr font-black">
-                      <div>{isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}</div>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] font-mono tabular-nums">
+                        {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center justify-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-sans">فروش کل:</span>
+                        <span className="font-bold">{isSecretMode ? '••••••' : formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalProjectedSalesValue, 0))}</span>
+                      </div>
+                      {summaryMetrics.totalInwardPurchasesFreightAndExpenses > 0 && (
+                        <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-bold text-center mt-0.5">
+                          کرایه بار: +{formatPrice(summaryMetrics.totalInwardPurchasesFreightAndExpenses)}
+                        </div>
+                      )}
                     </td>
-                    <td className="py-3.5 px-3.5 text-left dir-ltr font-bold text-sky-700 dark:text-sky-300">
-                      <div>{isSecretMode ? '••••••' : (summaryMetrics.totalInwardPurchasesFreightAndExpenses > 0 ? `+${formatPrice(summaryMetrics.totalInwardPurchasesFreightAndExpenses)}` : '۰ تومان')}</div>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-[13px] font-mono tabular-nums">
+                          {isSecretMode ? '••••••' : `+${formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0))}`}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-[11px] font-mono shrink-0">
+                          {isSecretMode ? '••٪' : `+${toPersianDigits(
+                            summaryMetrics.totalInwardPurchasesNet > 0
+                              ? ((purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0) / summaryMetrics.totalInwardPurchasesNet) * 100).toFixed(1)
+                              : '0.0'
+                          )}٪`}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center mt-0.5">
+                        {toPersianDigits(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalItemsPieces, 0))} عدد کل اقلام
+                      </div>
                     </td>
-                    <td className="py-3.5 px-3.5 text-left dir-ltr font-bold text-slate-800 dark:text-slate-200">
-                      {isSecretMode ? '••••••' : formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalProjectedSalesValue, 0))}
-                    </td>
-                    <td className="py-3.5 px-3.5 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
-                      {isSecretMode ? '••••••' : `+${formatPrice(purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0))}`}
-                    </td>
-                    <td className="py-3.5 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
-                      {isSecretMode ? '••٪' : `+${toPersianDigits(
-                        summaryMetrics.totalInwardPurchasesNet > 0
-                          ? ((purchaseInvoicesProfitability.reduce((s, p) => s + p.projectedProfit, 0) / summaryMetrics.totalInwardPurchasesNet) * 100).toFixed(1)
-                          : '0.0'
-                      )}٪`}
-                    </td>
-                    <td className="py-3.5 px-3.5 text-center text-[11px] text-slate-500 font-medium">
-                      {toPersianDigits(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalItemsPieces, 0))} عدد کالا
+                    <td className="py-2.5 px-3 text-center text-[10.5px] text-slate-400 font-bold">
+                      —
                     </td>
                   </tr>
                 </tfoot>
