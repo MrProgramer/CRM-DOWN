@@ -479,10 +479,10 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
         {/* Card 1: ارزش دفتری خرید */}
         <div 
           onClick={() => onSelectBreakdownType(selectedBreakdownType === 'stock_purchase_cost' ? null : 'stock_purchase_cost')}
-          className={`bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
             selectedBreakdownType === 'stock_purchase_cost'
-              ? 'border-indigo-500 ring-2 ring-indigo-500/40 dark:ring-indigo-500/30 shadow-xl'
-              : 'border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/60 hover:shadow-xl hover:-translate-y-0.5'
+              ? 'border-indigo-500 ring-2 ring-indigo-500/40 dark:ring-indigo-500/30 shadow-md'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/60 hover:shadow-md'
           }`}
           title="کلیک برای باز/بستن جدول ریز بهای تمام‌شده خرید کالاهای انبار در همین صفحه"
         >
@@ -497,7 +497,7 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
             </span>
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
               {formatPrice(remainingStockPurchaseCost)}
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mt-1">
@@ -513,10 +513,10 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
         {/* Card 2: ارزش فروش نهایی */}
         <div 
           onClick={() => onSelectBreakdownType(selectedBreakdownType === 'stock_selling_value' ? null : 'stock_selling_value')}
-          className={`bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
             selectedBreakdownType === 'stock_selling_value'
-              ? 'border-emerald-500 ring-2 ring-emerald-500/40 dark:ring-emerald-500/30 shadow-xl'
-              : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/60 hover:shadow-xl hover:-translate-y-0.5'
+              ? 'border-emerald-500 ring-2 ring-emerald-500/40 dark:ring-emerald-500/30 shadow-md'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/60 hover:shadow-md'
           }`}
           title="کلیک برای باز/بستن جدول ریز ارزش فروش موجودی انبار در همین صفحه"
         >
@@ -531,7 +531,7 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
             </span>
           </div>
           <div>
-            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-right">
+            <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
               {formatPrice(remainingStockSellingValue)}
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mt-1">
@@ -547,10 +547,10 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
         {/* Card 3: گردش مرجوعی */}
         <div 
           onClick={() => onSelectBreakdownType(selectedBreakdownType === 'returns' ? null : 'returns')}
-          className={`bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
+          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border shadow-2xs space-y-3 cursor-pointer transition-all group ${
             selectedBreakdownType === 'returns'
-              ? 'border-rose-500 ring-2 ring-rose-500/40 dark:ring-rose-500/30 shadow-xl'
-              : 'border-slate-200/90 dark:border-slate-800 hover:border-rose-500/60 hover:shadow-xl hover:-translate-y-0.5'
+              ? 'border-rose-500 ring-2 ring-rose-500/40 dark:ring-rose-500/30 shadow-md'
+              : 'border-slate-200/90 dark:border-slate-800 hover:border-rose-500/60 hover:shadow-md'
           }`}
           title="کلیک برای باز/بستن جدول ریز مرجوعی‌ها در همین صفحه"
         >
@@ -565,7 +565,7 @@ export const CapitalInventoryDashboard: React.FC<CapitalInventoryDashboardProps>
             </span>
           </div>
           <div>
-            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 dir-ltr text-right">
+            <div className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
               {formatPrice(totalCustomerReturnsValue + totalSupplierReturnsValue)}
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mt-1">

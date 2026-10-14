@@ -391,7 +391,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
                               {/* Badge notification counter */}
                               {item.count !== null && item.count > 0 && (
-                                <span className="absolute -top-1 -left-1 px-1 min-w-[16px] h-4 rounded-full bg-rose-500 text-white text-[9px] font-mono font-black flex items-center justify-center ring-2 ring-white dark:ring-[#090d16] shadow-xs">
+                                <span className={`absolute -top-1 -left-1 px-1 min-w-[16px] h-4 rounded-full ${theme.primary} text-white text-[9px] font-mono font-black flex items-center justify-center ring-2 ring-white dark:ring-[#090d16] shadow-xs`}>
                                   {item.count > 99 ? '۹۹+' : toPersianDigits(item.count)}
                                 </span>
                               )}

@@ -1724,18 +1724,18 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
         
         {/* Card 1: سود کل فاکتورهای فروش (مجموع سود فاکتورهای موجود در جدول) */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-[#090d16] rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 transition-colors flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">سود کل فاکتورهای فروش</span>
-            <div className="p-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-right font-mono">
+          <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
             {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>تعداد فاکتورهای صادرشده:</span>
             <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
               {toPersianDigits(summaryMetrics.invoicesCount)} فاکتور
@@ -1744,58 +1744,58 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         </div>
 
         {/* Card 2: مجموع فروش فاکتورها */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-[#090d16] rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 transition-colors flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-600 dark:text-slate-400">مجموع فروش فاکتورها</span>
-            <div className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
             {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalRevenue)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>تعداد کل اقلام:</span>
-            <span className="text-slate-700 dark:text-slate-300 font-bold">{toPersianDigits(summaryMetrics.totalItemsCount)} قلم کالا</span>
+            <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">{toPersianDigits(summaryMetrics.totalItemsCount)} قلم کالا</span>
           </div>
         </div>
 
         {/* Card 3: سود خالص فاکتورهای ورودی خرید */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-[#090d16] rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 transition-colors flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-800 dark:text-amber-300">سود خالص فاکتورهای ورودی (خرید)</span>
-            <div className="p-2 rounded-2xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
               <Boxes className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300 dir-ltr text-right">
+          <div className="text-lg sm:text-xl font-black text-amber-700 dark:text-amber-300 font-mono tracking-tight">
             {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.totalInwardPurchasesProjectedProfit)}`}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>بهای کل (اصلی + کرایه):</span>
-            <span className="text-slate-700 dark:text-slate-300 font-bold">
+            <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">
               {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}
             </span>
           </div>
         </div>
 
         {/* Card 4: میانگین بازدهی و حاشیه سود */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-[#090d16] rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 transition-colors flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className={`text-xs font-bold ${theme.primaryText}`}>حاشیه سود میانگین</span>
-            <div className="p-2 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800">
               <Percent className="w-4 h-4" />
             </div>
           </div>
 
-          <div className={`text-xl sm:text-2xl font-black ${theme.primaryText} dir-ltr text-right`}>
+          <div className={`text-lg sm:text-xl font-black ${theme.primaryText} font-mono tracking-tight`}>
             {isSecretMode ? '••٪' : `${toPersianDigits(summaryMetrics.overallMargin.toFixed(1))}٪`}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
             <span>میانگین سود هر فاکتور:</span>
-            <span className="text-slate-700 dark:text-slate-300 font-bold">
+            <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">
               {isSecretMode ? '••••••' : formatPrice(summaryMetrics.avgProfitPerInvoice)}
             </span>
           </div>

@@ -488,7 +488,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5 font-mono">
+            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5 font-mono tracking-tight">
               <span>{toPersianDigits(totalPackagedCartons)}</span>
               <span className="text-xs text-slate-500 font-sans font-bold">کارتن کامل</span>
             </div>
@@ -512,7 +512,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 2: Purchase Value / Capital */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
+        <div className="bg-white dark:bg-[#090d16] p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">کل سرمایه خرید انبار</span>
             <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
@@ -520,7 +520,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
+            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
               {!isSecretMode ? formatPrice(totalPurchaseValue) : '🔒 محرمانه'}
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
@@ -544,7 +544,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 3: Realized Sales / All Invoices */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
+        <div className="bg-white dark:bg-[#090d16] p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">گردش فروش کل کالاها</span>
             <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
@@ -552,7 +552,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
+            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
               {formatPrice(overallSalesSummary.totalRevenueSum)}
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
@@ -572,7 +572,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
         </div>
 
         {/* Card 4: Potential Sales Value & Gross Profit */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
+        <div className="bg-white dark:bg-[#090d16] p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">ارزش کل فروش بالقوه موجودی</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
@@ -580,7 +580,7 @@ export const InventoryAuditReport: React.FC<InventoryAuditReportProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
+            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
               {formatPrice(totalSalesValue)}
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 space-y-0.5">
