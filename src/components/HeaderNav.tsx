@@ -828,14 +828,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
                       <div className="p-1.5 max-h-80 overflow-y-auto space-y-0.5">
                         {[
+                          { id: 'modern' as AppDesignMode, name: 'فلت مدرن تجاری (سوئیس و فین‌تک)', icon: Sparkles, badge: 'تخت و ارگونومیک', color: '#0ea5e9' },
+                          { id: 'corporate' as AppDesignMode, name: 'تجاری سازمانی (استاندارد ERP)', icon: FileSpreadsheet, badge: 'سازمانی و شرکتی', color: '#2563eb' },
                           { id: 'classic' as AppDesignMode, name: 'کلاسیک اداری و دفتری سنتی', icon: FileSpreadsheet, badge: 'سنتی و دفتری', color: '#475569' },
-                          { id: 'modern' as AppDesignMode, name: 'فلت مدرن تجاری (سوئیس و فین‌تک)', icon: Sparkles, badge: 'تخت و خلوت', color: '#0ea5e9' },
-                          { id: 'glassmorphism' as AppDesignMode, name: 'گلس‌مورفیک شیشه‌ای کریستال', icon: Gem, badge: 'شیشه‌ای لوکس', color: '#8b5cf6' },
-                          { id: 'luxury-gold' as AppDesignMode, name: 'لوکس ابسیدین و زرین شاهانه', icon: Crown, badge: 'VIP شاهانه', color: '#d4af37' },
-                          { id: 'neobrutalism' as AppDesignMode, name: 'نئوبروتالیسم نرم گرافیکی', icon: Shapes, badge: 'شارپ و زنده', color: '#f43f5e' },
-                          { id: 'cyber-tech' as AppDesignMode, name: 'سایبرتک نئون و ترمینال', icon: Cpu, badge: 'اتاق فرمان', color: '#06b6d4' },
-                          { id: 'minimal-nordic' as AppDesignMode, name: 'مینیمال نوردیک اسکاندیناوی', icon: Feather, badge: 'خلوت و آرامش‌بخش', color: '#64748b' },
-                          { id: 'aurora-sunset' as AppDesignMode, name: 'گرادیان شفق قطبی زنده', icon: Wand2, badge: 'پویا و رنگین‌کمانی', color: '#f59e0b' },
+                          { id: 'minimal-studio' as AppDesignMode, name: 'مینیمال سوئیسی استودیو', icon: Feather, badge: 'خلوت و خطوط مویی', color: '#64748b' },
+                          { id: 'titanium-luxury' as AppDesignMode, name: 'پرستیژ تیتانیوم دارک و گرافیتی مات', icon: Crown, badge: 'VIP و متالیک', color: '#94a3b8' },
+                          { id: 'fintech-precision' as AppDesignMode, name: 'فین‌تک وال‌استریت پرو', icon: TrendingUp, badge: 'تحلیلی و مدولار', color: '#0284c7' },
+                          { id: 'frosted-silk' as AppDesignMode, name: 'گلس‌مورفیک ابریشمی', icon: Gem, badge: 'کریستال مات لطیف', color: '#8b5cf6' },
                         ].map((m, mIdx) => {
                           const isCur = (settings.designMode || 'modern') === m.id;
                           const MIcon = m.icon;

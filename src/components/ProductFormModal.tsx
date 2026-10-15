@@ -494,7 +494,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   <span>ساختار بسته‌بندی و تعداد در ۱ کارتن:</span>
                 </div>
                 {isUnpackaged && (
-                  <span className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[11px] font-black border border-indigo-200 dark:border-indigo-800">
+                  <span className={`px-2.5 py-1 rounded-lg ${theme.badgeBg} ${theme.primaryText} text-[11px] font-black border ${theme.borderColor}`}>
                     📦 تعداد کارتن: نامشخص (بدون بسته‌بندی)
                   </span>
                 )}
@@ -505,7 +505,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 id="toggle-unpackaged-product-form"
                 className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
                   isUnpackaged 
-                    ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800' 
+                    ? `${theme.badgeBg} ${theme.borderColor}` 
                     : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
@@ -542,7 +542,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       کالای بدون بسته‌بندی یا کارتن نامشخص (فروش دانه‌ای، فله یا کیلویی)
                     </span>
                     {isUnpackaged && (
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black shadow-2xs">
+                      <span className={`px-2 py-0.5 rounded-md ${theme.primary} text-white text-[10px] font-black shadow-2xs`}>
                         تعداد کارتن: نامشخص
                       </span>
                     )}
@@ -648,12 +648,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </div>
                 </>
               ) : (
-                <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/60 flex items-center justify-between text-xs">
-                  <span className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                    <Boxes className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div className={`p-3 rounded-xl border ${theme.badgeBg} ${theme.borderColor} flex items-center justify-between text-xs`}>
+                  <span className={`font-bold ${theme.primaryText} flex items-center gap-1.5`}>
+                    <Boxes className="w-4 h-4" />
                     <span>کالای بدون بسته‌بندی کارتن (فروش تک عددی / فله)</span>
                   </span>
-                  <span className="font-black text-indigo-700 dark:text-indigo-300">
+                  <span className={`font-black ${theme.primaryText}`}>
                     تعداد کارتن: نامشخص
                   </span>
                 </div>
@@ -831,7 +831,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-indigo-800 dark:text-indigo-400 mb-1 text-xs flex items-center justify-between">
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs flex items-center justify-between">
                     <span>قیمت روی جلد (مصرف‌کننده)</span>
                     <span className="text-[10px] text-slate-400 font-normal">اختیاری</span>
                   </label>
@@ -842,7 +842,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   />
                   <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
                     {formData.coverPrice > 0 ? (
-                      <span className="text-indigo-600 dark:text-indigo-300 font-bold">
+                      <span className={`font-bold ${theme.primaryText}`}>
                         روی جلد هر کارتن: {toPersianDigits(((formData.coverPrice || 0) * (formData.piecesPerCarton || 1)).toLocaleString())} تومان
                       </span>
                     ) : (
@@ -881,9 +881,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     </div>
 
                     {formData.coverPrice > 0 && (
-                      <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-indigo-200/80 dark:border-indigo-800/80">
-                        <span className="text-[10px] text-indigo-500 font-bold block">تخفیف از روی جلد</span>
-                        <span className="font-black text-indigo-700 dark:text-indigo-300 text-xs">
+                      <div className={`p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border ${theme.borderColor}`}>
+                        <span className={`text-[10px] ${theme.primaryText} font-bold block`}>تخفیف از روی جلد</span>
+                        <span className={`font-black ${theme.primaryText} text-xs`}>
                           {formData.coverPrice > formData.sellingPrice 
                             ? `${toPersianDigits((((formData.coverPrice - formData.sellingPrice) / formData.coverPrice) * 100).toFixed(0))}٪ ارزان‌تر`
                             : 'هم‌قیمت جلد'}

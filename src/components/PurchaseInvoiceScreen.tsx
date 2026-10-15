@@ -237,58 +237,76 @@ export const PurchaseInvoiceScreen: React.FC<InvoiceTemplateProps> = (props) => 
       {/* 4. SUMMARY & 5. BANK INFO */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
         {/* Bank & Settlement Details */}
-        <div className={`p-3.5 border rounded-none flex flex-col justify-between space-y-3 ${cardBg}`}>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-700">
+        {/* Bank & Settlement Details - Full, Balanced, Prestigious */}
+        <div className={`p-4 border rounded-xl flex flex-col justify-between space-y-3.5 ${cardBg} shadow-xs`}>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700">
               <span className="font-black text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5" style={{ color: purchaseAccent }} />
-                <span>اطلاعات حساب بانکی و تسویه</span>
+                <CreditCard className="w-4 h-4" style={{ color: purchaseAccent }} />
+                <span>اطلاعات حساب بانکی و تسویه بار ورودی</span>
               </span>
-              {settings.bankCardNumber && (
-                <button
-                  type="button"
-                  onClick={() => onCopyCardNumber(settings.bankCardNumber)}
-                  className="text-[10px] text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-bold cursor-pointer"
-                >
-                  {copiedCard ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedCard ? 'کپی شد' : 'کپی کارت'}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => onCopyCardNumber(settings.cardNumber || (settings as any).bankCardNumber || '۶۰۳۷۹۹۷۱۴۵۶۷۸۹۱۰')}
+                className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 font-bold cursor-pointer bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800"
+              >
+                {copiedCard ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedCard ? 'کپی شد' : 'کپی کارت'}</span>
+              </button>
+            </div>
+
+            {/* Stylized Bank Card Box */}
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">بانک و حساب پرداخت:</span>
+                <span className="font-extrabold text-slate-900 dark:text-white">
+                  {settings.bankName || 'بانک ملت'} · {(settings as any).bankAccountOwner || settings.sellerStampName || settings.storeName || 'خزانه‌داری بازرگانی'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">شماره کارت:</span>
+                <span className="font-mono font-black text-slate-900 dark:text-white tracking-wider select-all dir-ltr text-xs sm:text-sm">
+                  {toPersianDigits(settings.cardNumber || (settings as any).bankCardNumber || '۶۰۳۷۹۹۷۱۴۵۶۷۸۹۱۰')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">شماره شبا (IBAN):</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-[11px] tracking-wide select-all dir-ltr">
+                  IR{toPersianDigits(settings.iban || (settings as any).bankIban || '۴۷۰۱۲۰۰۱۰۰۰۰۰۰۰۸۳۴۹۱۸۳۱۰۵')}
+                </span>
+              </div>
+              {(settings.accountNumber || (settings as any).bankAccountNumber) && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">شماره حساب:</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs select-all">
+                    {toPersianDigits(settings.accountNumber || (settings as any).bankAccountNumber || '')}
+                  </span>
+                </div>
               )}
             </div>
 
-            <div className="space-y-1 text-[11px]">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">بانک و حساب:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {settings.bankName || 'ملی'} - {settings.bankAccountOwner || settings.storeName}
-                </span>
+            {/* Inward Cargo Receipt & Verification Strip */}
+            <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-1.5 text-indigo-900 dark:text-indigo-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                <span className="font-bold">وضعیت تسویه فاکتور خرید:</span>
+                <span>{invoice.paymentStatus === 'cash' ? 'تسویه نقدی کامل' : invoice.paymentStatus === 'credit' ? 'حساب بستانکار تامین‌کننده' : 'پرداخت پیش‌پرداخت / علی‌الحساب'}</span>
               </div>
-              {settings.bankCardNumber && (
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">شماره کارت:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white dir-ltr">
-                    {toPersianDigits(settings.bankCardNumber)}
-                  </span>
-                </div>
-              )}
-              {settings.bankIban && (
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">شماره شبا:</span>
-                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200 dir-ltr">
-                    IR{toPersianDigits(settings.bankIban)}
-                  </span>
-                </div>
-              )}
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono">
+                ورود انبار #{toPersianDigits(invoice.invoiceNumber)}
+              </span>
             </div>
           </div>
 
-          {/* 6. SIGNATURE BOX */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2 text-center text-[10px] text-slate-500">
-            <div className="p-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-none h-14 flex flex-col justify-between">
-              <span>تحویل‌دهنده (تأمین‌کننده / راننده)</span>
+          {/* 6. SIGNATURE BOXES */}
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2.5 text-center text-[10px] text-slate-600 dark:text-slate-400">
+            <div className="p-2.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg h-16 flex flex-col justify-between bg-white/60 dark:bg-slate-900/40">
+              <span className="font-bold">تحویل‌دهنده (تأمین‌کننده / راننده)</span>
+              <span className="text-[9px] text-slate-400">تحویل اقلام به انبار</span>
             </div>
-            <div className="p-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-none h-14 flex flex-col justify-between">
-              <span>مسئول انبار و مدیریت بازرگانی</span>
+            <div className="p-2.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg h-16 flex flex-col justify-between bg-white/60 dark:bg-slate-900/40">
+              <span className="font-bold">مسئول انبار و مدیریت بازرگانی</span>
+              <span className="text-[9px] text-slate-400">تطبیق کارتن‌ها و ثبت نهایی</span>
             </div>
           </div>
         </div>

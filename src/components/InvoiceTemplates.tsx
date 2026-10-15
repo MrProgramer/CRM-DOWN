@@ -1112,8 +1112,8 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
 
       {/* 4. BOTTOM SECTION (اطلاعات واریز بانکی در چپ + خلاصه مالی در راست) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
-        {/* Left Column: Bank Info & Signatures */}
-        <div className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between space-y-4 transition-colors ${infoCardBg}`}>
+        {/* Left Column: Bank Info & Signatures - Full, Balanced & Prestigious */}
+        <div className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between space-y-3.5 transition-colors ${infoCardBg} shadow-2xs`}>
           <div className="space-y-3">
             {/* Bank Header */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-slate-700/70">
@@ -1124,69 +1124,82 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
                 >
                   <Building2 className="w-4 h-4" />
                 </div>
-                <span>اطلاعات واریز بانکی</span>
+                <span>اطلاعات حساب و واریز بانکی</span>
               </div>
-              {settings.cardNumber && (
-                <button
-                  type="button"
-                  onClick={onCopyCardNumber}
-                  className="no-print w-7 h-7 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer shadow-2xs"
-                  title="کپی شماره کارت"
-                >
-                  {copiedCard ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={onCopyCardNumber}
+                className="no-print px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 transition-colors cursor-pointer text-[11px] font-bold shadow-2xs"
+                title="کپی شماره کارت بانکی"
+              >
+                {copiedCard ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedCard ? 'کپی شد' : 'کپی کارت'}</span>
+              </button>
             </div>
 
-            {/* Bank Rows */}
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs font-medium">شماره کارت:</span>
-                <span className="font-mono font-black text-slate-900 dark:text-white text-sm tracking-wider select-all">
-                  {toPersianDigits(settings.cardNumber || '۶۱۰۴۳۳۷۴۲۰۶۷۲۷۲۵')}
+            {/* Stylized Bank Card Box */}
+            <div className="rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/80 dark:bg-slate-800/80 p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">شماره کارت:</span>
+                <span className="font-mono font-black text-slate-900 dark:text-white text-xs sm:text-sm tracking-wider select-all dir-ltr">
+                  {toPersianDigits(settings.cardNumber || (settings as any).bankCardNumber || '۶۱۰۴۳۳۷۴۲۰۶۷۲۷۲۵')}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs font-medium">بانک:</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">بانک و صاحب حساب:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                  {settings.bankName || 'بانک ملت'}
+                  {settings.bankName || 'بانک ملت'} · {(settings as any).bankAccountOwner || settings.sellerStampName || settings.storeName || 'مدیریت بازرگانی'}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs font-medium">شماره شبا:</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">شماره شبا (IBAN):</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white text-xs tracking-wider select-all" dir="ltr">
-                  {toPersianDigits(settings.iban || 'IR ۴۷۰۱۲۰۰۱۰۰۰۰۰۰۰۸۳۴۹۱۸۳۱۰۵')}
+                  IR{toPersianDigits(settings.iban || (settings as any).bankIban || '۴۷۰۱۲۰۰۱۰۰۰۰۰۰۰۸۳۴۹۱۸۳۱۰۵')}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs font-medium">شماره حساب:</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">شماره حساب:</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white text-xs select-all">
-                  {toPersianDigits(settings.accountNumber || '۸۳۴۹۱۸۳۱۰۵')}
+                  {toPersianDigits(settings.accountNumber || (settings as any).bankAccountNumber || '۸۳۴۹۱۸۳۱۰۵')}
                 </span>
               </div>
+            </div>
+
+            {/* Settlement Status & Guidance Strip */}
+            <div className="rounded-xl border border-slate-200/70 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-900/60 p-2.5 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: primaryHex }} />
+                <span className="font-bold">وضعیت تسویه فاکتور:</span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  {invoice.paymentStatus === 'cash' ? 'تسویه نقدی کامل' : invoice.paymentStatus === 'credit' ? 'غیرنقدی (نسیه توافقی)' : 'پرداخت ترکیبی / علی‌الحساب'}
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-slate-400">
+                سند #{toPersianDigits(invoice.invoiceNumber)}
+              </span>
             </div>
           </div>
 
           {/* Signatures: Two distinct rounded cards */}
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-700 text-center">
-            {/* Right Signature Box: Management */}
+          <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-slate-200/80 dark:border-slate-700 text-center">
+            {/* Management Signature Box */}
             <div className="space-y-1 rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 p-3 shadow-2xs">
               <div className="flex items-center justify-center gap-1 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
                 <User className="w-3.5 h-3.5" style={{ color: primaryHex }} />
                 <span>{isPurchase ? 'مهر و امضای مدیر خرید' : 'مهر و امضای مدیریت بازرگانی'}</span>
               </div>
               <div className="text-[10px] text-slate-400 font-normal">
-                محل مهر و امضا
+                {settings.sellerStampName || 'محل مهر و امضا'}
               </div>
             </div>
-            {/* Left Signature Box: Buyer */}
+            {/* Buyer / Carrier Signature Box */}
             <div className="space-y-1 rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 p-3 shadow-2xs">
               <div className="flex items-center justify-center gap-1 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
                 <ArrowDownLeft className="w-3.5 h-3.5" style={{ color: primaryHex }} />
-                <span>امضای خریدار</span>
+                <span>{isPurchase ? 'امضای تحویل‌دهنده' : 'امضای خریدار'}</span>
               </div>
               <div className="text-[10px] text-slate-400 font-normal">
-                محل امضا
+                {isPurchase ? 'تطبیق و تحویل کالا' : 'تحویل کالا و تایید اقلام'}
               </div>
             </div>
           </div>

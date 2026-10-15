@@ -1713,17 +1713,21 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden text-xs text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden text-xs text-slate-900 dark:text-slate-100"
             >
-              <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    شارژ سریع موجودی کالا (خرید جدید)
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-                    افزایش موجودی انبار بدون نیاز به تغییر فیلدهای دیگر کالا
-                  </p>
+              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-2xl ${theme.badgeBg} ${theme.primaryText}`}>
+                    <PlusCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 dark:text-white text-base">
+                      شارژ سریع موجودی کالا (ورود بار جدید)
+                    </h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                      افزایش موجودی انبار بدون نیاز به تغییر فیلدهای دیگر کالا
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -1736,14 +1740,23 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
               <form onSubmit={handleSubmitRestock} className="p-5 space-y-4">
                 {/* Product Info Banner */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
-                  <div className="text-slate-400 font-bold mb-0.5">نام محصول:</div>
-                  <div className="text-sm font-black text-slate-900 dark:text-white mb-2">{restockingProduct.name}</div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
+                <div className={`p-4 rounded-2xl border ${theme.borderColor} ${theme.badgeBg} space-y-2`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">کالای انتخابی جهت شارژ:</span>
+                    <span className={`px-2 py-0.5 rounded-md ${theme.primary} text-white text-[10px] font-black`}>
+                      {restockingProduct.category}
+                    </span>
+                  </div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white">{restockingProduct.name}</div>
+                  <div className="flex items-center justify-between pt-1 border-t border-black/5 dark:border-white/5 text-[11px] text-slate-600 dark:text-slate-300">
                     <div>
-                      موجودی فعلی: <b className="text-slate-900 dark:text-white font-extrabold">{toPersianDigits(restockingProduct.stockPieces.toLocaleString())} عدد</b> {!isProductUnpackaged(restockingProduct) && getProductEffectiveCartonSize(restockingProduct) > 1 ? `(${toPersianDigits(Math.floor(restockingProduct.stockPieces / getProductEffectiveCartonSize(restockingProduct)))} کارتن)` : '(بدون بسته‌بندی)'}
+                      موجودی فعلی انبار: <b className="text-slate-900 dark:text-white font-black">{toPersianDigits(restockingProduct.stockPieces.toLocaleString())} عدد</b>
                     </div>
-                    <div>دسته‌بندی: <b className="text-slate-900 dark:text-white font-extrabold">{restockingProduct.category}</b></div>
+                    {!isProductUnpackaged(restockingProduct) && getProductEffectiveCartonSize(restockingProduct) > 1 && (
+                      <span className="font-bold text-slate-500 dark:text-slate-400">
+                        ({toPersianDigits(Math.floor(restockingProduct.stockPieces / getProductEffectiveCartonSize(restockingProduct)))} کارتن)
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1757,7 +1770,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       onChange={(e) => setRestockCartons(Math.max(0, parseInt(e.target.value) || 0))}
                       placeholder="مثلاً ۵ کارتن"
                       disabled={isProductUnpackaged(restockingProduct) || getProductEffectiveCartonSize(restockingProduct) <= 1}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold focus:ring-2 focus:ring-emerald-500 text-xs disabled:opacity-50"
+                      className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold focus:outline-none focus:ring-2 ${theme.ring} text-xs disabled:opacity-50`}
                     />
                     <span className="text-[10px] text-slate-400 mt-0.5 block">
                       {isProductUnpackaged(restockingProduct) || getProductEffectiveCartonSize(restockingProduct) <= 1 
@@ -1774,7 +1787,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       value={restockPieces || ''}
                       onChange={(e) => setRestockPieces(Math.max(0, parseInt(e.target.value) || 0))}
                       placeholder="دانه تک"
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold focus:ring-2 focus:ring-emerald-500 text-xs"
+                      className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold focus:outline-none focus:ring-2 ${theme.ring} text-xs`}
                     />
                     <span className="text-[10px] text-slate-400 mt-0.5 block">جمعاً {toPersianDigits(((restockCartons * getProductEffectiveCartonSize(restockingProduct)) + restockPieces).toLocaleString())} عدد شارژ می‌شود</span>
                   </div>
@@ -1788,7 +1801,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                     value={restockPurchasePrice || ''}
                     onChange={(e) => setRestockPurchasePrice(Math.max(0, parseInt(e.target.value) || 0))}
                     placeholder="قیمت خرید فعلی"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-extrabold focus:ring-2 focus:ring-emerald-500 text-xs"
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-extrabold focus:outline-none focus:ring-2 ${theme.ring} text-xs`}
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">قیمت قبلی: {toPersianDigits(restockingProduct.purchasePrice.toLocaleString())} تومان</span>
                 </div>
@@ -1801,15 +1814,15 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   if (totalCost <= 0) return null;
 
                   return (
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-xs">
+                    <div className={`p-4 rounded-2xl bg-white dark:bg-slate-950 border ${theme.borderColor} space-y-3 shadow-xs`}>
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-700 dark:text-slate-300">مجموع بهای خرید این بار:</span>
-                        <span className={`text-sm font-black ${theme.primaryText}`}>
+                        <span className={`text-base font-black ${theme.primaryText}`}>
                           {formatPrice(totalCost)}
                         </span>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
+                      <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
                         <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                           کسر وجه خرید از نقدینگی و دارایی‌ها:
                         </label>
@@ -1873,16 +1886,16 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => setRestockingProduct(null)}
-                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer transition-colors"
                     >
                       انصراف
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                      className={`px-5 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all`}
                     >
                       <PlusCircle className="w-4 h-4" />
-                      تایید و شارژ موجودی
+                      <span>تایید و شارژ موجودی</span>
                     </button>
                   </div>
                 </div>

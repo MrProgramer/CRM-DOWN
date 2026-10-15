@@ -22,6 +22,7 @@ import {
   Copy, 
   Check, 
   ArrowRight, 
+  ArrowUp,
   Edit3, 
   FileText,
   CreditCard,
@@ -49,7 +50,9 @@ import {
   FileSpreadsheet,
   Layers,
   LayoutTemplate,
-  Tag
+  Tag,
+  Calendar,
+  Receipt
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -791,419 +794,332 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
 
   return (
     <div className="w-full max-w-5xl mx-auto pb-16 transition-colors print:max-w-none print:w-full print:m-0 print:p-0 print:pb-0">
-      {/* Control Bar (Hidden when printing) - Flat, Clean, Modern */}
-      <div className="no-print mb-4 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-slate-900 dark:text-slate-100 shadow-none transition-colors">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {onBack && (
-            <button
-              id="invoice-back-btn"
-              onClick={onBack}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              <ArrowRight className="w-4 h-4 stroke-[2]" />
-              <span>بازگشت</span>
-            </button>
-          )}
+      {/* 1. Main Executive Header Bar - Unified, Ultra-Balanced & Proportional */}
+      <div className="no-print mb-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs transition-colors space-y-3.5">
+        {/* Tier 1: Identity (Right) vs Key Actions (Left) - Perfectly Balanced */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
+          {/* Right Wing: Navigation & Document Plaque */}
+          <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+            {onBack && (
+              <button
+                id="invoice-back-btn"
+                onClick={onBack}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95 group"
+                title="بازگشت به فهرست فاکتورها"
+              >
+                <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:-translate-x-0.5 transition-transform" />
+                <span>بازگشت به لیست</span>
+              </button>
+            )}
 
-          <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
-          {/* Clean metadata badge */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-bold text-slate-900 dark:text-white">
-              فاکتور #{toPersianDigits(invoice.invoiceNumber)}
-            </span>
-            <span className="text-slate-400 dark:text-slate-600">·</span>
-            <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-              isPurchase 
-                ? 'bg-amber-100/70 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
-                : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
-            }`}>
-              {isPurchase ? 'ورود به انبار (خرید)' : 'فروش مشتری'}
-            </span>
-            <span className="text-slate-400 dark:text-slate-600 hidden md:inline">·</span>
-            <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] hidden md:inline">
-              {toPersianDigits(invoice.date)}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center flex-wrap gap-2">
-          {/* Day / Night View Canvas Toggle (Preview Mode) */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
-            <button
-              type="button"
-              onClick={() => setViewPaperMode('auto')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
-                viewPaperMode === 'auto'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-              title="پیروی خودکار از حالت شب/روز کل برنامه"
-            >
-              <span>خودکار</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPaperMode('dark')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
-                viewPaperMode === 'dark'
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-              title="نمایش فاکتور در تم تیره (حالت شب فلت)"
-            >
-              <Moon className="w-3.5 h-3.5" />
-              <span>تیره</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPaperMode('paper')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold transition-colors cursor-pointer ${
-                viewPaperMode === 'paper'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-              title="پیش‌نمایش کاغذ سفید چاپی A4 روی صفحه"
-            >
-              <Sun className="w-3.5 h-3.5" />
-              <span>کاغذ چاپی</span>
-            </button>
-          </div>
-
-          {/* Presentation Mode Toggle Button */}
-          {isPurchase && (
-            <button
-              id="toggle-presentation-price-btn"
-              onClick={() => {
-                if (!isPresentationModeActive && !isPresentationPanelOpen) {
-                  setIsPresentationModeActive(true);
-                  setIsPresentationPanelOpen(true);
-                } else {
-                  setIsPresentationPanelOpen(!isPresentationPanelOpen);
-                }
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
-                isPresentationModeActive
-                  ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
-                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
-              }`}
-              title="قیمت نمایشی یا درصد افزایش روی قیمت خرید جهت ارائه به مشتری"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>
-                {isPresentationModeActive
-                  ? `قیمت نمایشی: ${
-                      presentationModeType === 'percent'
-                        ? `+${toPersianDigits(markupPercent)}٪`
-                        : presentationModeType === 'fixed'
-                        ? `+${formatPrice(fixedMarkupPerUnit)}`
-                        : presentationModeType === 'selling_price'
-                        ? 'قیمت فروش انبار'
-                        : 'سفارشی'
-                    }`
-                  : 'قیمت نمایشی'}
+            {/* Document Plaque */}
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
+                isPurchase 
+                  ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                  : 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+              }`}>
+                {isPurchase ? 'رسید ورود انبار (خرید)' : 'فاکتور فروش رسمی'}
               </span>
-              {isPresentationPanelOpen ? (
-                <ChevronUp className="w-3.5 h-3.5 mr-0.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5 mr-0.5" />
-              )}
-            </button>
-          )}
 
-          {/* Cover Price Visibility Toggle Button */}
-          <button
-            type="button"
-            id="invoice-toggle-cover-price-btn"
-            onClick={() => {
-              const nextVal = !showCoverPrice;
-              setShowCoverPrice(nextVal);
-              invoice.showCoverPrice = nextVal;
-              onUpdateInvoice?.({ ...invoice, showCoverPrice: nextVal });
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
-              showCoverPrice
-                ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
-                : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
-            }`}
-            title="نمایش یا عدم نمایش قیمت روی جلد در فاکتور"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>{showCoverPrice ? 'قیمت روی جلد: فعال' : 'قیمت روی جلد: مخفی'}</span>
-          </button>
+              <span className="font-mono font-black text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
+                سند #{toPersianDigits(invoice.invoiceNumber)}
+              </span>
 
-          {/* Profit / Loss Display Mode Toggle Button */}
-          {!isSecretMode && (
-            <button
-              type="button"
-              id="invoice-toggle-profit-mode-btn"
-              onClick={() => setShowProfitMode(!showProfitMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
-                showProfitMode
-                  ? `${theme.primary} ${theme.primaryHover} text-white shadow-xs`
-                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700'
-              }`}
-              title="نمایش یا عدم نمایش سود و حاشیه سود اقلام و کل فاکتور"
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{showProfitMode ? 'نمایش سود: فعال' : 'نمایش سود'}</span>
-            </button>
-          )}
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
 
-          {/* Export Profit/Loss Include Checkbox Toggle */}
-          {showProfitMode && !isSecretMode && (
-            <label 
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} text-xs font-bold cursor-pointer select-none transition-colors`}
-              title="در صورت فعال بودن، سود و زیان اقلام و جمع کل سود در چاپ، عکس و خروجی PDF نیز نمایش داده می‌شود"
-            >
-              <input
-                type="checkbox"
-                checked={includeProfitInExport}
-                onChange={(e) => setIncludeProfitInExport(e.target.checked)}
-                className="w-3.5 h-3.5 rounded cursor-pointer"
-              />
-              <span>در چاپ و عکس</span>
-            </label>
-          )}
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate max-w-[180px]" title={invoice.customerName}>
+                طرف حساب: <b className="text-slate-900 dark:text-white font-extrabold">{invoice.customerName || 'مشتری متفرقه'}</b>
+              </span>
 
-          {/* Gradient Styling Checkbox Toggle */}
-          {isAppThemeGradient && (
-            <label
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer select-none transition-all ${
-                useGradientStyling
-                  ? `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor} shadow-2xs`
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
-              }`}
-              title="اعمال رنگ‌آمیزی گرادینتی پالت رنگی برنامه روی هدر، جدول و المان‌های پیش‌نمایش فاکتور"
-            >
-              <input
-                type="checkbox"
-                checked={useGradientStyling}
-                onChange={(e) => setUseGradientStyling(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-              />
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${theme.hex}, ${theme.secondaryHex || theme.hex})` }}
-                />
-                <span>رنگ‌آمیزی گرادینتی</span>
-                {useGradientStyling && (
-                  <span className="text-[10px] px-1 py-0.2 rounded bg-white/70 dark:bg-slate-900/70 font-mono font-bold">
-                    فعال
-                  </span>
-                )}
-              </div>
-            </label>
-          )}
+              <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
 
-          {/* Edit Invoice */}
-          {onEdit && (
-            <button
-              id="invoice-edit-btn"
-              onClick={() => onEdit(invoice)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span>ویرایش</span>
-            </button>
-          )}
-
-          {/* Copy Screenshot */}
-          <button
-            id="invoice-copy-screenshot-btn"
-            onClick={handleCopyScreenshot}
-            disabled={isCopyingScreenshot}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
-            title="کپی مستقیم تصویر فاکتور در کلیپ‌بورد برای تلگرام یا ایتا"
-          >
-            <Camera className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
-            <span>{isCopyingScreenshot ? 'کپی عکس...' : 'کپی عکس'}</span>
-          </button>
-
-          {/* Copy Summary Text */}
-          <button
-            id="invoice-copy-summary-btn"
-            onClick={handleCopySummary}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
-            <span>{copied ? 'کپی شد' : 'کپی متن'}</span>
-          </button>
-
-          {/* Print / Export Button */}
-          <button
-            id="invoice-print-btn"
-            onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-800 dark:border-slate-700 transition-colors cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>چاپ و صدور</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Template Mode Switcher Bar (حالت ۲ گانه: چاپ سیاه و سفید سوئیسی vs ۵ مدل فلت گرافیکی) */}
-      <div className="no-print mb-5 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs transition-colors">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-slate-500 dark:text-slate-400 font-bold ml-1">قالب فاکتور:</span>
-
-          {/* Primary Toggle: Black & White Print vs Graphic Flat */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              id="mode-print-mono-btn"
-              onClick={() => setTemplateMode('print_mono')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
-                templateMode === 'print_mono'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs font-black'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="حالت چاپی رسمی: فقط و فقط سیاه و سفید، بدون هیچ متن رنگی"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>چاپ رسمی (سیاه و سفید خالص)</span>
-            </button>
-
-            <button
-              type="button"
-              id="mode-graphic-btn"
-              onClick={() => {
-                if (templateMode === 'print_mono') setTemplateMode('graphic_swiss');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
-                templateMode !== 'print_mono'
-                  ? `${theme.primary} text-white shadow-2xs font-black`
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="حالت گرافیکی فلت در ۸ مدل چیدمان و رنگبندی بر اساس پالت انتخابی"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>فاکتورهای گرافیکی فلت (۸ مدل)</span>
-            </button>
+              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-mono text-xs dir-ltr">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>{toPersianDigits(invoice.date)}</span>
+              </span>
+            </div>
           </div>
 
-          {/* 8 Graphic Flat Models Sub-selector */}
-          {templateMode !== 'print_mono' && (
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs flex-wrap gap-0.5">
+          {/* Left Wing: Profit Analysis, Edit & Hero Print Button (Balanced on Left Side) */}
+          <div className="flex items-center gap-2 justify-end flex-wrap shrink-0">
+            {!isPurchase && onOpenProfitAnalysis && !isSecretMode && (
               <button
                 type="button"
-                id="template-swiss-btn"
-                onClick={() => setTemplateMode('graphic_swiss')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_swiss' || templateMode === 'graphic_minimal'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۱: فلت سوئیسی مینیمال و خطوط ظریف همرنگ پالت"
+                id="top-profit-analysis-btn"
+                onClick={() => onOpenProfitAnalysis(invoice)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="تحلیل سود و زیان این فاکتور"
               >
-                <span>مدل ۱: مینیمال سوئیسی</span>
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>تحلیل سود و زیان</span>
               </button>
+            )}
+
+            {onEdit && (
               <button
-                type="button"
-                id="template-fintech-btn"
-                onClick={() => setTemplateMode('graphic_fintech')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_fintech' || templateMode === 'graphic_nordic'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۲: فین‌تک مدولار با برچسب‌های رنگی و جدول مدرن"
+                id="invoice-edit-btn"
+                onClick={() => onEdit(invoice)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                title="ویرایش اقلام، مقادیر یا مشخصات فاکتور"
               >
-                <span>مدل ۲: فین‌تک مدولار</span>
+                <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>ویرایش فاکتور</span>
               </button>
+            )}
+
+            {/* Primary Action Button */}
+            <button
+              id="invoice-print-btn"
+              onClick={() => setIsExportModalOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black text-white ${theme.primary} ${theme.primaryHover} transition-all cursor-pointer shadow-xs active:scale-95 shrink-0`}
+              title="چاپ کاغذی پرینتر، صدور PDF و دانلود عکس فاکتور"
+            >
+              <Printer className="w-4 h-4" />
+              <span>چاپ و صدور رسمی</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier 2: Configuration & Display Controls (Consolidated & Compact) */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+          {/* Right: Template Selector (Print Mono vs Graphic Flat Models) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-1">قالب فاکتور:</span>
+
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
-                id="template-executive-btn"
-                onClick={() => setTemplateMode('graphic_executive')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_executive'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
+                id="mode-print-mono-btn"
+                onClick={() => setTemplateMode('print_mono')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
+                  templateMode === 'print_mono'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs font-black'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
-                title="مدل ۳: سازمانی رسمی با خطوط دوگانه و مهر تایید"
+                title="حالت چاپی رسمی: فقط و فقط سیاه و سفید بدون رنگ"
               >
-                <span>مدل ۳: سازمانی رسمی</span>
+                <Printer className="w-3.5 h-3.5" />
+                <span>چاپ رسمی (سیاه و سفید)</span>
               </button>
+
               <button
                 type="button"
-                id="template-artisan-btn"
-                onClick={() => setTemplateMode('graphic_artisan')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_artisan'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
+                id="mode-graphic-btn"
+                onClick={() => {
+                  if (templateMode === 'print_mono') setTemplateMode('graphic_swiss');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
+                  templateMode !== 'print_mono'
+                    ? `${theme.primary} text-white shadow-2xs font-black`
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
-                title="مدل ۴: کارت‌های تفکیکی آرتیسان با های‌لایت شیک پالت"
+                title="قالب گرافیکی مدرن هماهنگ با پالت رنگی برنامه"
               >
-                <span>مدل ۴: کارت‌های تفکیکی</span>
-              </button>
-              <button
-                type="button"
-                id="template-compact-btn"
-                onClick={() => setTemplateMode('graphic_compact')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_compact'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۵: فشرده لجستیک با تراکم اطلاعات بالا و بارکد انبارداری"
-              >
-                <span>مدل ۵: فشرده لجستیک</span>
-              </button>
-              <button
-                type="button"
-                id="template-commercial-btn"
-                onClick={() => setTemplateMode('graphic_commercial')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_commercial'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۶: تجاری خطی و مویی با خطوط تفکیک بسیار ظریف"
-              >
-                <span>مدل ۶: تجاری خطی</span>
-              </button>
-              <button
-                type="button"
-                id="template-neo-btn"
-                onClick={() => setTemplateMode('graphic_neo')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_neo'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۷: نئو-کامرس بازرگانی با بنر گرافیکی و کارت‌های هندسی"
-              >
-                <span>مدل ۷: نئو-کامرس</span>
-              </button>
-              <button
-                type="button"
-                id="template-hyper-btn"
-                onClick={() => setTemplateMode('graphic_hyper')}
-                className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  templateMode === 'graphic_hyper'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="مدل ۸: هایپر-مینیمال شرکتی با ساختار مدرن و کادر مشکی مالی"
-              >
-                <span>مدل ۸: هایپر-مینیمال</span>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>قالب گرافیکی (۸ مدل)</span>
               </button>
             </div>
-          )}
-        </div>
 
-        {/* Quick Print Button */}
-        <button
-          type="button"
-          onClick={handleDirectPrint}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer mr-auto"
-          title="چاپ مستقیم این قالب با پرینتر"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          <span>{templateMode === 'print_mono' ? 'چاپ سیاه و سفید' : 'چاپ همین مدل'}</span>
-        </button>
+            {/* Clean Dropdown for the 8 Graphic Models */}
+            {templateMode !== 'print_mono' && (
+              <select
+                id="template-model-select"
+                value={
+                  templateMode === 'graphic_minimal' ? 'graphic_swiss' :
+                  templateMode === 'graphic_nordic' ? 'graphic_fintech' :
+                  templateMode
+                }
+                onChange={(e) => setTemplateMode(e.target.value as InvoiceTemplateMode)}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs focus:outline-none"
+              >
+                <option value="graphic_swiss">مدل ۱: فلت مینیمال سوئیسی</option>
+                <option value="graphic_fintech">مدل ۲: فین‌تک مدولار پیشرفته</option>
+                <option value="graphic_executive">مدل ۳: سازمانی رسمی هیئت‌مدیره</option>
+                <option value="graphic_artisan">مدل ۴: کارت‌های تفکیکی آرتیسان</option>
+                <option value="graphic_compact">مدل ۵: فشرده لجستیک و انبارداری</option>
+                <option value="graphic_commercial">مدل ۶: تجاری خطی و بازرگانی</option>
+                <option value="graphic_neo">مدل ۷: نئو-کامرس بازرگانی</option>
+                <option value="graphic_hyper">مدل ۸: هایپر-مینیمال مدرن</option>
+              </select>
+            )}
+          </div>
+
+          {/* Left: Export Tools, Canvas & Visibility Toggles */}
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            {/* Quick Export Group */}
+            <div className="flex items-center gap-1.5">
+              <button
+                id="invoice-copy-screenshot-btn"
+                onClick={handleCopyScreenshot}
+                disabled={isCopyingScreenshot}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                title="کپی مستقیم تصویر فاکتور در کلیپ‌بورد"
+              >
+                <Camera className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <span>{isCopyingScreenshot ? 'کپی...' : 'کپی عکس'}</span>
+              </button>
+
+              <button
+                id="invoice-download-pdf-top-btn"
+                onClick={handleDownloadPDF}
+                disabled={isExportingPDF}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                title="دانلود فایل PDF فاکتور"
+              >
+                <FileDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <span>{isExportingPDF ? 'PDF...' : 'دانلود PDF'}</span>
+              </button>
+
+              <button
+                id="invoice-copy-summary-btn"
+                onClick={handleCopySummary}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+                title="کپی متن ریز اقلام و محاسبات فاکتور"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{copied ? 'کپی شد' : 'کپی متن'}</span>
+              </button>
+            </div>
+
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+
+            {/* Canvas Mode (Paper A4, Dark, Auto) */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setViewPaperMode('paper')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                  viewPaperMode === 'paper'
+                    ? 'bg-white text-slate-900 shadow-2xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title="پیش‌نمایش کاغذ سفید چاپی A4 روی صفحه"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>کاغذ A4</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewPaperMode('dark')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                  viewPaperMode === 'dark'
+                    ? 'bg-slate-900 text-white shadow-2xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title="نمایش فاکتور در تم تیره فلت"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span>تیره</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewPaperMode('auto')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                  viewPaperMode === 'auto'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title="پیروی خودکار از حالت کلی برنامه"
+              >
+                <span>خودکار</span>
+              </button>
+            </div>
+
+            {/* Cover Price Visibility Toggle */}
+            <button
+              type="button"
+              id="invoice-toggle-cover-price-btn"
+              onClick={() => {
+                const nextVal = !showCoverPrice;
+                setShowCoverPrice(nextVal);
+                invoice.showCoverPrice = nextVal;
+                onUpdateInvoice?.({ ...invoice, showCoverPrice: nextVal });
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                showCoverPrice
+                  ? `${theme.primary} text-white shadow-2xs`
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`}
+              title="نمایش یا عدم نمایش ستون قیمت مصرف‌کننده در فاکتور"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>{showCoverPrice ? 'قیمت مصرف‌کننده ✓' : 'قیمت مصرف‌کننده'}</span>
+            </button>
+
+            {/* Profit Mode Toggle */}
+            {!isSecretMode && (
+              <button
+                type="button"
+                id="invoice-toggle-profit-mode-btn"
+                onClick={() => setShowProfitMode(!showProfitMode)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                  showProfitMode
+                    ? `${theme.primary} text-white shadow-2xs`
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                }`}
+                title="نمایش یا عدم نمایش سود و حاشیه سود"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{showProfitMode ? 'نمایش سود ✓' : 'نمایش سود'}</span>
+              </button>
+            )}
+
+            {/* Presentation Mode Toggle (For Purchase Invoices) */}
+            {isPurchase && (
+              <button
+                id="toggle-presentation-price-btn"
+                onClick={() => {
+                  if (!isPresentationModeActive && !isPresentationPanelOpen) {
+                    setIsPresentationModeActive(true);
+                    setIsPresentationPanelOpen(true);
+                  } else {
+                    setIsPresentationPanelOpen(!isPresentationPanelOpen);
+                  }
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                  isPresentationModeActive
+                    ? `${theme.primary} text-white shadow-2xs`
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                }`}
+                title="قیمت نمایشی یا درصد افزایش روی قیمت خرید جهت ارائه به مشتری"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>
+                  {isPresentationModeActive
+                    ? `قیمت نمایشی: ${
+                        presentationModeType === 'percent'
+                          ? `+${toPersianDigits(markupPercent)}٪`
+                          : presentationModeType === 'fixed'
+                          ? `+${formatPrice(fixedMarkupPerUnit)}`
+                          : presentationModeType === 'selling_price'
+                          ? 'قیمت فروش انبار'
+                          : 'سفارشی'
+                      }`
+                    : 'قیمت نمایشی'}
+                </span>
+                {isPresentationPanelOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5 mr-0.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 mr-0.5" />
+                )}
+              </button>
+            )}
+
+            {/* Direct Print Button */}
+            <button
+              type="button"
+              onClick={handleDirectPrint}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+              title="چاپ فوری این قالب با پرینتر"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>چاپ فوری</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Presentation Mode Settings Panel (Flat, Clean) */}
@@ -1616,6 +1532,156 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
           {templateMode === 'graphic_commercial' && <GraphicCommercialLedgerTemplate {...templateProps} />}
           {templateMode === 'graphic_neo' && <GraphicNeoCommerceTemplate {...templateProps} />}
           {templateMode === 'graphic_hyper' && <GraphicHyperMinimalTemplate {...templateProps} />}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 5. BALANCED EXECUTIVE BOTTOM ACTION DOCK (نوار ابزار کاملاً متقارن و متناسب پایانی) */}
+      {/* ========================================================================= */}
+      <div className="no-print mt-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-colors space-y-3.5">
+        {/* Tier 1: Primary Navigation (Right) vs Primary Action (Left) - Perfectly Balanced */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+          {/* Right Side: Navigation & Document Plaque */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {onBack && (
+              <button
+                type="button"
+                id="bottom-invoice-back-btn"
+                onClick={onBack}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95 group"
+                title="بازگشت به فهرست فاکتورها"
+              >
+                <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:-translate-x-0.5 transition-transform" />
+                <span>بازگشت به لیست فاکتورها</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              id="bottom-invoice-scroll-top-btn"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs active:scale-95"
+              title="پرش به ابتدای سند"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              <span>ابتدای فاکتور</span>
+            </button>
+
+            {/* Document Quick Badge */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                سند #{toPersianDigits(invoice.invoiceNumber)}
+              </span>
+              <span>•</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {formatPrice(invoice.finalAmount || invoice.totalAmount || 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Left Side: Primary Actions (ویرایش فاکتور + چاپ و صدور رسمی) */}
+          <div className="flex items-center gap-2.5 justify-end flex-wrap">
+            {onEdit && (
+              <button
+                type="button"
+                id="bottom-invoice-edit-btn"
+                onClick={() => onEdit(invoice)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                title="ویرایش مشخصات یا اقلام فاکتور"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                <span>ویرایش فاکتور</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              id="bottom-invoice-print-btn"
+              onClick={() => setIsExportModalOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-black text-white ${theme.primary} ${theme.primaryHover} transition-all cursor-pointer shadow-xs active:scale-95`}
+              title="چاپ کاغذی، صدور PDF و دانلود عکس فاکتور"
+            >
+              <Printer className="w-4 h-4" />
+              <span>چاپ و صدور رسمی</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier 2: Financial Intelligence (Right) vs Export Tools (Left) - Perfectly Balanced */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          {/* Right Side: Financial Intelligence */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isPurchase && onOpenProfitAnalysis && !isSecretMode && (
+              <button
+                type="button"
+                id="bottom-profit-analysis-btn"
+                onClick={() => onOpenProfitAnalysis(invoice)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="تحلیل دقیق سود ناخالص و خالص این فاکتور"
+              >
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>تحلیل سود و زیان این فاکتور</span>
+              </button>
+            )}
+            {isPurchase && (
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">
+                سند خرید و ورود کالا به انبار
+              </span>
+            )}
+          </div>
+
+          {/* Left Side: Export & Copy Buttons (Symmetrical with Left Wing) */}
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            <button
+              type="button"
+              id="bottom-copy-screenshot-btn"
+              onClick={handleCopyScreenshot}
+              disabled={isCopyingScreenshot}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+              title="کپی مستقیم عکس فاکتور در حافظه"
+            >
+              <Camera className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+              <span>{isCopyingScreenshot ? 'کپی...' : 'کپی عکس'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="bottom-download-pdf-btn"
+              onClick={handleDownloadPDF}
+              disabled={isExportingPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+              title="دانلود فایل PDF"
+            >
+              <FileDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+              <span>{isExportingPDF ? 'PDF...' : 'دانلود PDF'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="bottom-download-image-btn"
+              onClick={handleDownloadImage}
+              disabled={isExportingImage}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+              title="دانلود تصویر با فرمت PNG"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+              <span>دانلود عکس</span>
+            </button>
+
+            <button
+              type="button"
+              id="bottom-copy-summary-btn"
+              onClick={handleCopySummary}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+              title="کپی متن فاکتور"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{copied ? 'کپی شد' : 'کپی متن'}</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -33,7 +33,8 @@ import {
   Wand2,
   Type,
   Sliders,
-  ZoomIn
+  ZoomIn,
+  TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -237,7 +238,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div>
                     <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      سبک و معماری برنامه (۸ حالت حرفه‌ای)
+                      سبک و معماری برنامه (۷ سبک حرفه‌ای)
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       کادربندی‌ها، گوشه‌ها، سایه‌ها و استایل کل برنامه را انتخاب کنید.
@@ -250,14 +251,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {[
+                    { id: 'modern' as AppDesignMode, name: 'فلت مدرن تجاری', badge: 'سوئیسی', icon: Sparkles, color: '#0ea5e9' },
+                    { id: 'corporate' as AppDesignMode, name: 'تجاری سازمانی', badge: 'ERP', icon: FileSpreadsheet, color: '#2563eb' },
                     { id: 'classic' as AppDesignMode, name: 'کلاسیک اداری', badge: 'دفاتری', icon: FileSpreadsheet, color: '#475569' },
-                    { id: 'modern' as AppDesignMode, name: 'مدرن هوشمند', badge: 'فین‌تک', icon: Sparkles, color: '#0ea5e9' },
-                    { id: 'glassmorphism' as AppDesignMode, name: 'کریستال شیشه‌ای', badge: 'شیشه‌ای', icon: Gem, color: '#8b5cf6' },
-                    { id: 'luxury-gold' as AppDesignMode, name: 'لوکس ابسیدین', badge: 'شاهانه', icon: Crown, color: '#d4af37' },
-                    { id: 'neobrutalism' as AppDesignMode, name: 'نئوبروتالیسم', badge: 'شارپ', icon: Shapes, color: '#f43f5e' },
-                    { id: 'cyber-tech' as AppDesignMode, name: 'سایبرتک نئون', badge: 'دیجیتال', icon: Cpu, color: '#06b6d4' },
-                    { id: 'minimal-nordic' as AppDesignMode, name: 'مینیمال نوردیک', badge: 'آرامش', icon: Feather, color: '#64748b' },
-                    { id: 'aurora-sunset' as AppDesignMode, name: 'شفق قطبی زنده', badge: 'پویا', icon: Wand2, color: '#f59e0b' },
+                    { id: 'minimal-studio' as AppDesignMode, name: 'مینیمال سوئیسی', badge: 'استودیو', icon: Feather, color: '#64748b' },
+                    { id: 'titanium-luxury' as AppDesignMode, name: 'پرستیژ تیتانیوم', badge: 'VIP مات', icon: Crown, color: '#94a3b8' },
+                    { id: 'fintech-precision' as AppDesignMode, name: 'فین‌تک پرو', badge: 'محاسباتی', icon: TrendingUp, color: '#0284c7' },
+                    { id: 'frosted-silk' as AppDesignMode, name: 'گلس ابریشمی', badge: 'شیشه‌ای', icon: Gem, color: '#8b5cf6' },
                   ].map((m, mIdx) => {
                     const isCur = (formData.designMode || 'modern') === m.id;
                     const MIcon = m.icon;
