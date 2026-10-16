@@ -14,6 +14,7 @@ import { getProductDiscountedPurchasePrice } from '../utils/invoiceCalculations'
 import { themes, getThemeBadges } from './ThemeConfig';
 import { CategoryManagerModal } from './CategoryManagerModal';
 import { InventoryAuditReport } from './InventoryAuditReport';
+import { WarehouseAnalyticsView } from './WarehouseAnalyticsView';
 import { ProductFormModal } from './ProductFormModal';
 import { SortableTableHeader } from './SortableTableHeader';
 import { RowUpdateBadge, RowUpdateIcon } from './RowUpdateBadge';
@@ -132,8 +133,9 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // View mode: 'list' (standard table) or 'audit' (full inline report)
+  // View mode: 'list' (standard table), 'audit' (full inline report), or 'analytics' (warehouse analytics)
   const [isAuditView, setIsAuditView] = useState(false);
+  const [isAnalyticsView, setIsAnalyticsView] = useState(false);
 
   // Category Management State
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
@@ -834,6 +836,27 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     return products.reduce((acc, p) => acc + (Math.max(0, Number(p.stockPieces) || 0) * (Number(p.sellingPrice) || 0)), 0);
   }, [products]);
 
+  // If user requested full warehouse analytics page, render inline view!
+  if (isAnalyticsView) {
+    return (
+      <WarehouseAnalyticsView
+        products={products}
+        invoices={invoices}
+        settings={settings}
+        isSecretMode={isSecretMode}
+        onBack={() => setIsAnalyticsView(false)}
+        onOpenRestock={(prod) => {
+          setIsAnalyticsView(false);
+          setRestockingProduct(prod);
+          setRestockCartons(0);
+          setRestockPieces(0);
+          setRestockPurchasePrice(prod.purchasePrice);
+          setRestockPaymentAccount('bank');
+        }}
+      />
+    );
+  }
+
   // If user requested full inventory audit report, render inline view!
   if (isAuditView) {
     return (
@@ -849,92 +872,137 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto pb-20 space-y-6">
-      {/* Top Bar - Modernized & Executive */}
-      <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl shadow-2xs border border-slate-200/90 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-5 transition-colors">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
-              <Boxes className="w-3.5 h-3.5" />
-              <span>انبارداری و کاتالوگ محصولات</span>
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>{toPersianDigits(products.length)} قلم کالای فعال</span>
-            </span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
-              <Boxes className="w-5 h-5" />
+      {/* Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4">
+        {/* Tier 1: Identity, Feature Structure & Primary CTA */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+              <Boxes className="w-6 h-6 stroke-[2.2]" />
             </div>
-            <span>مدیریت کالاها و موجودی انبار</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
-            تعریف ساختار کارتن، بسته و دانه، رصد لحظه‌ای کاردکس موجودی، تعیین بهای خرید و فروش و گزارش‌گیری ارزش انبار
-          </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  مدیریت کالاها و موجودی انبار
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{toPersianDigits(products.length)} قلم کالا</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags instead of cluttered block text */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📦</span>
+                  <span>کارتن، بسته و دانه</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📊</span>
+                  <span>رصد لحظه‌ای کاردکس</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>💰</span>
+                  <span>بهای خرید و فروش</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📑</span>
+                  <span>ارزش‌گذاری انبار</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Action Button (Add Product) */}
+          <div className="flex items-center gap-2 justify-end shrink-0 self-end lg:self-center">
+            <button
+              id="add-new-product-btn"
+              type="button"
+              onClick={handleOpenNew}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black text-white shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer ${theme.primary} ${theme.primaryHover} shrink-0`}
+            >
+              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span>افزودن کالای جدید</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0 max-w-full">
-          {/* Purchase Price Peek Button (5 Seconds) - ONLY visible when Secret Mode is OFF */}
-          {!isSecretMode && (
+        {/* Tier 2: Dedicated Command Toolbar (Symmetrically Aligned & Sized) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-0.5">
+          {/* Right Group: Analytics & Financial Intelligence Tools */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Warehouse Analytics Page Button */}
             <button
-              id="peek-purchase-price-btn"
+              id="open-warehouse-analytics-btn"
               type="button"
-              onClick={handleTriggerPurchasePricePeek}
-              className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border shadow-2xs ${
-                showPurchasePricePeek
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20'
-                  : 'bg-slate-50 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-800 dark:text-slate-200 hover:text-amber-700 dark:hover:text-amber-300 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700'
-              }`}
-              title="کلیک کنید تا قیمت خرید کالاها به مدت ۵ ثانیه روی صفحه قرار گیرد"
+              onClick={() => setIsAnalyticsView(true)}
+              className={`flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl font-black transition-all cursor-pointer shadow-2xs border ${theme.badgeBg} ${theme.primaryText} ${theme.borderColor} hover:opacity-90 active:scale-95`}
+              title="آنالیز دوره‌ای کارتن‌ها، روند هفتگی، ماهانه، سالانه و بارهای ارسالی"
             >
-              {showPurchasePricePeek ? (
-                <>
-                  <Eye className="w-4 h-4 text-white animate-pulse shrink-0" />
-                  <span>قیمت خرید ({toPersianDigits(peekCountdown)}s)</span>
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>نمایش قیمت خرید</span>
-                </>
-              )}
+              <TrendingUp className="w-4 h-4 shrink-0" />
+              <span>آنالیز پیشرفته انبار و کالاها</span>
+              <span className={`px-1.5 py-0.5 text-[10px] font-black rounded-md ${theme.primary} text-white`}>
+                دوره‌ای
+              </span>
             </button>
-          )}
 
-          {/* Manage Categories Button */}
-          <button
-            id="open-category-modal-btn"
-            type="button"
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 border border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-700 transition-all cursor-pointer shadow-2xs"
-            title="مدیریت، ویرایش و افزودن دسته‌بندی‌های محصولات"
-          >
-            <FolderPlus className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0" />
-            <span>مدیریت دسته‌بندی‌ها</span>
-          </button>
+            {/* Inventory Full Audit & Breakdown Button */}
+            <button
+              id="open-inventory-audit-btn"
+              type="button"
+              onClick={() => setIsAuditView(true)}
+              className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+              title="مشاهده صورت حساب کامل انبار، جمع کارتن‌ها، دانه‌ای و ارزشیابی مالی"
+            >
+              <BarChart3 className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+              <span>گزارش ارزش انبار و کاردکس</span>
+            </button>
+          </div>
 
-          {/* Inventory Full Audit & Breakdown Button */}
-          <button
-            id="open-inventory-audit-btn"
-            type="button"
-            onClick={() => setIsAuditView(true)}
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-700 dark:hover:text-blue-300 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer shadow-2xs"
-            title="مشاهده صورت حساب کامل انبار، جمع کارتن‌ها، دانه‌ای و ارزشیابی مالی"
-          >
-            <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span>گزارش ارزش انبار</span>
-          </button>
+          {/* Left Group: Management & Security Controls */}
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            {/* Manage Categories Button */}
+            <button
+              id="open-category-modal-btn"
+              type="button"
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+              title="مدیریت، ویرایش و افزودن دسته‌بندی‌های محصولات"
+            >
+              <FolderPlus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span>مدیریت دسته‌بندی‌ها</span>
+            </button>
 
-          {/* New Product CTA */}
-          <button
-            id="add-new-product-btn"
-            type="button"
-            onClick={handleOpenNew}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black text-white shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer ${theme.primary} ${theme.primaryHover} shrink-0`}
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>افزودن کالای جدید</span>
-          </button>
+            {/* Purchase Price Peek Button */}
+            {!isSecretMode && (
+              <button
+                id="peek-purchase-price-btn"
+                type="button"
+                onClick={handleTriggerPurchasePricePeek}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold transition-all cursor-pointer border shadow-2xs ${
+                  showPurchasePricePeek
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20'
+                    : 'bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-slate-700 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 border-slate-200 dark:border-slate-700'
+                }`}
+                title="کلیک کنید تا قیمت خرید کالاها به مدت ۵ ثانیه روی صفحه قرار گیرد"
+              >
+                {showPurchasePricePeek ? (
+                  <>
+                    <Eye className="w-3.5 h-3.5 text-white animate-pulse shrink-0" />
+                    <span>قیمت خرید ({toPersianDigits(peekCountdown)}s)</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>نمایش قیمت خرید</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
