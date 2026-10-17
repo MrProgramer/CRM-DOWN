@@ -40,7 +40,9 @@ import {
   FileText, 
   Phone, 
   MapPin, 
-  Building, 
+  Building,
+  Building2,
+  Calendar,
   CreditCard,
   MessageCircle,
   Send,
@@ -664,158 +666,206 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto space-y-5 pb-24 px-2 sm:px-4">
       
-      {/* 1. TOP EXECUTIVE HEADER & ACTIONS BAR */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all no-print">
+      {/* 1. TOP EXECUTIVE COMMAND HEADER & BALANCED TOOLBAR - Ultra-Modern & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4 transition-all no-print">
         
-        {/* Left Side: Back Button & Customer Info */}
-        <div className="flex items-center gap-3.5 flex-wrap">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-bold transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs group shrink-0"
-            title="بازگشت به فهرست مشتریان"
-          >
-            <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:-translate-x-0.5 transition-transform" />
-            <span>بازگشت به فهرست</span>
-          </button>
+        {/* Tier 1: Customer Identity Plaque & Primary Action Hub */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
           
-          <div className="h-8 w-px bg-slate-200 dark:border-slate-800 hidden sm:block" />
-          
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">صورت‌حساب و گردش مالی:</span>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span className={theme.primaryText}>{currentCustomer.name}</span>
-              </h2>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black border ${typeInfo.badgeClass}`}>
-                {renderCustomerTypeIcon(typeInfo.iconName, "w-3.5 h-3.5")}
-                <span>{typeInfo.label}</span>
-              </span>
-              {currentCustomer.company && (
-                <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-                  {currentCustomer.company}
-                </span>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
-              <a 
-                href={`tel:${currentCustomer.phone}`}
-                className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors font-mono font-bold"
-              >
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span>{toPersianDigits(currentCustomer.phone)}</span>
-              </a>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>شهر: <strong className="text-slate-700 dark:text-slate-300 font-bold">{currentCustomer.city || 'نامشخص'}</strong></span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Structured Action Toolbar */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100 dark:border-slate-800">
-          
-          {/* Primary CTA: New Invoice */}
-          <button
-            type="button"
-            onClick={() => onNewInvoice(currentCustomer)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white text-xs sm:text-sm font-black shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
-            title="صدور مستقیم فاکتور فروش جدید برای این مشتری"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
-            <span>صدور فاکتور جدید</span>
-          </button>
-
-          {/* Group 1: Financial Quick Actions */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-950/80 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0">
+          {/* Right Wing: Back Button, Divider & Customer Identity */}
+          <div className="flex items-center gap-3.5 flex-wrap">
             <button
               type="button"
-              onClick={() => onOpenPaymentModal(currentCustomer)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800/90 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-bold shadow-2xs border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800 transition-all cursor-pointer"
-              title="ثبت دریافتی و واریز وجه"
+              onClick={onBack}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-black transition-all cursor-pointer border border-slate-300/80 dark:border-slate-700 shadow-2xs group shrink-0 active:scale-95"
+              title="بازگشت به دفتر حساب و فهرست مشتریان"
             >
-              <Banknote className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>ثبت واریزی</span>
+              <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:-translate-x-0.5 transition-transform" />
+              <span>دفتر حساب‌ها</span>
+            </button>
+
+            <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+
+            <div className="flex items-center gap-3">
+              {/* Monogram / Avatar Plaque with Status Dot */}
+              <div className={`relative w-11 h-11 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs flex items-center justify-center font-black text-base shrink-0`}>
+                <span>{currentCustomer.name.trim().charAt(0) || 'م'}</span>
+                <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-black ${
+                  isDebtor 
+                    ? 'bg-amber-500 text-white' 
+                    : isCreditor 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-emerald-500 text-white'
+                }`}>
+                  {isDebtor ? '!' : isCreditor ? '★' : '✓'}
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                    {currentCustomer.name}
+                  </h1>
+
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black border ${typeInfo.badgeClass}`}>
+                    {renderCustomerTypeIcon(typeInfo.iconName, "w-3.5 h-3.5")}
+                    <span>{typeInfo.label}</span>
+                  </span>
+
+                  <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black ${
+                    isDebtor 
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800' 
+                      : isCreditor 
+                      ? `${theme.badgeBg} ${theme.badgeText} border ${theme.borderColor}` 
+                      : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                  }`}>
+                    {isDebtor ? 'حساب بدهکار' : isCreditor ? 'حساب بستانکار' : 'تسویه کامل'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium flex-wrap">
+                  <a 
+                    href={`tel:${currentCustomer.phone}`}
+                    className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors font-mono font-bold"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{toPersianDigits(currentCustomer.phone)}</span>
+                  </a>
+                  {currentCustomer.city && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                        <span>شهر: <strong className="text-slate-700 dark:text-slate-300 font-bold">{currentCustomer.city}</strong></span>
+                      </span>
+                    </>
+                  )}
+                  {currentCustomer.company && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-bold">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{currentCustomer.company}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Left Wing: Edit Profile & Primary CTA New Invoice */}
+          <div className="flex items-center gap-2.5 justify-end shrink-0 self-end lg:self-center">
+            <button
+              type="button"
+              onClick={() => onEditCustomer(currentCustomer)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="ویرایش مشخصات، نشانی و سقف اعتبار مشتری"
+            >
+              <Edit3 className="w-4 h-4 shrink-0" />
+              <span>ویرایش پرونده</span>
             </button>
 
             <button
               type="button"
-              onClick={() => onOpenSettlementModal(currentCustomer)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800/90 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-bold shadow-2xs border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800 transition-all cursor-pointer"
-              title="تسویه کامل مانده حساب این مشتری با یک کلیک"
+              onClick={() => onNewInvoice(currentCustomer)}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white text-xs sm:text-sm font-black shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
+              title="صدور مستقیم فاکتور فروش جدید برای این مشتری"
             >
-              <CheckCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>تسویه کامل</span>
+              <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span>صدور فاکتور جدید</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier 2: Docked, Symmetrical Command Toolbar (Financial Hub on Right, Output & Communication on Left) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs pt-0.5">
+          
+          {/* Right Group: Financial Operations Hub */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 pl-1 hidden lg:inline">
+              عملیات مالی:
+            </span>
+
+            <button
+              type="button"
+              onClick={() => onOpenPaymentModal(currentCustomer)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-200/90 dark:border-blue-800/80 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="ثبت دریافتی و واریز وجه توسط مشتری"
+            >
+              <Banknote className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>ثبت واریزی وجه</span>
             </button>
 
             <button
               type="button"
               onClick={() => onOpenBalanceAdjModal(currentCustomer, 'credit')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800/90 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-slate-800 dark:text-slate-200 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-bold shadow-2xs border border-transparent hover:border-teal-200 dark:hover:border-teal-800 transition-all cursor-pointer"
-              title="تعدیل حساب یا ثبت بستانکاری"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 border border-teal-200/90 dark:border-teal-800/80 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="تعدیل حساب، ثبت پیش‌دریافت یا بستانکاری"
             >
-              <TrendingUp className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+              <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
               <span>ثبت بستانکاری</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onOpenSettlementModal(currentCustomer)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200/90 dark:border-emerald-800/80 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="تسویه کامل مانده حساب این مشتری با یک کلیک"
+            >
+              <CheckCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>تسویه کامل مانده</span>
             </button>
           </div>
 
-          {/* Group 2: Share & Export Actions */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Left Group: Communication, Output & Export Tools */}
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 pl-1 hidden lg:inline">
+              ارتباط و خروجی:
+            </span>
+
             {isDebtor && (
               <button
                 type="button"
                 onClick={() => setIsReminderModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-800 dark:text-slate-200 hover:text-amber-700 dark:hover:text-amber-300 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800/80 font-bold transition-all cursor-pointer shadow-2xs active:scale-95 animate-pulse"
                 title="ارسال پیامک یا پیام واتساپ یادآوری بدهی و شماره کارت"
               >
-                <MessageCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>یادآوری</span>
+                <MessageCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>یادآوری بدهی</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={() => onOpenShotModal(currentCustomer)}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-slate-800 dark:text-slate-200 hover:text-purple-700 dark:hover:text-purple-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-              title="شات تصویری گرافیکی صورت‌حساب جهت ارسال در تلگرام/ایتا/واتساپ"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-800 dark:text-purple-200 border border-purple-200/90 dark:border-purple-800/80 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="ایجاد عکس و شات تصویری گرافیکی صورت‌حساب جهت ارسال در تلگرام و ایتا"
             >
-              <Camera className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+              <Camera className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
               <span>شات تلگرام</span>
             </button>
 
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
               title="خروجی فایل اکسل از ریز گردش حساب"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline">اکسل</span>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>اکسل</span>
             </button>
 
             <button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
               title="چاپ رسمی یا ذخیره PDF صورت‌حساب"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 shrink-0" />
-              <span className="hidden sm:inline">چاپ</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onEditCustomer(currentCustomer)}
-              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
-              title="ویرایش مشخصات پرونده مشتری"
-            >
-              <Edit3 className="w-4 h-4 shrink-0" />
+              <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+              <span>چاپ</span>
             </button>
           </div>
-
         </div>
       </div>
 
@@ -1178,129 +1228,151 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({
       {activeTab === 'ledger' && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
           
-          {/* Header Controls: Search & Date Filters */}
-          <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
-            
-            <div className="flex items-center gap-2">
-              <History className="w-4 h-4 text-slate-400" />
-              <h3 className="font-black text-sm text-slate-900 dark:text-white">
-                ریز گردش حساب به تفکیک تراکنش‌ها
-              </h3>
+          {/* Header Controls: Structured & Uncluttered Command Toolbar */}
+          <div className="p-4 sm:p-5 border-b border-slate-200/90 dark:border-slate-800 space-y-4 no-print bg-slate-50/50 dark:bg-slate-900/40">
+            {/* Row 1: Section Title & Identity + Document Type Segment Tabs */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+                  <History className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
+                      ریز گردش حساب به تفکیک تراکنش‌ها
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 font-mono">
+                      {toPersianDigits(computedRows.length)} سند ثبتی
+                    </span>
+                    {filteredLedgerRows.length !== computedRows.length && (
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-mono">
+                        {toPersianDigits(filteredLedgerRows.length)} مورد مطابق فیلتر
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                    ثبت خودکار گردش فاکتورهای نقدی و نسیه، واریزی‌ها، مرجوعی‌ها و تراز لحظه‌ای
+                  </p>
+                </div>
+              </div>
+
+              {/* Document Type Segmented Controller */}
+              <div className="inline-flex items-center gap-1 bg-white dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs self-stretch xl:self-auto overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => { setLedgerFilterType('all'); setLedgerPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                    ledgerFilterType === 'all'
+                      ? `${theme.primary} text-white shadow-xs`
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  همه اسناد
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLedgerFilterType('credit_sales'); setLedgerPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    ledgerFilterType === 'credit_sales'
+                      ? 'bg-amber-500 text-white shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                  }`}
+                >
+                  فاکتور نسیه و بدهی
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLedgerFilterType('payments'); setLedgerPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    ledgerFilterType === 'payments'
+                      ? 'bg-blue-600 text-white shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                  }`}
+                >
+                  واریزی و تسویه‌ها
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLedgerFilterType('returns'); setLedgerPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    ledgerFilterType === 'returns'
+                      ? 'bg-rose-600 text-white shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                  }`}
+                >
+                  کالای مرجوعی
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Row 2: Search Input & Time Period & Sort Order - Clean Grid Layout */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800/70">
               
-              {/* Search */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              {/* Search Bar - Modern, Full Focus */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="جستجو در شرح یا کد..."
+                  placeholder="جستجو در شرح سند، شماره فاکتور یا کد رهگیری..."
                   value={ledgerSearch}
                   onChange={(e) => {
                     setLedgerSearch(e.target.value);
                     setLedgerPage(1);
                   }}
-                  className="pl-3 pr-8 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 w-44 sm:w-56"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-2xs"
                 />
                 {ledgerSearch && (
                   <button
-                    onClick={() => setLedgerSearch('')}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    type="button"
+                    onClick={() => { setLedgerSearch(''); setLedgerPage(1); }}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    title="پاک‌کردن جستجو"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
 
-              {/* Date Filter Pills */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs">
+              {/* Controls Group: Time Period Filter Capsule + Sort Direction Toggle */}
+              <div className="flex items-center gap-2.5 flex-wrap justify-between md:justify-end">
+                {/* Time Period Filter Capsule */}
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs text-xs">
+                  <span className="text-slate-400 px-2 flex items-center gap-1.5 text-[11px] font-bold">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>دوره:</span>
+                  </span>
+                  {[
+                    { id: 'all', label: 'همه زمان‌ها' },
+                    { id: 'today', label: 'امروز' },
+                    { id: 'this_month', label: 'این ماه' },
+                    { id: 'this_year', label: 'امسال' },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => { setLedgerDateFilter(item.id as any); setLedgerPage(1); }}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        ledgerDateFilter === item.id
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-black'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort Toggle Button */}
                 <button
-                  onClick={() => { setLedgerDateFilter('all'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    ledgerDateFilter === 'all'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
+                  type="button"
+                  onClick={() => setLedgerSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95"
+                  title="تغییر ترتیب چینش تاریخ (جدیدترین / قدیمی‌ترین)"
                 >
-                  همه زمان‌ها
-                </button>
-                <button
-                  onClick={() => { setLedgerDateFilter('today'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    ledgerDateFilter === 'today'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  امروز
-                </button>
-                <button
-                  onClick={() => { setLedgerDateFilter('this_month'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    ledgerDateFilter === 'this_month'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  این ماه
-                </button>
-                <button
-                  onClick={() => { setLedgerDateFilter('this_year'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    ledgerDateFilter === 'this_year'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  امسال
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{ledgerSortOrder === 'desc' ? 'جدیدترین اول' : 'قدیمی‌ترین اول'}</span>
                 </button>
               </div>
-
-              {/* Type Filter Tabs */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                <button
-                  onClick={() => { setLedgerFilterType('all'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    ledgerFilterType === 'all'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  همه ({toPersianDigits(computedRows.length)})
-                </button>
-                <button
-                  onClick={() => { setLedgerFilterType('credit_sales'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    ledgerFilterType === 'credit_sales'
-                      ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  نسیه و بدهی
-                </button>
-                <button
-                  onClick={() => { setLedgerFilterType('payments'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    ledgerFilterType === 'payments'
-                      ? `bg-white dark:bg-slate-800 ${theme.primaryText} shadow-xs`
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  واریزی‌ها
-                </button>
-                <button
-                  onClick={() => { setLedgerFilterType('returns'); setLedgerPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    ledgerFilterType === 'returns'
-                      ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                  }`}
-                >
-                  مرجوعی‌ها
-                </button>
-              </div>
-
             </div>
           </div>
 

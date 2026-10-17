@@ -314,56 +314,73 @@ export const BackupPage: React.FC<BackupPageProps> = ({
 
   return (
     <div className="space-y-6 pb-20 dir-rtl text-slate-800 dark:text-slate-100">
-      {/* Top Banner Card - Executive Control Room */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-all no-print">
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
-              <HardDrive className="w-3.5 h-3.5" />
-              <span>سیستم هوشمند پشتیبان‌گیری دوگانه</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800">
-              <Zap className="w-3 h-3 text-purple-500" />
-              <span>۵ اسلات تغییرات لحظه‌ای</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800">
-              <Clock className="w-3 h-3 text-blue-500" />
-              <span>۱۰ اسلات دوره‌ای و دستی</span>
-            </span>
+      {/* 1. Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+        {/* Tier 1: Identity, Feature Structure & Action Controls */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+              <HardDrive className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  پشتیبان‌گیری هوشمند، بازیابی و امنیت داده‌ها
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{toPersianDigits(snapshots.length)} نسخه پشتیبان آماده بازیابی</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>⚡</span>
+                  <span>پشتیبان خودکار لحظه‌ای</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>⏰</span>
+                  <span>نسخه‌های زمان‌بندی شده</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🛡️</span>
+                  <span>حفاظت پیش از حذف اسناد</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📥</span>
+                  <span>خروجی استاندارد JSON</span>
+                </span>
+              </div>
+            </div>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <div className={`p-2.5 rounded-2xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor} shadow-xs`}>
-              <Database className="w-6 h-6" />
-            </div>
-            <span>مدیریت و پشتیبان‌گیری هوشمند دیتابیس (۱۵ نسخه)</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
-            پشتیبان‌گیری خودکار پس از هر بار ثبت، ویرایش، تغییر داده یا پیش‌نویس فاکتور، همراه با نسخه‌های دوره‌ای و استخراج کامل فایل استاندارد JSON
-          </p>
-        </div>
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 justify-end shrink-0 self-end xl:self-center">
+            <button
+              type="button"
+              onClick={() => setShowAutoSettings(!showAutoSettings)}
+              className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl ${showAutoSettings ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'} font-bold text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95`}
+              title="تنظیمات فاصله پشتیبان‌گیری زمان‌بندی شده"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+              <span>تنظیم دوره خودکار</span>
+            </button>
 
-        {/* Quick Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowAutoSettings(!showAutoSettings)}
-            className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl ${showAutoSettings ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'} font-bold text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer`}
-            title="تنظیمات فاصله پشتیبان‌گیری زمان‌بندی شده"
-          >
-            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-            <span>تنظیمات دوره خودکار</span>
-          </button>
-
-          <button
-            id="download-full-json-backup-btn"
-            type="button"
-            onClick={onExportData}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
-          >
-            <Download className="w-4 h-4 shrink-0" />
-            <span>دانلود کامل فایل پشتیبان (JSON)</span>
-          </button>
+            <button
+              id="download-full-json-backup-btn"
+              type="button"
+              onClick={onExportData}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
+              title="دانلود فایل پشتیبان آفلاین با تمام داده‌های انبار، مشتریان و فاکتورها"
+            >
+              <Download className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span>دانلود فایل پشتیبان (JSON)</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1603,49 +1603,78 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto space-y-5 pb-20 px-2 sm:px-4">
       
-      {/* 1. Header Banner & Controls - Clean Standard Design Matching App */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all no-print">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl ${theme.badgeBg} ${theme.badgeText} text-xs font-bold border ${theme.borderColor}`}>
-              <Scale className="w-3.5 h-3.5" />
-              <span>گزارش جامع سود و زیان بازرگانی</span>
-            </span>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>{toPersianDigits(filteredSalesInvoices.length)} فاکتور فروش · {toPersianDigits(purchaseInvoicesProfitability.length)} فاکتور خرید</span>
+      {/* 1. Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+        {/* Tier 1: Identity, Feature Structure & Action Controls */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+              <TrendingUp className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  تحلیل سود و زیان، حاشیه سود و بهای تمام‌شده
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{toPersianDigits(filteredSalesInvoices.length)} فاکتور فروش · {toPersianDigits(purchaseInvoicesProfitability.length)} خرید</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📈</span>
+                  <span>سود ناخالص و خالص</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🏷️</span>
+                  <span>بهای تمام‌شده خرید انبار</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🔍</span>
+                  <span>حاشیه سود درصدی کالاها</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🖨️</span>
+                  <span>گزارش رسمی و خروجی</span>
+                </span>
+              </div>
             </div>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <span>تحلیل سود و زیان، حاشیه سود و بهای تمام‌شده</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl font-medium">
-            محاسبه دقیق سود ناخالص و خالص، بهای تمام‌شده خرید کالا، تخفیفات و هزینه‌های جاری
-          </p>
-        </div>
 
-        <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 shrink-0">
-          {onToggleSecretMode && (
+          {/* Action Buttons */}
+          <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 justify-end shrink-0 self-end xl:self-center">
+            {onToggleSecretMode && (
+              <button
+                type="button"
+                onClick={onToggleSecretMode}
+                className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                  isSecretMode
+                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                }`}
+                title={isSecretMode ? 'خروج از حالت محرمانه و نمایش ارقام سود' : 'مخفی‌سازی مبالغ حساس در برابر مراجعین'}
+              >
+                {isSecretMode ? <EyeOff className="w-4 h-4 text-amber-500 shrink-0" /> : <Eye className="w-4 h-4 text-emerald-500 shrink-0" />}
+                <span>{isSecretMode ? 'حالت محرمانه فعال است' : 'حالت محرمانه'}</span>
+              </button>
+            )}
+
             <button
-              onClick={onToggleSecretMode}
-              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
-                isSecretMode
-                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                  : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-              }`}
+              type="button"
+              onClick={() => window.print()}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-300/80 dark:border-slate-700 shadow-2xs active:scale-95"
+              title="چاپ رسمی گزارش تحلیل سود و زیان"
             >
-              {isSecretMode ? <EyeOff className="w-4 h-4 text-amber-500 shrink-0" /> : <Eye className="w-4 h-4 text-emerald-500 shrink-0" />}
-              <span>{isSecretMode ? 'حالت محرمانه' : 'نمایش ارقام'}</span>
+              <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+              <span>چاپ گزارش</span>
             </button>
-          )}
-
-          <button
-            onClick={() => window.print()}
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
-          >
-            <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
-            <span>چاپ گزارش</span>
-          </button>
+          </div>
         </div>
       </div>
 

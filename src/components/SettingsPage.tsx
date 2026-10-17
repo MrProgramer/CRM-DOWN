@@ -209,47 +209,78 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   return (
     <div className="w-full space-y-6 pb-20 no-print transition-colors text-right font-sans">
-      {/* Top Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div 
-            className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs"
-            style={{ 
-              backgroundColor: currentTheme.hex + '15', 
-              borderColor: currentTheme.hex + '40',
-              color: currentTheme.hex 
-            }}
-          >
-            <Settings className="w-6 h-6" style={{ color: currentTheme.hex }} />
+      {/* 1. Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+        {/* Tier 1: Identity, Feature Structure & Action Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div 
+              className="p-3 rounded-2xl border shadow-2xs shrink-0 mt-0.5 sm:mt-0 flex items-center justify-center"
+              style={{ 
+                backgroundColor: currentTheme.hex + '15', 
+                borderColor: currentTheme.hex + '40',
+                color: currentTheme.hex 
+              }}
+            >
+              <Settings className="w-6 h-6 stroke-[2.2]" style={{ color: currentTheme.hex }} />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {mode === 'business' ? 'تنظیمات کسب‌وکار و سربرگ تجاری' : 'تنظیمات سیستمی، امنیتی و پالت رنگی'}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>پیکربندی فعال سامانه</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🎨</span>
+                  <span>پالت‌های رنگی و فونت‌ها</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🏢</span>
+                  <span>مشخصات و برندینگ فروشگاه</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>💳</span>
+                  <span>حساب‌های بانکی و کارت‌ها</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🛡️</span>
+                  <span>امنیت، اثر انگشت و پین‌کد</span>
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-              {mode === 'business' ? 'تنظیمات کسب‌وکار و سربرگ تجاری' : 'تنظیمات سیستمی، امنیتی و پالت رنگی'}
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {mode === 'business' 
-                ? 'مدیریت آیکون و برند، اطلاعات سربرگ فاکتور، مشخصات بانکی و سفارشی‌سازی چاپ و مهر' 
-                : 'انتخاب از میان ۸ پالت رنگی مدرن و پیکربندی پین‌کد ورود و سطوح امنیتی سامانه'}
-            </p>
+
+          {/* Action Toolbar */}
+          <div className="flex items-center gap-2.5 justify-end shrink-0 self-end sm:self-center">
+            <button
+              onClick={() => handleSave()}
+              className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl ${currentTheme.primary} ${currentTheme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
+              title="ذخیره کلیه تنظیمات و اعمال بلادرنگ در سیستم"
+            >
+              {savedSuccess ? (
+                <>
+                  <Check className="w-4 h-4 stroke-[2.5]" />
+                  <span>ذخیره شد!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 stroke-[2.5]" />
+                  <span>ذخیره تغییرات</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
-
-        <button
-          onClick={() => handleSave()}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl ${currentTheme.primary} ${currentTheme.primaryHover} text-white font-black text-xs shadow-md transition-all cursor-pointer`}
-        >
-          {savedSuccess ? (
-            <>
-              <Check className="w-4 h-4" />
-              <span>ذخیره شد!</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              <span>ذخیره تغییرات</span>
-            </>
-          )}
-        </button>
       </div>
 
       {/* Success Notification Alert */}

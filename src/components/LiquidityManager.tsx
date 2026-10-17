@@ -1562,72 +1562,91 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
   return (
     <div className="w-full space-y-6 pb-24 transition-colors dir-rtl text-slate-800 dark:text-slate-200">
       
-      {/* 1. Executive Modern Header & Action Center */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-5 transition-all no-print">
-        <div className="space-y-2.5 max-w-3xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
-              <Scale className="w-3.5 h-3.5" />
-              <span>خزانه‌داری، پایش نقدینگی و مدیریت سرمایه</span>
-            </span>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/90 dark:border-emerald-800/80 text-xs font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>تراز برخط حساب‌ها و تسویه‌ها</span>
+      {/* 1. Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+        {/* Tier 1: Identity, Feature Structure & Primary Actions */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+              <Wallet className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  مدیریت نقدینگی، خزانه‌داری و جریان وجوه نقد
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>تراز برخط دارایی‌ها و وجوه نقد</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>💵</span>
+                  <span>موجودی صندوق و بانک</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🚛</span>
+                  <span>هزینه‌ها و کرایه بار</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📊</span>
+                  <span>مطالبات و بدهی‌های بازار</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>⚖️</span>
+                  <span>تراز کل و سود ناخالص</span>
+                </span>
+              </div>
             </div>
           </div>
 
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-              <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
-                <Wallet className="w-5 h-5" />
-              </div>
-              <span>صورت وضعیت جامع جریان وجوه نقد و تخصیص دارایی‌ها</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-medium">
-              پایش برخط موجودی صندوق و بانک، ثبت منعطف هزینه‌ها و کرایه بار، ارزیابی مطالبات بازار و سود ناخالص کالاها
-            </p>
+          {/* Action Toolbar */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 justify-end shrink-0 self-end xl:self-center">
+            <button
+              type="button"
+              onClick={() => handleOpenTransfer('cash', true)}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700/80 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 shrink-0"
+              title="انتقال سریع و واریز تمام موجودی صندوق نقدی به حساب بانکی / کارت‌خوان"
+            >
+              <ArrowRightLeft className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>واریز دخل به کارت‌خوان</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTx(null);
+                setTxType('expense');
+                setSource('cash');
+                setImpactOnLiquidity('deduct');
+                setCategory('کرایه بار و پیک / حمل‌ونقل کالا');
+                setAmount(0);
+                setDescription('');
+                setIsTxFormOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+              title="ثبت سریع هزینه کرایه بار و مخارج عملیاتی با امکان کسر یا عدم کسر از صندوق"
+            >
+              <Truck className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+              <span>ثبت هزینه / کرایه بار</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenNewTx}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
+              title="ثبت دریافت، پرداخت یا انتقال جدید در خزانه"
+            >
+              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span>عملیات خزانه‌داری</span>
+            </button>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => handleOpenTransfer('cash', true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700/80 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95"
-            title="انتقال سریع و واریز تمام موجودی صندوق نقدی به حساب بانکی / کارت‌خوان"
-          >
-            <ArrowRightLeft className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>انتقال حساب (واریز دخل به کارت‌خوان)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEditingTx(null);
-              setTxType('expense');
-              setSource('cash');
-              setImpactOnLiquidity('deduct');
-              setCategory('کرایه بار و پیک / حمل‌ونقل کالا');
-              setAmount(0);
-              setDescription('');
-              setIsTxFormOpen(true);
-            }}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
-            title="ثبت سریع هزینه کرایه بار و مخارج عملیاتی با امکان کسر یا عدم کسر از صندوق"
-          >
-            <Truck className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
-            <span>ثبت هزینه / کرایه بار</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenNewTx}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0`}
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>عملیات خزانه‌داری</span>
-          </button>
         </div>
       </div>
 

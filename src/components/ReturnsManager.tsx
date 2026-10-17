@@ -417,43 +417,65 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
   return (
     <div className="w-full space-y-6 pb-24 no-print transition-colors dir-rtl text-slate-800 dark:text-slate-200">
       
-      {/* 1. Executive Modern Header */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-5 transition-all">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${theme.badgeBg} ${theme.badgeText} text-xs font-black border ${theme.borderColor} shadow-2xs`}>
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>مدیریت کالاهای مرجوعی و استرداد</span>
-            </span>
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-              <span>{toPersianDigits(returns.length)} سند مرجوعی</span>
+      {/* 1. Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+        {/* Tier 1: Identity, Feature Structure & Primary CTA */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+              <RotateCcw className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  مدیریت کالاهای مرجوعی و استرداد
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                  <span>{toPersianDigits(returns.length)} سند مرجوعی ثبت شده</span>
+                </span>
+              </div>
+              
+              {/* Structured Executive Feature Tags */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🏢</span>
+                  <span>برگشت از خرید (شرکت‌ها)</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>🛍️</span>
+                  <span>برگشت از فروش (مشتریان)</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>📦</span>
+                  <span>اصلاح خودکار موجودی انبار</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold">
+                  <span>💰</span>
+                  <span>تراز مالی و تسویه</span>
+                </span>
+              </div>
             </div>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
-              <PackageX className="w-5 h-5" />
-            </div>
-            <span>ثبت، کنترل و تسویه مالی اقلام مرجوعی</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-medium">
-            مدیریت یکپارچه برگشت از خرید به تامین‌کنندگان و برگشت از فروش مشتریان با اصلاح خودکار موجودی انبار و تراز مالی طرف‌حساب‌ها
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setEditingReturnId(null);
-              setIsFormOpen(true);
-            }}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} active:scale-95 text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer`}
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>ثبت مرجوعی جدید</span>
-          </button>
+          {/* Primary Action Button (Add Return) */}
+          <div className="flex items-center gap-2.5 justify-end shrink-0 self-end lg:self-center">
+            <button
+              type="button"
+              onClick={() => {
+                setEditingReturnId(null);
+                setIsFormOpen(true);
+              }}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} active:scale-95 text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0`}
+              title="ثبت سند مرجوعی جدید (خرید یا فروش)"
+            >
+              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span>ثبت مرجوعی جدید</span>
+            </button>
+          </div>
         </div>
       </div>
 
