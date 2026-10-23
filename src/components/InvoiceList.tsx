@@ -90,37 +90,85 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     onFilterChange?.(type);
   };
 
-  // Helper to dynamically calculate invoice subtotal linked to item selling prices & catalog
-  const getInvoiceEffectiveSubtotal = (inv: Invoice): number => {
-    if (!inv || !inv.items || inv.items.length === 0) return inv?.subtotal || 0;
-    if (inv.type === 'purchase') {
-      return (inv.items || []).reduce((sum, item) => {
+  // Deterministic source of truth for an invoice's effective net final amount
+  const getInvoiceEffectiveAmount = (inv: Invoice): number => {
+    if (!inv) return 0;
+    const isPurchase = inv.type === 'purchase';
+
+    // Matched unlinked/live returns for this invoice
+    const invReturns = (productReturns || []).filter(r => {
+      if (isPurchase && r.type !== 'to_supplier') return false;
+      if (!isPurchase && r.type !== 'from_customer') return false;
+      if (r.invoiceId && r.invoiceId === inv.id) return true;
+      if (r.invoiceNumber && r.invoiceNumber === inv.invoiceNumber) return true;
+      return false;
+    });
+    const matchedReturnsTotal = invReturns.reduce((s, r) => s + getNetReturnAmount(r), 0);
+
+    // If the invoice already has offsetReturnsTotal factored into its recorded finalAmount,
+    // only deduct excess returns that have not been baked into offsetReturnsTotal.
+    const alreadyOffsetReturns = inv.offsetReturnsTotal || 0;
+    const unbakedReturns = Math.max(0, matchedReturnsTotal - alreadyOffsetReturns);
+
+    // Deterministic calculation from items, discount, tax, expenses, and returns
+    const calculatedSub = (inv.items || []).reduce((sum, item) => {
+      if (isPurchase) {
+        if (item.totalPurchaseCost !== undefined && item.totalPurchaseCost > 0) return sum + item.totalPurchaseCost;
+        if (item.totalPrice !== undefined && item.totalPrice > 0) return sum + item.totalPrice;
         const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
         const uPrice = (item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0)
           ? item.unitPurchasePrice
-          : ((prod && prod.purchasePrice > 0) ? prod.purchasePrice : (item.unitSellingPrice || 0));
+          : ((prod && prod.purchasePrice > 0) ? prod.purchasePrice : ((item as any).unitPrice || item.unitSellingPrice || 0));
         return sum + (item.totalPieces * uPrice);
-      }, 0);
-    }
-    return (inv.items || []).reduce((sum, item) => {
-      const uPrice = (item.unitSellingPrice !== undefined && item.unitSellingPrice > 0)
-        ? item.unitSellingPrice
-        : (item.totalPieces > 0 && item.totalPrice > 0 ? Math.round(item.totalPrice / item.totalPieces) : (item.unitPrice || 0));
-      return sum + (uPrice > 0 ? uPrice * item.totalPieces : (item.totalPrice || 0));
-    }, 0);
-  };
+      } else {
+        if (item.totalPrice !== undefined && item.totalPrice > 0) return sum + item.totalPrice;
+        const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
+        const uPrice = (item.unitSellingPrice !== undefined && item.unitSellingPrice > 0)
+          ? item.unitSellingPrice
+          : ((prod && prod.sellingPrice > 0) ? prod.sellingPrice : ((item as any).unitPrice || item.unitPurchasePrice || 0));
+        return sum + (item.totalPieces * uPrice);
+      }
+    }, 0) || inv.subtotal || 0;
 
-  // Helper to dynamically calculate effective final amount linked to item prices, returns, and expenses
-  const getInvoiceEffectiveAmount = (inv: Invoice): number => {
-    const calculatedSub = getInvoiceEffectiveSubtotal(inv);
-    const offsetReturns = inv.offsetReturnsTotal || 0;
-    const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
-    if (inv.type === 'purchase') {
-      return Math.max(0, calculatedSub - (inv.discount || 0) + (inv.tax || 0) - offsetReturns) + totalExpenses;
-    }
+    const discount = inv.discount || 0;
+    const tax = inv.tax || 0;
+    const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
+
     const expDeductions = inv.expensesTotalDeduction || (inv.expenses || []).filter(e => e.action === 'deduct').reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const expAdditions = inv.expensesTotalAddition || (inv.expenses || []).filter(e => e.action === 'add').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-    return Math.max(0, calculatedSub - (inv.discount || 0) + (inv.tax || 0) - offsetReturns - expDeductions + expAdditions);
+
+    const calculatedEffective = isPurchase
+      ? Math.max(0, calculatedSub - discount + tax - alreadyOffsetReturns - unbakedReturns) + totalExpenses
+      : Math.max(0, calculatedSub - discount + tax - alreadyOffsetReturns - unbakedReturns - expDeductions + expAdditions);
+
+    // If finalAmount is explicitly recorded and positive on the invoice,
+    // ensure it is mathematically consistent with items (avoiding stale corrupted values like 6.4M vs 110M)
+    if (typeof inv.finalAmount === 'number' && !isNaN(inv.finalAmount) && inv.finalAmount > 0) {
+      const netFinal = Math.max(0, inv.finalAmount - unbakedReturns);
+      if (Math.abs(netFinal - calculatedEffective) > calculatedEffective * 0.1 && calculatedEffective > 0) {
+        return calculatedEffective;
+      }
+      return netFinal;
+    }
+
+    return calculatedEffective;
+  };
+
+  // Helper to dynamically calculate invoice subtotal linked to item selling prices & catalog
+  const getInvoiceEffectiveSubtotal = (inv: Invoice): number => {
+    if (!inv) return 0;
+    if (inv.subtotal !== undefined && inv.subtotal > 0) return inv.subtotal;
+    if (!inv.items || inv.items.length === 0) return 0;
+    const isPurchase = inv.type === 'purchase';
+    return (inv.items || []).reduce((sum, item) => {
+      if (item.totalPrice !== undefined && item.totalPrice > 0) return sum + item.totalPrice;
+      const prod = products.find(p => p.id === item.productId || p.name?.trim().toLowerCase() === item.productName?.trim().toLowerCase());
+      const uPrice = isPurchase
+        ? ((item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0) ? item.unitPurchasePrice : ((prod && prod.purchasePrice > 0) ? prod.purchasePrice : (item.unitSellingPrice || 0)))
+        : ((item.unitSellingPrice !== undefined && item.unitSellingPrice > 0) ? item.unitSellingPrice : ((prod && prod.sellingPrice > 0) ? prod.sellingPrice : (item.unitPrice || 0)));
+      return sum + (item.totalPieces * uPrice);
+    }, 0);
   };
 
   // Pagination State
@@ -133,19 +181,8 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const purchaseInvoices = invoices.filter(i => i.type === 'purchase');
   const draftInvoicesCount = invoices.filter(i => i.isDraft).length;
 
-  const totalSalesRevenue = salesInvoices.reduce((sum, inv) => {
-    const invReturns = (productReturns || []).filter(r => r.type === 'from_customer' && (r.invoiceId === inv.id || r.invoiceNumber === inv.invoiceNumber));
-    const retAmount = invReturns.reduce((s, r) => s + getNetReturnAmount(r), 0);
-    const effAmount = getInvoiceEffectiveAmount(inv);
-    return sum + Math.max(0, effAmount - retAmount);
-  }, 0);
-
-  const totalPurchaseValue = purchaseInvoices.reduce((sum, inv) => {
-    const invReturns = (productReturns || []).filter(r => r.type === 'to_supplier' && (r.invoiceId === inv.id || r.invoiceNumber === inv.invoiceNumber));
-    const retAmount = invReturns.reduce((s, r) => s + getNetReturnAmount(r), 0);
-    const effAmount = getInvoiceEffectiveAmount(inv);
-    return sum + Math.max(0, effAmount - retAmount);
-  }, 0);
+  const totalSalesRevenue = salesInvoices.reduce((sum, inv) => sum + getInvoiceEffectiveAmount(inv), 0);
+  const totalPurchaseValue = purchaseInvoices.reduce((sum, inv) => sum + getInvoiceEffectiveAmount(inv), 0);
 
   const filteredInvoices = invoices.filter(inv => {
     let matchesType = true;
@@ -231,11 +268,15 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   return (
     <div className="w-full space-y-4 pb-20 no-print transition-colors dir-rtl">
       {/* Executive Command Header - Professional, Balanced & Organized */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4 no-print">
+      {/* Executive Command Header - Professional, Balanced & Organized */}
+      <div className="bg-white dark:bg-[#0c1322] rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800/90 p-4 sm:p-5 lg:p-6 transition-all space-y-4 no-print relative overflow-hidden">
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 right-0 w-64 h-24 bg-gradient-to-l from-slate-100/60 dark:from-slate-800/20 to-transparent pointer-events-none rounded-tr-2xl" />
+
         {/* Tier 1: Identity, Feature Structure & Primary Actions */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0`}>
+            <div className={`p-3 rounded-2xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} shadow-2xs shrink-0 mt-0.5 sm:mt-0 flex items-center justify-center`}>
               <Receipt className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div className="space-y-1.5">
@@ -274,13 +315,13 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 justify-end shrink-0 self-end lg:self-center">
+          {/* Action Buttons - Fully Responsive */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 justify-stretch sm:justify-end shrink-0 w-full lg:w-auto">
             <button
               id="invoice-list-new-purchase-btn"
               type="button"
               onClick={() => onNewInvoice('purchase')}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs sm:text-sm border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs sm:text-sm border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
               title="ثبت ورود کالا به انبار و صدور فاکتور خرید"
             >
               <Package className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -290,7 +331,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               id="invoice-list-new-sale-btn"
               type="button"
               onClick={() => onNewInvoice('sale')}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer`}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl ${theme.primary} ${theme.primaryHover} text-white font-black text-xs sm:text-sm shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer`}
               title="صدور فاکتور خروج کالا و فروش به مشتری"
             >
               <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
@@ -300,47 +341,47 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         </div>
       </div>
 
-      {/* Archive Statistics Summary Cards - Flat Design */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      {/* Archive Statistics Summary Cards - Ultra-Sleek & Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
         
-        {/* Total Documents */}
+        {/* Card 1: Total Documents */}
         <div 
           onClick={() => handleSelectFilter('all')}
-          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
+          className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md hover:-translate-y-0.5 ${
             filterType === 'all'
-              ? `${theme.borderColor} ${theme.primaryLight} ring-1 ring-current/20`
+              ? `${theme.borderColor} ${theme.primaryLight} ring-2 ring-current/25 shadow-sm`
               : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
           title="کلیک برای نمایش تمام فاکتورها و اسناد"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <span>تعداد کل اسناد</span>
               {filterType === 'all' && (
                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${theme.primary} text-white`}>انتخاب شده</span>
               )}
             </span>
-            <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 group-hover:scale-105 transition-transform">
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
-            {toPersianDigits(totalInvoicesCount)} <span className="text-xs text-slate-500 font-medium">سند</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(totalInvoicesCount)} <span className="text-xs font-sans text-slate-500 font-bold">سند</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>آرشیو کل اسناد:</span>
-            <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
-              {toPersianDigits(totalInvoicesCount)} سند
+            <span className="font-black text-slate-800 dark:text-slate-200 font-mono">
+              {toPersianDigits(totalInvoicesCount)} پرونده
             </span>
           </div>
         </div>
 
-        {/* Sales Invoices */}
+        {/* Card 2: Sales Invoices */}
         <div 
           onClick={() => handleSelectFilter('sale')}
-          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
+          className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md hover:-translate-y-0.5 ${
             filterType === 'sale'
-              ? 'border-emerald-600 dark:border-emerald-500 ring-1 ring-emerald-500/20'
+              ? 'border-emerald-500 dark:border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 ring-2 ring-emerald-500/25 shadow-sm'
               : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/50'
           }`}
           title="کلیک برای نمایش فاکتورهای فروش"
@@ -352,27 +393,27 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 group-hover:scale-105 transition-transform">
               <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
-            {toPersianDigits(salesInvoices.length)} <span className="text-xs text-slate-500 font-medium">فاکتور</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(salesInvoices.length)} <span className="text-xs font-sans text-slate-500 font-bold">فاکتور</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>گردش فروش:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
+            <span>مجموع گردش فروش:</span>
+            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {formatPrice(totalSalesRevenue)}
             </span>
           </div>
         </div>
 
-        {/* Purchase Invoices / Goods Entry */}
+        {/* Card 3: Purchase Invoices / Goods Entry - Accurate Unified Calculation */}
         <div 
           onClick={() => handleSelectFilter('purchase')}
-          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
+          className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md hover:-translate-y-0.5 ${
             filterType === 'purchase'
-              ? 'border-blue-600 dark:border-blue-500 ring-1 ring-blue-500/20'
+              ? 'border-blue-500 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 ring-2 ring-blue-500/25 shadow-sm'
               : 'border-slate-200/90 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50'
           }`}
           title="کلیک برای نمایش اسناد ورود کالا و خرید"
@@ -384,27 +425,27 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 group-hover:scale-105 transition-transform">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
-            {toPersianDigits(purchaseInvoices.length)} <span className="text-xs text-slate-500 font-medium">فاکتور</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(purchaseInvoices.length)} <span className="text-xs font-sans text-slate-500 font-bold">فاکتور</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>{!isSecretMode ? 'بهای تأمین:' : 'وضعیت:'}</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
+            <span>{!isSecretMode ? 'مجموع بهای تأمین:' : 'وضعیت تأمین:'}</span>
+            <span className="font-black text-blue-600 dark:text-blue-400 font-mono">
               {!isSecretMode ? formatPrice(totalPurchaseValue) : 'تأیید شده'}
             </span>
           </div>
         </div>
 
-        {/* Draft Invoices */}
+        {/* Card 4: Draft Invoices */}
         <div 
           onClick={() => handleSelectFilter('drafts')}
-          className={`bg-white dark:bg-[#090d16] rounded-xl p-4 border transition-colors cursor-pointer flex flex-col justify-between ${
+          className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md hover:-translate-y-0.5 ${
             filterType === 'drafts'
-              ? 'border-amber-600 dark:border-amber-500 ring-1 ring-amber-500/20'
+              ? 'border-amber-500 dark:border-amber-500 bg-amber-50/30 dark:bg-amber-950/20 ring-2 ring-amber-500/25 shadow-sm'
               : 'border-slate-200/90 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/50'
           }`}
           title="کلیک برای نمایش فاکتورهای پیش‌نویس بلاتکلیف"
@@ -416,16 +457,16 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-600 text-white">انتخاب شده</span>
               )}
             </span>
-            <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 group-hover:scale-105 transition-transform">
               <FileClock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-2.5 dir-ltr text-right">
-            {toPersianDigits(draftInvoicesCount)} <span className="text-xs text-slate-500 font-medium">پیش‌نویس</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(draftInvoicesCount)} <span className="text-xs font-sans text-slate-500 font-bold">پیش‌نویس</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>در انتظار نهایی‌سازی:</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
+            <span className="font-black text-amber-600 dark:text-amber-400 font-mono">
               {toPersianDigits(draftInvoicesCount)} سند
             </span>
           </div>
@@ -650,9 +691,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
                   const grossOriginalAmount = Math.max(0, resolvedGrossSubtotal + (inv.tax || 0));
                   const totalExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
-                  const effectiveFinalAmount = inv.type === 'purchase'
-                    ? (Math.max(0, resolvedGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount) + totalExpenses)
-                    : Math.max(0, resolvedGrossSubtotal - invDiscountAmount + (inv.tax || 0) - totalReturnsAmount);
+                  const effectiveFinalAmount = getInvoiceEffectiveAmount(inv);
                   const hasReturns = totalReturnsAmount > 0;
                   const inwardSellThrough = (isPurchaseMode && !inv.isDraft)
                     ? calculateInwardInvoiceSellThrough(inv, invoices, products)

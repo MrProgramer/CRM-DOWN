@@ -63,6 +63,8 @@ export interface ProcessedItem {
   unitProfit?: number;
   totalProfit?: number;
   profitMarginPercent?: number;
+  itemFreightShare?: number;
+  itemFreightPerPiece?: number;
   isProfit?: boolean;
   isLoss?: boolean;
 }
@@ -261,28 +263,36 @@ export const renderTableProfitSummaryRow = (
     ? 'item-profit-badge-exportable'
     : 'item-profit-badge no-print hide-on-export confidential-price-data print:hidden';
 
+  const isDark = props.isDarkCanvas;
+
   return (
-    <tr className={`invoice-last-record-profit-row ${hideClasses} border-t-2 border-slate-300 dark:border-slate-700 bg-slate-50/95 dark:bg-slate-800/90 font-bold select-none`}>
+    <tr className={`invoice-last-record-profit-row ${hideClasses} border-t-2 ${
+      isDark ? 'border-slate-700 bg-slate-900/90 text-slate-100' : 'border-slate-300 bg-slate-50/95 text-slate-900'
+    } font-bold select-none`}>
       <td colSpan={colSpan} className="py-2.5 px-3">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-black text-slate-900 dark:text-white">
-              {isPurchase ? '📊 آخرین رکورد جدول — سود انتظاری ورود کالا:' : '📊 آخرین رکورد جدول — سود کامل و حاشیه سود فاکتور:'}
+            <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isPurchase ? '📊 سود خالص فاکتور ورود کالا (با کسر کرایه بار):' : '📊 آخرین رکورد جدول — سود کامل و حاشیه سود فاکتور:'}
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              {isPurchase ? '(تفاوت بهای خرید با نرخ فروش انبار)' : '(مجموع سود ناخالص تمام اقلام)'}
+            <span className="text-[10px] text-slate-400">
+              {isPurchase ? '(محاسبه دقیق پس از تسهیم و کسر کامل کرایه بار و تخفیف)' : '(مجموع سود ناخالص تمام اقلام)'}
             </span>
           </div>
           <div className="flex items-center gap-3 font-mono">
             <span className={`font-black text-sm flex items-center gap-1 ${
-              isProfit ? 'text-emerald-700 dark:text-emerald-400' : isLoss ? 'text-rose-700 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'
+              isProfit ? 'text-emerald-500 dark:text-emerald-400' : isLoss ? 'text-rose-500 dark:text-rose-400' : (isDark ? 'text-slate-200' : 'text-slate-700')
             }`}>
               <span>{isProfit ? 'سود کل:' : isLoss ? 'زیان کل:' : 'تراز:'}</span>
               <span dir="ltr">{isProfit ? `+${formatPrice(totalInvoiceProfit)}` : isLoss ? `-${formatPrice(Math.abs(totalInvoiceProfit))}` : '۰'}</span>
               <span className="text-[10px] font-normal text-slate-400">تومان</span>
             </span>
             {totalInvoiceProfitMargin !== 0 && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                isDark 
+                  ? 'bg-slate-950 text-slate-200 border-slate-700' 
+                  : 'bg-white text-slate-800 border-slate-300'
+              }`}>
                 حاشیه سود کامل: {totalInvoiceProfitMargin > 0 ? '+' : ''}{toPersianDigits(totalInvoiceProfitMargin)}٪
               </span>
             )}
@@ -372,16 +382,16 @@ export const renderCumulativeBalanceSection = (props: InvoiceTemplateProps) => {
 
   return (
     <div className={`space-y-2 mt-2.5 pt-2 border-t ${borderClass}`}>
-      <div className={`p-2.5 rounded-none border ${borderClass} ${boxBg} space-y-2 text-xs`}>
-        <div className="flex items-center justify-between font-bold pb-1 border-b border-black/5 dark:border-white/5">
-          <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-black text-[11px]">
-            <Scale className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+      <div className={`p-2.5 rounded-xl border ${borderClass} ${boxBg} space-y-2 text-xs`}>
+        <div className={`flex items-center justify-between font-bold pb-1 border-b ${isDarkCanvas ? 'border-slate-700/60' : 'border-slate-200/80'}`}>
+          <span className={`flex items-center gap-1.5 font-black text-[11px] ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800'}`}>
+            <Scale className="w-3.5 h-3.5 text-amber-500" />
             <span>{isCreditInvoice ? 'محاسبه نسیه و مانده کل حساب طرف‌حساب:' : 'وضعیت مانده حساب قبلی:'}</span>
           </span>
-          <span className={`text-[9.5px] px-2 py-0.5 rounded-none font-black ${
+          <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-black ${
             isCreditInvoice 
-              ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-              : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+              ? (isDarkCanvas ? 'bg-amber-950/80 text-amber-300 border border-amber-800' : 'bg-amber-100 text-amber-800 border border-amber-300')
+              : (isDarkCanvas ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800' : 'bg-emerald-100 text-emerald-800 border border-emerald-300')
           }`}>
             {isCreditInvoice ? 'فاکتور نسیه' : 'تسویه نقدی'}
           </span>
@@ -390,43 +400,55 @@ export const renderCumulativeBalanceSection = (props: InvoiceTemplateProps) => {
         {/* 3-Step Math Formula */}
         <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
           {/* 1. مانده قبلی */}
-          <div className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/80 flex flex-col justify-between items-center min-h-[66px]">
-            <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-bold block mb-0.5">مانده قبلی:</span>
-            <span className="font-mono font-black text-slate-800 dark:text-slate-200 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+          <div className={`p-1.5 sm:p-2 rounded-lg border flex flex-col justify-between items-center min-h-[66px] ${
+            isDarkCanvas 
+              ? 'border-slate-700/80 bg-slate-900/90 text-slate-100' 
+              : 'border-slate-200 bg-white/90 text-slate-800'
+          }`}>
+            <span className="text-[9.5px] text-slate-400 font-bold block mb-0.5">مانده قبلی:</span>
+            <span className={`font-mono font-black ${isDarkCanvas ? 'text-white' : 'text-slate-800'} dir-ltr text-xs sm:text-[13px] block tracking-tight select-all`}>
               {previousBalanceNumber < 0 ? `-${formatPrice(Math.abs(previousBalanceNumber), false)}` : formatPrice(previousBalanceNumber, false)}
             </span>
-            <span className="text-[8px] sm:text-[8.5px] leading-tight text-slate-500 dark:text-slate-400 font-medium block mt-1 break-words max-w-full text-center">
+            <span className={`text-[8px] sm:text-[8.5px] leading-tight ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500'} font-medium block mt-1 break-words max-w-full text-center`}>
               ({numberToPersianWords(previousBalanceNumber, true)})
             </span>
           </div>
 
           {/* 2. نسیه فاکتور */}
-          <div className="p-1.5 sm:p-2 rounded-lg border border-amber-200 dark:border-amber-800/70 bg-amber-50/60 dark:bg-amber-950/40 flex flex-col justify-between items-center min-h-[66px]">
-            <span className="text-[9.5px] text-amber-700 dark:text-amber-400 font-bold block mb-0.5">نسیه فاکتور (+):</span>
-            <span className="font-mono font-black text-amber-600 dark:text-amber-400 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+          <div className={`p-1.5 sm:p-2 rounded-lg border flex flex-col justify-between items-center min-h-[66px] ${
+            isDarkCanvas 
+              ? 'border-amber-800/80 bg-amber-950/60 text-amber-300' 
+              : 'border-amber-200 bg-amber-50/70 text-amber-800'
+          }`}>
+            <span className={`text-[9.5px] font-bold block mb-0.5 ${isDarkCanvas ? 'text-amber-400' : 'text-amber-700'}`}>نسیه فاکتور (+):</span>
+            <span className="font-mono font-black text-amber-500 dark:text-amber-400 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
               +{formatPrice(unpaidAmount, false)}
             </span>
-            <span className="text-[8px] sm:text-[8.5px] leading-tight text-amber-800/80 dark:text-amber-400/80 font-medium block mt-1 break-words max-w-full text-center">
+            <span className={`text-[8px] sm:text-[8.5px] leading-tight ${isDarkCanvas ? 'text-amber-400/90' : 'text-amber-800/80'} font-medium block mt-1 break-words max-w-full text-center`}>
               ({numberToPersianWords(unpaidAmount, true)})
             </span>
           </div>
 
           {/* 3. جمع کل مانده */}
-          <div className="p-1.5 sm:p-2 rounded-lg border border-rose-200 dark:border-rose-900/70 bg-rose-50/70 dark:bg-rose-950/40 flex flex-col justify-between items-center min-h-[66px]">
-            <span className="text-[9.5px] text-rose-700 dark:text-rose-400 font-bold block mb-0.5">جمع کل مانده (=):</span>
-            <span className="font-mono font-black text-rose-700 dark:text-rose-300 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
+          <div className={`p-1.5 sm:p-2 rounded-lg border flex flex-col justify-between items-center min-h-[66px] ${
+            isDarkCanvas 
+              ? 'border-rose-900/80 bg-rose-950/60 text-rose-300' 
+              : 'border-rose-200 bg-rose-50/70 text-rose-800'
+          }`}>
+            <span className={`text-[9.5px] font-bold block mb-0.5 ${isDarkCanvas ? 'text-rose-400' : 'text-rose-700'}`}>جمع کل مانده (=):</span>
+            <span className="font-mono font-black text-rose-500 dark:text-rose-300 dir-ltr text-xs sm:text-[13px] block tracking-tight select-all">
               {cumulativeBalanceVal < 0 ? `-${formatPrice(Math.abs(cumulativeBalanceVal), false)}` : formatPrice(cumulativeBalanceVal, false)}
             </span>
-            <span className="text-[8px] sm:text-[8.5px] leading-tight text-rose-800 dark:text-rose-300 font-bold block mt-1 break-words max-w-full text-center">
+            <span className={`text-[8px] sm:text-[8.5px] leading-tight ${isDarkCanvas ? 'text-rose-300' : 'text-rose-800'} font-bold block mt-1 break-words max-w-full text-center`}>
               ({numberToPersianWords(cumulativeBalanceVal, true)})
             </span>
           </div>
         </div>
 
         {/* Running Balance Word Banner */}
-        <div className="flex items-center justify-between text-[10.5px] pt-1 font-medium border-t border-black/5 dark:border-white/5">
-          <span className="text-slate-500 dark:text-slate-400">وضعیت نهایی حساب طرف‌حساب:</span>
-          <span className="font-black text-slate-900 dark:text-white text-[11px]">
+        <div className={`flex items-center justify-between text-[10.5px] pt-1 font-medium border-t ${isDarkCanvas ? 'border-slate-700/60' : 'border-slate-200/80'}`}>
+          <span className={isDarkCanvas ? 'text-slate-400' : 'text-slate-500'}>وضعیت نهایی حساب طرف‌حساب:</span>
+          <span className={`font-black text-[11px] ${isDarkCanvas ? 'text-white' : 'text-slate-900'}`}>
             {finalBalanceDisplay}
           </span>
         </div>
@@ -596,18 +618,19 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
     inwardSellThroughSummary,
     shouldShowProfitUnderItems,
     includeProfitInExport,
+    isDarkCanvas,
   } = props;
 
   return (
-    <div className="space-y-6 text-slate-900 bg-white select-text">
+    <div className={`space-y-6 select-text transition-colors ${isDarkCanvas ? 'text-slate-100 bg-[#0b0f19]' : 'text-slate-900 bg-white'}`}>
       {/* Editorial Minimal Header */}
-      <div className="pb-5 border-b-2 border-slate-900">
+      <div className={`pb-5 border-b-2 ${isDarkCanvas ? 'border-slate-700' : 'border-slate-900'}`}>
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
           <div className="space-y-1.5 text-right">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950">
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDarkCanvas ? 'text-white' : 'text-slate-950'}`}>
               {settings.brandName || 'فروشگاه بازرگانی'}
             </h1>
-            <p className="text-xs text-slate-600 font-medium">
+            <p className={`text-xs font-medium ${isDarkCanvas ? 'text-slate-400' : 'text-slate-600'}`}>
               {settings.subtitle || (isPurchase ? 'مرکز ورود و تأمین کالا' : 'فروش عمده و توزیع کالا و خدمات')}
             </p>
             {settings.bismillah && (
@@ -618,13 +641,15 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
           </div>
 
           <div className="text-center self-center sm:self-auto">
-            <div className="border border-slate-900 px-4 py-1.5 text-xs font-black tracking-wider uppercase">
+            <div className={`border px-4 py-1.5 text-xs font-black tracking-wider uppercase ${
+              isDarkCanvas ? 'border-slate-700 bg-slate-900 text-white' : 'border-slate-900 bg-white text-slate-900'
+            }`}>
               {isPurchase
                 ? (isPresentationModeActive ? 'سند تأمین و تحویل کالا' : 'سند رسمی ورود کالا به انبار')
                 : 'صورت‌حساب رسمی فروش کالا و خدمات'}
             </div>
             {invoice.isDraft && (
-              <span className="block text-[11px] font-bold text-slate-600 mt-1">
+              <span className="block text-[11px] font-bold text-slate-400 mt-1">
                 (نسخه پیش‌نویس موقت)
               </span>
             )}
@@ -632,23 +657,23 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
 
           {/* Metadata Block: Clean Typographic Alignment */}
           <div className="text-xs space-y-1 min-w-[160px] text-right">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-              <span className="text-slate-500">شماره سند:</span>
-              <span className="font-black text-slate-950">{toPersianDigits(invoice.invoiceNumber)}</span>
+            <div className={`flex items-center justify-between border-b pb-1 ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200'}`}>
+              <span className="text-slate-400">شماره سند:</span>
+              <span className={`font-black ${isDarkCanvas ? 'text-white' : 'text-slate-950'}`}>{toPersianDigits(invoice.invoiceNumber)}</span>
             </div>
-            <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-              <span className="text-slate-500">تاریخ صدور:</span>
-              <span className="font-bold text-slate-900">{toPersianDigits(invoice.date)}</span>
+            <div className={`flex items-center justify-between border-b pb-1 ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200'}`}>
+              <span className="text-slate-400">تاریخ صدور:</span>
+              <span className={`font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-900'}`}>{toPersianDigits(invoice.date)}</span>
             </div>
             {invoice.time && (
-              <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                <span className="text-slate-500">زمان ثبت:</span>
-                <span className="text-slate-700">{toPersianDigits(invoice.time)}</span>
+              <div className={`flex items-center justify-between border-b pb-1 ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200'}`}>
+                <span className="text-slate-400">زمان ثبت:</span>
+                <span className={isDarkCanvas ? 'text-slate-300' : 'text-slate-700'}>{toPersianDigits(invoice.time)}</span>
               </div>
             )}
             <div className="flex items-center justify-between pt-0.5">
-              <span className="text-slate-500">نحوه تسویه:</span>
-              <span className="font-bold text-slate-900">{invoice.paymentMethod || 'نقدی'}</span>
+              <span className="text-slate-400">نحوه تسویه:</span>
+              <span className={`font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-900'}`}>{invoice.paymentMethod || 'نقدی'}</span>
             </div>
           </div>
         </div>
@@ -656,46 +681,48 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
 
       {/* Parties: Clean Split Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-        <div className="space-y-1.5 pb-2 border-b md:border-b-0 md:border-l md:border-slate-200 md:pl-4">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        <div className={`space-y-1.5 pb-2 border-b md:border-b-0 md:border-l md:pl-4 ${isDarkCanvas ? 'border-slate-800 md:border-slate-800' : 'border-slate-200 md:border-slate-200'}`}>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             {isPurchase ? 'مشخصات تأمین‌کننده (فروشنده):' : 'مشخصات فروشنده / صادرکننده:'}
           </div>
-          <div className="text-sm font-black text-slate-950">
+          <div className={`text-sm font-black ${isDarkCanvas ? 'text-white' : 'text-slate-950'}`}>
             {isPurchase ? (invoice.customerName || 'تامین‌کننده') : (settings.brandName || 'فروشگاه')}
           </div>
-          <div className="text-slate-600 flex items-center gap-1.5">
-            <span className="text-slate-500">تماس:</span>
+          <div className={`${isDarkCanvas ? 'text-slate-300' : 'text-slate-600'} flex items-center gap-1.5`}>
+            <span className="text-slate-400">تماس:</span>
             <span>{toPersianDigits(isPurchase ? (invoice.customerPhone || '-') : (settings.phone || '-'))}</span>
           </div>
-          <div className="text-slate-600">
-            <span className="text-slate-500">نشانی: </span>
+          <div className={isDarkCanvas ? 'text-slate-300' : 'text-slate-600'}>
+            <span className="text-slate-400">نشانی: </span>
             <span>{isPurchase ? (invoice.customerCity || invoice.customerAddress || '-') : (settings.address || '-')}</span>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             {isPurchase ? 'مشخصات خریدار (تحویل‌گیرنده انبار):' : 'مشخصات خریدار (طرف‌حساب):'}
           </div>
-          <div className="text-sm font-black text-slate-950">
+          <div className={`text-sm font-black ${isDarkCanvas ? 'text-white' : 'text-slate-950'}`}>
             {isPurchase ? (settings.brandName || 'انبار مرکزی') : (invoice.customerName || 'مشتری')}
           </div>
-          <div className="text-slate-600 flex items-center gap-1.5">
-            <span className="text-slate-500">همراه:</span>
+          <div className={`${isDarkCanvas ? 'text-slate-300' : 'text-slate-600'} flex items-center gap-1.5`}>
+            <span className="text-slate-400">همراه:</span>
             <span>{toPersianDigits(isPurchase ? (settings.phone || '-') : (invoice.customerPhone || '-'))}</span>
           </div>
-          <div className="text-slate-600">
-            <span className="text-slate-500">نشانی: </span>
+          <div className={isDarkCanvas ? 'text-slate-300' : 'text-slate-600'}>
+            <span className="text-slate-400">نشانی: </span>
             <span>{isPurchase ? settings.address : (invoice.customerCity || invoice.customerAddress || '-')}</span>
           </div>
         </div>
       </div>
 
       {/* Items Table: Professional Editorial Horizontal Lines */}
-      <div className="overflow-hidden border border-slate-300 rounded-lg">
+      <div className={`overflow-hidden border rounded-lg ${isDarkCanvas ? 'border-slate-800' : 'border-slate-300'}`}>
         <table className="w-full text-right border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-300 bg-slate-100 text-slate-900 font-black text-xs">
+            <tr className={`border-b font-black text-xs ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-900 text-slate-200' : 'border-slate-300 bg-slate-100 text-slate-900'
+            }`}>
               <th className="py-2.5 px-2 text-center w-10 shrink-0">#</th>
               <th className="py-2.5 px-3">شرح کامل کالا و بسته‌بندی</th>
               <th className="py-2.5 px-3 text-center min-w-[120px] shrink-0">مقدار (تعداد / کارتن)</th>
@@ -707,7 +734,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className={`divide-y ${isDarkCanvas ? 'divide-slate-800' : 'divide-slate-200'}`}>
             {processedItems.map((processedItem) => {
               const {
                 item,
@@ -729,15 +756,15 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                 discountedLineTotal
               } = processedItem;
               return (
-                <tr key={`mono-item-${item.id || index}`} className="text-slate-900">
-                  <td className="py-2.5 px-2 text-center text-slate-500">
+                <tr key={`mono-item-${item.id || index}`} className={isDarkCanvas ? 'text-slate-200' : 'text-slate-900'}>
+                  <td className="py-2.5 px-2 text-center text-slate-400">
                     {toPersianDigits(index + 1)}
                   </td>
                   <td className="py-2.5 px-3">
-                    <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-400' : 'text-slate-950'}`}>
+                    <div className={`font-bold text-sm ${itemReturns.length > 0 && (item.totalPieces === 0 || itemNetPrice === 0) ? 'line-through text-slate-500' : (isDarkCanvas ? 'text-white' : 'text-slate-950')}`}>
                       {item.productName}
                     </div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
                       {!isUnknown && <span>{packagingSpec}</span>}
                       {hasCustomNote && (
                         <>
@@ -747,7 +774,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                       )}
                     </div>
                     {itemReturns.length > 0 && (
-                      <div className="text-[11px] font-bold text-slate-900 mt-0.5">
+                      <div className="text-[11px] font-bold text-rose-500 mt-0.5">
                         مرجوع شده: {toPersianDigits(itemReturnedCartons)} کارتن
                         {itemReturnedExtraPieces > 0 ? ` و ${toPersianDigits(itemReturnedExtraPieces)} دانه` : ''}
                         <span className="mr-1 dir-ltr inline-block">(-{formatPrice(itemReturnedTotalAmount)})</span>
@@ -759,7 +786,7 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                   <div className="font-bold text-sm">
                     {toPersianDigits(item.totalPieces.toLocaleString())} {item.unitTitle || 'عدد'}
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-400 mt-0.5">
                     {cartonLabel}
                   </div>
                 </td>
@@ -767,12 +794,12 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
                   <div>{toPersianDigits(displayUnitPrice.toLocaleString())}</div>
                   {renderItemCoverPriceBadge(processedItem.coverPrice, props.showCoverPrice)}
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode && (
-                    <div className="text-[10px] text-slate-900 dark:text-slate-100 font-bold mt-0.5">
+                    <div className="text-[10px] text-emerald-500 font-bold mt-0.5">
                       با {toPersianDigits(discountPercent)}٪ تخفیف: {toPersianDigits((discountedUnitPrice || 0).toLocaleString())}
                     </div>
                   )}
                 </td>
-                <td className="py-2.5 px-3 text-center font-bold text-sm whitespace-nowrap text-slate-950">
+                <td className={`py-2.5 px-3 text-center font-bold text-sm whitespace-nowrap ${isDarkCanvas ? 'text-white' : 'text-slate-950'}`}>
                   {hasDiscount && discountPercent && discountPercent > 0 && !isSecretMode ? (
                     <div>
                       <span>{toPersianDigits((discountedLineTotal || 0).toLocaleString())}</span>
@@ -794,28 +821,30 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
       {/* Summary & Bank/Signatures Grid: 2 Balanced Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
         {/* Left: Financial Ledger Box Matching Table Border */}
-        <div className="p-4 rounded-lg border border-slate-300 bg-slate-50/70 space-y-2 text-slate-900 flex flex-col justify-between">
-          <div className="space-y-1.5 pb-2 border-b border-slate-200">
+        <div className={`p-4 rounded-lg border space-y-2 flex flex-col justify-between ${
+          isDarkCanvas ? 'border-slate-800 bg-slate-900/70 text-slate-200' : 'border-slate-300 bg-slate-50/70 text-slate-900'
+        }`}>
+          <div className={`space-y-1.5 pb-2 border-b ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
-              <span className="text-slate-600">
+              <span className={isDarkCanvas ? 'text-slate-400' : 'text-slate-600'}>
                 جمع ناخالص ({toPersianDigits(processedItems.length)} قلم{invoiceCartonBreakdownText ? ` · ${invoiceCartonBreakdownText}` : ''}):
               </span>
-              <span className="font-bold">{formatPrice(grossAmount)}</span>
+              <span className={`font-bold ${isDarkCanvas ? 'text-white' : 'text-slate-900'}`}>{formatPrice(grossAmount)}</span>
             </div>
             {discount > 0 && (
-              <div className="flex items-center justify-between font-bold">
+              <div className="flex items-center justify-between font-bold text-amber-500">
                 <span>تخفیف:</span>
                 <span className="dir-ltr">-{formatPrice(discount)}</span>
               </div>
             )}
             {tax > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">مالیات / ارزش افزوده:</span>
+                <span className={isDarkCanvas ? 'text-slate-400' : 'text-slate-600'}>مالیات / ارزش افزوده:</span>
                 <span className="dir-ltr">+{formatPrice(tax)}</span>
               </div>
             )}
             {totalInvoiceReturnsAmount > 0 && (
-              <div className="flex items-center justify-between font-bold">
+              <div className="flex items-center justify-between font-bold text-rose-500">
                 <span>کسر بابت مرجوعی:</span>
                 <span className="dir-ltr">-{formatPrice(totalInvoiceReturnsAmount)}</span>
               </div>
@@ -824,20 +853,24 @@ export const PrintModernMonoTemplate: React.FC<InvoiceTemplateProps> = (props) =
           </div>
 
           {/* Net Payable: Clean Matching Border */}
-          <div className="border border-slate-300 p-3 rounded-lg bg-white text-black">
+          <div className={`border p-3 rounded-lg transition-colors ${
+            isDarkCanvas ? 'border-slate-700 bg-slate-900 text-white' : 'border-slate-300 bg-white text-black'
+          }`}>
             <div className="flex items-center justify-between">
-              <span className="font-black text-sm text-black">
+              <span className={`font-black text-sm ${isDarkCanvas ? 'text-white' : 'text-black'}`}>
                 {isPurchase ? (isPresentationModeActive ? 'مبلغ نهایی فاکتور:' : 'مبلغ کل خرید فاکتور:') : 'مبلغ خالص قابل دریافت:'}
               </span>
-              <span className="font-black text-xl text-black">
+              <span className={`font-black text-xl ${isDarkCanvas ? 'text-white' : 'text-black'}`}>
                 {formatPrice(netPayableAmount)}
               </span>
             </div>
 
             {/* Inward Sell-Through Single Line */}
             {isPurchase && !isSecretMode && !isPresentationModeActive && inwardSellThroughSummary && (
-              <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-900">
-                <span className="text-[11px] text-slate-600 font-medium">وضعیت فروش این فاکتور:</span>
+              <div className={`mt-2 pt-2 border-t flex items-center justify-between text-xs font-bold ${
+                isDarkCanvas ? 'border-slate-800 text-slate-200' : 'border-slate-200 text-slate-900'
+              }`}>
+                <span className={`text-[11px] font-medium ${isDarkCanvas ? 'text-slate-400' : 'text-slate-600'}`}>وضعیت فروش این فاکتور:</span>
                 <div className="font-black">
                   <span>{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش‌رفته</span>
                   <span className="mx-2 text-slate-400">|</span>
@@ -891,8 +924,8 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
 
   // Soft card background tints matching the selected palette
   const infoCardBg = isDarkCanvas 
-    ? 'bg-slate-800/60 border-slate-700/80' 
-    : 'bg-[#f8fafc] border-slate-200/90';
+    ? 'bg-slate-900/90 border-slate-800 text-slate-200' 
+    : 'bg-[#f8fafc] border-slate-200/90 text-slate-800';
 
   const brandTitle = settings.brandName || 'بازرگانی';
   const brandSubtitle = settings.subtitle || (isPurchase ? 'همراه مطمئن کسب و کار شما' : 'اعتماد شما سرمایه ماست');
@@ -1020,10 +1053,14 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
       </div>
 
       {/* 3. TABLE SECTION (جدول اقلام - دقیقاً عین عکس، با حذف عکس محصول) */}
-      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
+      <div className={`rounded-2xl border overflow-hidden shadow-2xs ${
+        isDarkCanvas ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-900'
+      }`}>
         <table className="w-full text-right border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-bold">
+            <tr className={`border-b font-bold ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-950/80 text-slate-200' : 'border-slate-200 bg-[#f8fafc] text-slate-700'
+            }`}>
               <th className="py-3 px-3 text-center w-12 font-bold">#</th>
               <th className="py-3 px-4 font-bold">شرح کالا</th>
               <th className="py-3 px-3 text-center font-bold min-w-[110px]">تعداد و کارتن</th>
@@ -1129,7 +1166,9 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
               <button
                 type="button"
                 onClick={onCopyCardNumber}
-                className="no-print px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 transition-colors cursor-pointer text-[11px] font-bold shadow-2xs"
+                className={`no-print px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer text-[11px] font-bold shadow-2xs ${
+                  isDarkCanvas ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
                 title="کپی شماره کارت بانکی"
               >
                 {copiedCard ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1138,39 +1177,43 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
             </div>
 
             {/* Stylized Bank Card Box */}
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/80 dark:bg-slate-800/80 p-3 space-y-2">
+            <div className={`rounded-xl border p-3 space-y-2 ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-900/90 text-slate-100' : 'border-slate-200/90 bg-white/80 text-slate-800'
+            }`}>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">شماره کارت:</span>
-                <span className="font-mono font-black text-slate-900 dark:text-white text-xs sm:text-sm tracking-wider select-all dir-ltr">
+                <span className={`font-mono font-black text-xs sm:text-sm tracking-wider select-all dir-ltr ${isDarkCanvas ? 'text-white' : 'text-slate-900'}`}>
                   {toPersianDigits(settings.cardNumber || (settings as any).bankCardNumber || '۶۱۰۴۳۳۷۴۲۰۶۷۲۷۲۵')}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">بانک و صاحب حساب:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                <span className={`font-bold text-xs ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800'}`}>
                   {settings.bankName || 'بانک ملت'} · {(settings as any).bankAccountOwner || settings.sellerStampName || settings.storeName || 'مدیریت بازرگانی'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">شماره شبا (IBAN):</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white text-xs tracking-wider select-all" dir="ltr">
+                <span className={`font-mono font-bold text-xs tracking-wider select-all dir-ltr ${isDarkCanvas ? 'text-white' : 'text-slate-900'}`}>
                   IR{toPersianDigits(settings.iban || (settings as any).bankIban || '۴۷۰۱۲۰۰۱۰۰۰۰۰۰۰۸۳۴۹۱۸۳۱۰۵')}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">شماره حساب:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white text-xs select-all">
+                <span className={`font-mono font-bold text-xs select-all ${isDarkCanvas ? 'text-white' : 'text-slate-900'}`}>
                   {toPersianDigits(settings.accountNumber || (settings as any).bankAccountNumber || '۸۳۴۹۱۸۳۱۰۵')}
                 </span>
               </div>
             </div>
 
             {/* Settlement Status & Guidance Strip */}
-            <div className="rounded-xl border border-slate-200/70 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-900/60 p-2.5 flex items-center justify-between text-[11px]">
-              <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <div className={`rounded-xl border p-2.5 flex items-center justify-between text-[11px] ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-950/70 text-slate-300' : 'border-slate-200/70 bg-slate-50/80 text-slate-700'
+            }`}>
+              <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: primaryHex }} />
                 <span className="font-bold">وضعیت تسویه فاکتور:</span>
-                <span className="text-slate-600 dark:text-slate-400">
+                <span className="text-slate-500 dark:text-slate-400">
                   {invoice.paymentStatus === 'cash' ? 'تسویه نقدی کامل' : invoice.paymentStatus === 'credit' ? 'غیرنقدی (نسیه توافقی)' : 'پرداخت ترکیبی / علی‌الحساب'}
                 </span>
               </div>
@@ -1181,10 +1224,12 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
           </div>
 
           {/* Signatures: Two distinct rounded cards */}
-          <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-slate-200/80 dark:border-slate-700 text-center">
+          <div className={`grid grid-cols-2 gap-3 pt-2.5 border-t text-center ${isDarkCanvas ? 'border-slate-800' : 'border-slate-200/80'}`}>
             {/* Management Signature Box */}
-            <div className="space-y-1 rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 p-3 shadow-2xs">
-              <div className="flex items-center justify-center gap-1 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
+            <div className={`space-y-1 rounded-xl border p-3 shadow-2xs ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-900/90 text-slate-200' : 'border-slate-200/90 bg-white text-slate-800'
+            }`}>
+              <div className="flex items-center justify-center gap-1 font-bold text-[11px]">
                 <User className="w-3.5 h-3.5" style={{ color: primaryHex }} />
                 <span>{isPurchase ? 'مهر و امضای مدیر خرید' : 'مهر و امضای مدیریت بازرگانی'}</span>
               </div>
@@ -1193,8 +1238,10 @@ export const UnifiedMasterCommercialTemplate: React.FC<InvoiceTemplateProps> = (
               </div>
             </div>
             {/* Buyer / Carrier Signature Box */}
-            <div className="space-y-1 rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 p-3 shadow-2xs">
-              <div className="flex items-center justify-center gap-1 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
+            <div className={`space-y-1 rounded-xl border p-3 shadow-2xs ${
+              isDarkCanvas ? 'border-slate-800 bg-slate-900/90 text-slate-200' : 'border-slate-200/90 bg-white text-slate-800'
+            }`}>
+              <div className="flex items-center justify-center gap-1 font-bold text-[11px]">
                 <ArrowDownLeft className="w-3.5 h-3.5" style={{ color: primaryHex }} />
                 <span>{isPurchase ? 'امضای تحویل‌دهنده' : 'امضای خریدار'}</span>
               </div>
@@ -1670,8 +1717,12 @@ export const GraphicExecutiveTemplate: React.FC<InvoiceTemplateProps> = (props) 
             <span className="font-bold">{formatPrice(grossAmount)}</span>
           </div>
           {renderExpensesSummary(invoice)}
-          <div className="p-3 bg-white dark:bg-slate-950 rounded-lg border border-slate-300 dark:border-slate-800 mt-2">
-            <div className="flex items-center justify-between text-sm font-black text-slate-900 dark:text-white">
+          <div className={`p-3 rounded-lg border mt-2 ${
+            isDarkCanvas 
+              ? 'bg-slate-950 border-slate-800 text-white' 
+              : 'bg-white border-slate-300 text-slate-900'
+          }`}>
+            <div className="flex items-center justify-between text-sm font-black">
               <span>مبلغ خالص قابل دریافت:</span>
               <span className="text-xl">{formatPrice(netPayableAmount)}</span>
             </div>

@@ -177,8 +177,6 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
 
   // Determine if the canvas should currently render in dark style on screen
   const isDarkCanvas = useMemo(() => {
-    // In pure monochrome print mode, canvas is strictly white paper with black text
-    if (templateMode === 'print_mono') return false;
     if (viewPaperMode === 'dark') return true;
     if (viewPaperMode === 'paper') return false;
     // 'auto': follow app dark mode
@@ -187,7 +185,7 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
       return document.documentElement.classList.contains('dark');
     }
     return false;
-  }, [templateMode, viewPaperMode, isDarkMode]);
+  }, [viewPaperMode, isDarkMode]);
 
   // Inward invoice sell-through analysis
   const inwardSellThroughSummary = useMemo(() => {
@@ -281,13 +279,9 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
   const matchedReturns = (productReturns || []).filter(r => {
     if (isPurchase && r.type !== 'to_supplier') return false;
     if (!isPurchase && r.type !== 'from_customer') return false;
+    if (invoice.offsetReturnIds && invoice.offsetReturnIds.includes(r.id)) return true;
     if (r.invoiceId && r.invoiceId === invoice.id) return true;
     if (r.invoiceNumber && r.invoiceNumber === invoice.invoiceNumber) return true;
-    const sameCust = invoice.customerName && r.customerName?.trim().toLowerCase() === invoice.customerName?.trim().toLowerCase();
-    const itemInInvoice = invoice.items.some(it => it.productId === r.productId || it.productName?.trim().toLowerCase() === r.productName?.trim().toLowerCase());
-    if (sameCust && itemInInvoice && (r.invoiceNumber === invoice.invoiceNumber || r.invoiceId === invoice.id)) {
-      return true;
-    }
     return false;
   });
 
@@ -351,9 +345,34 @@ export const InvoiceView: React.FC<InvoiceViewProps> = ({
     : itemsCurrentSubtotal;
 
   const grossAmount = Math.max(0, grossSubtotal - (invoice.discount || 0) + (invoice.tax || 0));
-  const netPayableAmount = invoice.finalAmount !== undefined && invoice.finalAmount > 0
-    ? invoice.finalAmount
-    : Math.max(0, grossAmount - totalInvoiceReturnsAmount - (invoice.expensesTotalDeduction || 0) + (invoice.expensesTotalAddition || 0));
+
+  const totalAdditionExpenses = (invoice.expenses || []).filter(e => e.action === 'add').reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    || (invoice.expensesTotalAddition || 0);
+  const totalDeductionExpenses = (invoice.expenses || []).filter(e => e.action === 'deduct').reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    || (invoice.expensesTotalDeduction || 0);
+
+  const calculatedNetPayable = isPurchase
+    ? Math.max(0, grossAmount - totalInvoiceReturnsAmount) + totalAdditionExpenses
+    : Math.max(0, grossAmount - totalInvoiceReturnsAmount - totalDeductionExpenses + totalAdditionExpenses);
+
+  // If invoice.finalAmount is explicitly positive and reasonably matches calculatedNetPayable (or when offsetReturnsTotal is factored),
+  // use invoice.finalAmount. BUT if invoice.finalAmount is stale, corrupted, or desynced from current items (like 6,475,000 vs 110,155,000),
+  // use calculatedNetPayable to ensure true mathematical integrity!
+  const netPayableAmount = (() => {
+    if (typeof invoice.finalAmount === 'number' && !isNaN(invoice.finalAmount) && invoice.finalAmount > 0) {
+      const diff = Math.abs(invoice.finalAmount - calculatedNetPayable);
+      if (diff < 1000) return invoice.finalAmount;
+      if (invoice.offsetReturnsTotal && Math.abs(invoice.finalAmount - (calculatedNetPayable - invoice.offsetReturnsTotal)) < 1000) {
+        return invoice.finalAmount;
+      }
+      // If finalAmount is wildly different (e.g. 6.4M vs 110M), it was corrupted by a past partial save bug
+      if (diff > calculatedNetPayable * 0.1) {
+        return calculatedNetPayable;
+      }
+      return invoice.finalAmount;
+    }
+    return calculatedNetPayable;
+  })();
 
   const handleDirectPrint = () => {
     setIsExportModalOpen(false);
@@ -795,16 +814,26 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
   return (
     <div className="w-full max-w-5xl mx-auto pb-16 transition-colors print:max-w-none print:w-full print:m-0 print:p-0 print:pb-0">
       {/* 1. Main Executive Header Bar - Unified, Ultra-Balanced & Proportional */}
-      <div className="no-print mb-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs transition-colors space-y-3.5">
+      <div className={`no-print mb-4 p-4 sm:p-5 rounded-2xl border shadow-xs transition-colors space-y-3.5 ${
+        isDarkCanvas
+          ? 'bg-slate-900 border-slate-800 text-slate-100'
+          : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+      }`}>
         {/* Tier 1: Identity (Right) vs Key Actions (Left) - Perfectly Balanced */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
+        <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b ${
+          isDarkCanvas ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800/80'
+        }`}>
           {/* Right Wing: Navigation & Document Plaque */}
           <div className="flex items-center gap-2.5 flex-wrap min-w-0">
             {onBack && (
               <button
                 id="invoice-back-btn"
                 onClick={onBack}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95 group"
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-black rounded-xl border transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95 group ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700'
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300/80 dark:border-slate-700'
+                }`}
                 title="بازگشت به فهرست فاکتورها"
               >
                 <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:-translate-x-0.5 transition-transform" />
@@ -812,31 +841,31 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               </button>
             )}
 
-            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className={`h-6 w-px hidden sm:block ${isDarkCanvas ? 'bg-slate-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
 
             {/* Document Plaque */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
                 isPurchase 
-                  ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-                  : 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                  ? (isDarkCanvas ? 'bg-amber-950/80 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-800')
+                  : (isDarkCanvas ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800')
               }`}>
                 {isPurchase ? 'رسید ورود انبار (خرید)' : 'فاکتور فروش رسمی'}
               </span>
 
-              <span className="font-mono font-black text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
+              <span className={`font-mono font-black text-sm sm:text-base tracking-tight ${isDarkCanvas ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                 سند #{toPersianDigits(invoice.invoiceNumber)}
               </span>
 
-              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+              <span className={`hidden sm:inline ${isDarkCanvas ? 'text-slate-700' : 'text-slate-300 dark:text-slate-700'}`}>|</span>
 
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate max-w-[180px]" title={invoice.customerName}>
-                طرف حساب: <b className="text-slate-900 dark:text-white font-extrabold">{invoice.customerName || 'مشتری متفرقه'}</b>
+              <span className={`text-xs font-bold truncate max-w-[180px] ${isDarkCanvas ? 'text-slate-300' : 'text-slate-700 dark:text-slate-300'}`} title={invoice.customerName}>
+                طرف حساب: <b className={`font-extrabold ${isDarkCanvas ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{invoice.customerName || 'مشتری متفرقه'}</b>
               </span>
 
-              <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
+              <span className={`hidden md:inline ${isDarkCanvas ? 'text-slate-700' : 'text-slate-300 dark:text-slate-700'}`}>|</span>
 
-              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-mono text-xs dir-ltr">
+              <span className={`flex items-center gap-1 font-mono text-xs dir-ltr ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <span>{toPersianDigits(invoice.date)}</span>
               </span>
@@ -850,10 +879,14 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 type="button"
                 id="top-profit-analysis-btn"
                 onClick={() => onOpenProfitAnalysis(invoice)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black border transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                  isDarkCanvas
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800 hover:bg-emerald-900/60'
+                    : 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border-emerald-300 dark:border-emerald-800'
+                }`}
                 title="تحلیل سود و زیان این فاکتور"
               >
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
                 <span>تحلیل سود و زیان</span>
               </button>
             )}
@@ -862,10 +895,14 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               <button
                 id="invoice-edit-btn"
                 onClick={() => onEdit(invoice)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer shadow-2xs active:scale-95 ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                }`}
                 title="ویرایش اقلام، مقادیر یا مشخصات فاکتور"
               >
-                <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <Edit3 className="w-3.5 h-3.5 text-slate-400" />
                 <span>ویرایش فاکتور</span>
               </button>
             )}
@@ -887,17 +924,19 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
           {/* Right: Template Selector (Print Mono vs Graphic Flat Models) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-1">قالب فاکتور:</span>
+            <span className={`text-[11px] font-bold ml-1 ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>قالب فاکتور:</span>
 
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className={`flex items-center p-0.5 rounded-lg border ${
+              isDarkCanvas ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}>
               <button
                 type="button"
                 id="mode-print-mono-btn"
                 onClick={() => setTemplateMode('print_mono')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
                   templateMode === 'print_mono'
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? (isDarkCanvas ? 'bg-slate-800 text-white shadow-2xs font-black border border-slate-700' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs font-black')
+                    : (isDarkCanvas ? 'text-slate-400 hover:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')
                 }`}
                 title="حالت چاپی رسمی: فقط و فقط سیاه و سفید بدون رنگ"
               >
@@ -914,7 +953,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
                   templateMode !== 'print_mono'
                     ? `${theme.primary} text-white shadow-2xs font-black`
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    : (isDarkCanvas ? 'text-slate-400 hover:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')
                 }`}
                 title="قالب گرافیکی مدرن هماهنگ با پالت رنگی برنامه"
               >
@@ -933,7 +972,11 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                   templateMode
                 }
                 onChange={(e) => setTemplateMode(e.target.value as InvoiceTemplateMode)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs focus:outline-none"
+                className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold cursor-pointer shadow-2xs focus:outline-none ${
+                  isDarkCanvas
+                    ? 'border-slate-700 bg-slate-800 text-slate-100'
+                    : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                }`}
               >
                 <option value="graphic_swiss">مدل ۱: فلت مینیمال سوئیسی</option>
                 <option value="graphic_fintech">مدل ۲: فین‌تک مدولار پیشرفته</option>
@@ -955,10 +998,14 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 id="invoice-copy-screenshot-btn"
                 onClick={handleCopyScreenshot}
                 disabled={isCopyingScreenshot}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer disabled:opacity-50 shadow-2xs ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                }`}
                 title="کپی مستقیم تصویر فاکتور در کلیپ‌بورد"
               >
-                <Camera className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <Camera className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isCopyingScreenshot ? 'کپی...' : 'کپی عکس'}</span>
               </button>
 
@@ -966,35 +1013,45 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 id="invoice-download-pdf-top-btn"
                 onClick={handleDownloadPDF}
                 disabled={isExportingPDF}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer disabled:opacity-50 shadow-2xs ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                }`}
                 title="دانلود فایل PDF فاکتور"
               >
-                <FileDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <FileDown className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isExportingPDF ? 'PDF...' : 'دانلود PDF'}</span>
               </button>
 
               <button
                 id="invoice-copy-summary-btn"
                 onClick={handleCopySummary}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer shadow-2xs ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                }`}
                 title="کپی متن ریز اقلام و محاسبات فاکتور"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
                 <span>{copied ? 'کپی شد' : 'کپی متن'}</span>
               </button>
             </div>
 
-            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className={`h-5 w-px hidden sm:block ${isDarkCanvas ? 'bg-slate-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
 
             {/* Canvas Mode (Paper A4, Dark, Auto) */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className={`flex items-center p-0.5 rounded-lg border ${
+              isDarkCanvas ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}>
               <button
                 type="button"
                 onClick={() => setViewPaperMode('paper')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
                   viewPaperMode === 'paper'
                     ? 'bg-white text-slate-900 shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    : (isDarkCanvas ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200')
                 }`}
                 title="پیش‌نمایش کاغذ سفید چاپی A4 روی صفحه"
               >
@@ -1004,23 +1061,23 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
               <button
                 type="button"
                 onClick={() => setViewPaperMode('dark')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
                   viewPaperMode === 'dark'
-                    ? 'bg-slate-900 text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-slate-800 text-white shadow-2xs font-black border border-slate-700'
+                    : (isDarkCanvas ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200')
                 }`}
                 title="نمایش فاکتور در تم تیره فلت"
               >
-                <Moon className="w-3.5 h-3.5" />
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
                 <span>تیره</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewPaperMode('auto')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
                   viewPaperMode === 'auto'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? (isDarkCanvas ? 'bg-slate-800 text-white shadow-2xs font-black' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-black')
+                    : (isDarkCanvas ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200')
                 }`}
                 title="پیروی خودکار از حالت کلی برنامه"
               >
@@ -1129,12 +1186,18 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             initial={{ opacity: 0, height: 0, y: -4 }}
             animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -4 }}
-            className="no-print mb-5 bg-white dark:bg-slate-900 rounded-xl border border-amber-300 dark:border-amber-800/80 p-4 space-y-3 overflow-hidden text-xs"
+            className={`no-print mb-5 rounded-xl border p-4 space-y-3 overflow-hidden text-xs transition-colors ${
+              isDarkCanvas 
+                ? 'bg-slate-900 border-amber-700/80 text-slate-100' 
+                : 'bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-800/80 text-slate-900 dark:text-slate-100'
+            }`}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div className={`flex flex-wrap items-center justify-between gap-3 pb-3 border-b ${
+              isDarkCanvas ? 'border-slate-800' : 'border-slate-200 dark:border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <span className="font-black text-slate-900 dark:text-white">
+                <span className={`font-black ${isDarkCanvas ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                   تنظیم قیمت نمایشی فاکتور (ارائه به همکار / اسکرین‌شات)
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-bold">
@@ -1356,15 +1419,23 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
 
       {/* Comprehensive Sell-Through & Inventory Audit Banner for Inward Purchase Invoices (درصدی، تومانی، کارتنی، عددی) */}
       {isPurchase && !isSecretMode && inwardSellThroughSummary && (
-        <div className="no-print mb-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-xs transition-colors shadow-2xs space-y-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div className={`no-print mb-5 rounded-2xl p-4 sm:p-5 text-xs transition-colors shadow-2xs space-y-3.5 border ${
+          isDarkCanvas 
+            ? 'bg-slate-900 border-slate-800 text-slate-100' 
+            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+        }`}>
+          <div className={`flex flex-wrap items-center justify-between gap-3 pb-3 border-b ${
+            isDarkCanvas ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800/80'
+          }`}>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+              <div className={`p-2 rounded-xl shrink-0 ${
+                isDarkCanvas ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }`}>
                 <Package className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  <span className={`font-extrabold text-sm ${isDarkCanvas ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                     وضعیت جامع فروش و موجودی این فاکتور ورود کالا:
                   </span>
                   {inwardSellThroughSummary.isFullySold ? (
@@ -1376,19 +1447,25 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                       {toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش رفته · {toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ در انبار
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                      isDarkCanvas ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
                       موجودی کامل در انبار (۰٪ فروش)
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className={`text-[11px] mt-0.5 ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                   ردیابی خروج کالا و سود قطعی حاصل از این بار ورودی بر مبنای حسابداری انبارداری FIFO
                 </p>
               </div>
             </div>
 
             {/* Profit Pill */}
-            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+            <div className={`flex items-center gap-3 px-3.5 py-2 rounded-xl border ${
+              isDarkCanvas 
+                ? 'bg-slate-800/80 border-slate-700 text-slate-200' 
+                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80'
+            }`}>
               <div className="text-right">
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">سود قطعی محقق‌شده:</div>
                 <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
@@ -1409,15 +1486,17 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
           {/* 4 Pillars of Sell-Through: درصدی، کارتنی، عددی، تومانی */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-right">
             {/* 1. درصدی */}
-            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+            <div className={`p-3 rounded-xl border space-y-1.5 ${
+              isDarkCanvas ? 'bg-slate-800/60 border-slate-700/70' : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
+            }`}>
+              <span className={`text-[11px] font-bold block ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 ۱. درصد فروش و باقیمانده:
               </span>
               <div className="flex items-center justify-between text-xs font-black">
                 <span className="text-sky-600 dark:text-sky-400">{toPersianDigits(inwardSellThroughSummary.percentSold)}٪ فروش</span>
                 <span className="text-amber-600 dark:text-amber-400">{toPersianDigits(inwardSellThroughSummary.percentRemaining)}٪ مانده</span>
               </div>
-              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden flex">
+              <div className={`w-full h-1.5 rounded-full overflow-hidden flex ${isDarkCanvas ? 'bg-slate-700' : 'bg-slate-200 dark:bg-slate-700'}`}>
                 <div 
                   className="bg-sky-500 h-full transition-all duration-300"
                   style={{ width: `${inwardSellThroughSummary.percentSold}%` }}
@@ -1430,44 +1509,50 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             </div>
 
             {/* 2. عددی */}
-            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+            <div className={`p-3 rounded-xl border space-y-1 ${
+              isDarkCanvas ? 'bg-slate-800/60 border-slate-700/70' : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
+            }`}>
+              <span className={`text-[11px] font-bold block ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 ۲. تعداد عددی:
               </span>
-              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+              <div className={`text-xs font-mono font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800 dark:text-slate-200'}`}>
                 فروش: <span className="text-sky-600 dark:text-sky-400 font-black">{toPersianDigits(inwardSellThroughSummary.totalSoldPieces.toLocaleString())}</span> عدد
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              <div className={`text-[11px] font-mono ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 مانده: {toPersianDigits(inwardSellThroughSummary.remainingPieces.toLocaleString())} از {toPersianDigits(inwardSellThroughSummary.totalPurchasedPieces.toLocaleString())} عدد
               </div>
             </div>
 
             {/* 3. کارتنی */}
-            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+            <div className={`p-3 rounded-xl border space-y-1 ${
+              isDarkCanvas ? 'bg-slate-800/60 border-slate-700/70' : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
+            }`}>
+              <span className={`text-[11px] font-bold block ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 ۳. تفکیک کارتنی:
               </span>
-              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+              <div className={`text-xs font-mono font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800 dark:text-slate-200'}`}>
                 فروش: <span className="text-sky-600 dark:text-sky-400 font-black">{toPersianDigits(inwardSellThroughSummary.totalSoldCartons)} کارتن</span>
                 {inwardSellThroughSummary.totalSoldExtraPieces > 0 && (
                   <span className="text-[10px] text-slate-500"> ({toPersianDigits(inwardSellThroughSummary.totalSoldExtraPieces)} دانه)</span>
                 )}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              <div className={`text-[11px] font-mono ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 مانده: {toPersianDigits(inwardSellThroughSummary.totalRemainingCartons)} کارتن
                 {inwardSellThroughSummary.totalRemainingExtraPieces > 0 && ` (${toPersianDigits(inwardSellThroughSummary.totalRemainingExtraPieces)} دانه)`}
               </div>
             </div>
 
             {/* 4. تومانی */}
-            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+            <div className={`p-3 rounded-xl border space-y-1 ${
+              isDarkCanvas ? 'bg-slate-800/60 border-slate-700/70' : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
+            }`}>
+              <span className={`text-[11px] font-bold block ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 ۴. ارزش تومانی:
               </span>
-              <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+              <div className={`text-xs font-mono font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800 dark:text-slate-200'}`}>
                 فروش: <span className="text-sky-600 dark:text-sky-400">{formatPrice(inwardSellThroughSummary.totalSoldCost)}</span>
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              <div className={`text-[11px] font-mono ${isDarkCanvas ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 مانده انبار: {formatPrice(inwardSellThroughSummary.totalRemainingCost)}
               </div>
             </div>
@@ -1482,7 +1567,7 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
         id="invoice-paper"
         className={`invoice-paper-container invoice-scalable-view relative rounded-xl border p-6 sm:p-10 overflow-hidden transition-colors ${
           isDarkCanvas 
-            ? 'bg-[#0b0f19] text-slate-100 border-slate-800 shadow-sm' 
+            ? 'dark bg-[#0b0f19] text-slate-100 border-slate-800 shadow-sm' 
             : 'bg-white text-slate-900 border-slate-200/90 shadow-sm'
         } print:p-0 print:m-0 print:border-none print:shadow-none print:bg-white print:text-slate-900 print:w-full print:max-w-none print:min-h-0`}
         style={{ minHeight: '297mm', fontFamily: "var(--app-font-family)" }}
@@ -1538,9 +1623,15 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
       {/* ========================================================================= */}
       {/* 5. BALANCED EXECUTIVE BOTTOM ACTION DOCK (نوار ابزار کاملاً متقارن و متناسب پایانی) */}
       {/* ========================================================================= */}
-      <div className="no-print mt-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-colors space-y-3.5">
+      <div className={`no-print mt-6 rounded-2xl border p-4 sm:p-5 shadow-xs transition-colors space-y-3.5 ${
+        isDarkCanvas
+          ? 'bg-slate-900 border-slate-800 text-slate-100'
+          : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+      }`}>
         {/* Tier 1: Primary Navigation (Right) vs Primary Action (Left) - Perfectly Balanced */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b ${
+          isDarkCanvas ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800/80'
+        }`}>
           {/* Right Side: Navigation & Document Plaque */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {onBack && (
@@ -1548,7 +1639,11 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 type="button"
                 id="bottom-invoice-back-btn"
                 onClick={onBack}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95 group"
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black border transition-all cursor-pointer shadow-2xs active:scale-95 group ${
+                  isDarkCanvas
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700'
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300/80 dark:border-slate-700'
+                }`}
                 title="بازگشت به فهرست فاکتورها"
               >
                 <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:-translate-x-0.5 transition-transform" />
@@ -1563,7 +1658,11 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs active:scale-95"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer shadow-2xs active:scale-95 ${
+                isDarkCanvas
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`}
               title="پرش به ابتدای سند"
             >
               <ArrowUp className="w-3.5 h-3.5" />
@@ -1571,12 +1670,16 @@ ${settings.phone ? `📞 شماره تماس: ${toPersianDigits(settings.phone)}
             </button>
 
             {/* Document Quick Badge */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
-              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
+              isDarkCanvas
+                ? 'bg-slate-950 border-slate-800 text-slate-300'
+                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+            }`}>
+              <span className={`font-mono font-bold ${isDarkCanvas ? 'text-slate-200' : 'text-slate-800 dark:text-slate-200'}`}>
                 سند #{toPersianDigits(invoice.invoiceNumber)}
               </span>
               <span>•</span>
-              <span className="font-bold text-slate-900 dark:text-white">
+              <span className={`font-bold ${isDarkCanvas ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                 {formatPrice(invoice.finalAmount || invoice.totalAmount || 0)}
               </span>
             </div>

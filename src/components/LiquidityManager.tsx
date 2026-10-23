@@ -1940,16 +1940,16 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             </div>
           </div>
           
-          {/* 4 Core Financial Stat Cards - Rounded-3xl Luxury Style */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 4 Core Financial Stat Cards - VIP Executive Responsive Style */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
             
             {/* Stat 1: کل نقدینگی آماده خرج */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'total_liquidity' ? null : 'total_liquidity')}
-              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs relative overflow-hidden flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all duration-200 select-none hover:shadow-md hover:-translate-y-0.5 ${
                 selectedBreakdownType === 'total_liquidity'
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-lg'
-                  : 'border-emerald-200/70 dark:border-emerald-900/40 hover:border-emerald-500/60'
+                  ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-md'
+                  : 'border-emerald-200/80 dark:border-emerald-900/50 hover:border-emerald-500/60'
               }`}
               title="کلیک برای باز/بستن جدول ریز اقلام و محاسبات مجموع نقدینگی در همین صفحه"
             >
@@ -1958,17 +1958,17 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">مجموع نقدینگی در دسترس</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">نقد و بانک تجاری</span>
                 </div>
-                <div className={`p-2.5 rounded-xl border transition-all ${
+                <div className={`p-2 rounded-xl border transition-all ${
                   selectedBreakdownType === 'total_liquidity'
                     ? 'bg-emerald-500 text-white border-emerald-600 scale-105'
-                    : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800 group-hover:scale-105'
+                    : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 group-hover:scale-105'
                 }`}>
                   <Wallet className="w-4 h-4" />
                 </div>
               </div>
 
               <div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
                   {formatPrice(totalLiquidity)}
                 </div>
                 {/* Visual Progress / Share Indicator */}
@@ -1979,13 +1979,13 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  <span>سهم از کل دارایی‌های خزانه</span>
+                  <span>سهم از دارایی‌ها:</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 dir-ltr">{toPersianDigits(treasuryHealth.instantLiquidPct.toFixed(1))}٪</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400 font-bold group-hover:text-emerald-500 transition-colors">
-                <span>{selectedBreakdownType === 'total_liquidity' ? '▲ بستن جدول ریز اقلام' : 'ریز اقلام و ممیزی نقدینگی'}</span>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400 font-bold group-hover:text-emerald-500 transition-colors">
+                <span>{selectedBreakdownType === 'total_liquidity' ? '▲ بستن ریز اقلام' : 'ریز اقلام و ممیزی نقدینگی'}</span>
                 <span className="flex items-center gap-0.5 text-[10px]">
                   <span>{selectedBreakdownType === 'total_liquidity' ? 'بستن' : 'مشاهده'}</span>
                   <ChevronLeft className={`w-3 h-3 transition-transform ${selectedBreakdownType === 'total_liquidity' ? 'rotate-90' : 'group-hover:-translate-x-1'}`} />
@@ -1996,10 +1996,10 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 2: صندوق نقدی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'cash' ? null : 'cash')}
-              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all duration-200 select-none hover:shadow-md hover:-translate-y-0.5 ${
                 selectedBreakdownType === 'cash'
-                  ? 'border-teal-500 ring-2 ring-teal-500/40 shadow-lg'
-                  : 'border-teal-200/70 dark:border-teal-900/40 hover:border-teal-500/60'
+                  ? 'border-teal-500 ring-2 ring-teal-500/40 shadow-md'
+                  : 'border-teal-200/80 dark:border-teal-900/50 hover:border-teal-500/60'
               }`}
               title="کلیک برای باز/بستن جدول ریز اقلام و محاسبات صندوق نقدی در همین صفحه"
             >
@@ -2008,17 +2008,17 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   <span className="text-xs font-bold text-teal-700 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">مانده صندوق نقدی و تنخواه</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">وجه نقد فیزیکی</span>
                 </div>
-                <div className={`p-2.5 rounded-xl border transition-all ${
+                <div className={`p-2 rounded-xl border transition-all ${
                   selectedBreakdownType === 'cash'
                     ? 'bg-teal-500 text-white border-teal-600 scale-105'
-                    : 'bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border-teal-200/80 dark:border-teal-800 group-hover:scale-105'
+                    : 'bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800 group-hover:scale-105'
                 }`}>
                   <Coins className="w-4 h-4" />
                 </div>
               </div>
 
               <div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
                   {formatPrice(netCashBalance)}
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2.5">
@@ -2028,14 +2028,14 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  <span>سهم از کل دارایی‌های خزانه</span>
+                  <span>سهم از دارایی‌ها:</span>
                   <span className="font-bold text-teal-600 dark:text-teal-400 dir-ltr">{toPersianDigits(treasuryChartData[0].share)}٪</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px] font-bold">
                 <span className="text-teal-600 dark:text-teal-400 group-hover:text-teal-500 transition-colors">
-                  {selectedBreakdownType === 'cash' ? '▲ بستن جدول ریز اقلام' : 'ریز اقلام و اسناد صندوق'}
+                  {selectedBreakdownType === 'cash' ? '▲ بستن ریز اقلام' : 'ریز اقلام صندوق'}
                 </span>
                 <button
                   type="button"
@@ -2047,7 +2047,7 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   title="واریز مستقیم کل موجودی صندوق نقدی به حساب بانکی / کارت‌خوان"
                 >
                   <ArrowRightLeft className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                  <span>انتقال به کارت‌خوان</span>
+                  <span>به کارت‌خوان</span>
                 </button>
               </div>
             </div>
@@ -2055,10 +2055,10 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 3: حساب‌های بانکی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'bank' ? null : 'bank')}
-              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all duration-200 select-none hover:shadow-md hover:-translate-y-0.5 ${
                 selectedBreakdownType === 'bank'
-                  ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg'
-                  : 'border-blue-200/70 dark:border-blue-900/40 hover:border-blue-500/60'
+                  ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-md'
+                  : 'border-blue-200/80 dark:border-blue-900/50 hover:border-blue-500/60'
               }`}
               title="کلیک برای باز/بستن جدول ریز اقلام و محاسبات حساب‌های بانکی در همین صفحه"
             >
@@ -2067,17 +2067,17 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   <span className="text-xs font-bold text-blue-700 dark:text-blue-400 group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors">موجودی بانک و کارت‌خوان</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">پایانه‌های فروش و حساب‌ها</span>
                 </div>
-                <div className={`p-2.5 rounded-xl border transition-all ${
+                <div className={`p-2 rounded-xl border transition-all ${
                   selectedBreakdownType === 'bank'
                     ? 'bg-blue-500 text-white border-blue-600 scale-105'
-                    : 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-blue-200/80 dark:border-blue-800 group-hover:scale-105'
+                    : 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 group-hover:scale-105'
                 }`}>
                   <CreditCard className="w-4 h-4" />
                 </div>
               </div>
 
               <div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
                   {formatPrice(netBankBalance)}
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2.5">
@@ -2087,13 +2087,13 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  <span>سهم از کل دارایی‌های خزانه</span>
+                  <span>سهم از دارایی‌ها:</span>
                   <span className="font-bold text-blue-600 dark:text-blue-400 dir-ltr">{toPersianDigits(treasuryChartData[1].share)}٪</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-blue-600 dark:text-blue-400 font-bold group-hover:text-blue-500 transition-colors">
-                <span>{selectedBreakdownType === 'bank' ? '▲ بستن جدول ریز اقلام' : 'ریز واریزی‌ها و پوز'}</span>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px] text-blue-600 dark:text-blue-400 font-bold group-hover:text-blue-500 transition-colors">
+                <span>{selectedBreakdownType === 'bank' ? '▲ بستن ریز اقلام' : 'ریز واریزی‌ها و پوز'}</span>
                 <span className="flex items-center gap-0.5 text-[10px]">
                   <span>{selectedBreakdownType === 'bank' ? 'بستن' : 'مشاهده'}</span>
                   <ChevronLeft className={`w-3 h-3 transition-transform ${selectedBreakdownType === 'bank' ? 'rotate-90' : 'group-hover:-translate-x-1'}`} />
@@ -2104,10 +2104,10 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
             {/* Stat 4: صندوق چک‌های صیادی */}
             <div 
               onClick={() => setSelectedBreakdownType(prev => prev === 'checks' ? null : 'checks')}
-              className={`bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all group select-none hover:shadow-md ${
+              className={`group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border shadow-xs flex flex-col justify-between space-y-3 cursor-pointer transition-all duration-200 select-none hover:shadow-md hover:-translate-y-0.5 ${
                 selectedBreakdownType === 'checks'
-                  ? 'border-amber-500 ring-2 ring-amber-500/40 shadow-lg'
-                  : 'border-amber-200/70 dark:border-amber-900/40 hover:border-amber-500/60'
+                  ? 'border-amber-500 ring-2 ring-amber-500/40 shadow-md'
+                  : 'border-amber-200/80 dark:border-amber-900/50 hover:border-amber-500/60'
               }`}
               title="کلیک برای باز/بستن جدول ریز چک‌های صیادی دریافتی در همین صفحه"
             >
@@ -2116,17 +2116,17 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   <span className="text-xs font-bold text-amber-700 dark:text-amber-400 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">اسناد تجاری و چک‌های صیادی</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">چک‌های نزد صندوق</span>
                 </div>
-                <div className={`p-2.5 rounded-xl border transition-all ${
+                <div className={`p-2 rounded-xl border transition-all ${
                   selectedBreakdownType === 'checks'
                     ? 'bg-amber-500 text-white border-amber-600 scale-105'
-                    : 'bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border-amber-200/80 dark:border-amber-800 group-hover:scale-105'
+                    : 'bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 group-hover:scale-105'
                 }`}>
                   <FileText className="w-4 h-4" />
                 </div>
               </div>
 
               <div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white dir-ltr text-right">
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white dir-ltr text-right font-mono">
                   {formatPrice(netChecksBalance)}
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2.5">
@@ -2136,13 +2136,13 @@ export const LiquidityManager: React.FC<LiquidityManagerProps> = ({
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  <span>سهم از کل دارایی‌های خزانه</span>
+                  <span>سهم از دارایی‌ها:</span>
                   <span className="font-bold text-amber-600 dark:text-amber-400 dir-ltr">{toPersianDigits(treasuryChartData[2].share)}٪</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-amber-600 dark:text-amber-400 font-bold group-hover:text-amber-500 transition-colors">
-                <span>{selectedBreakdownType === 'checks' ? '▲ بستن جدول ریز اقلام' : 'ریز چک‌های دریافتی صیادی'}</span>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px] text-amber-600 dark:text-amber-400 font-bold group-hover:text-amber-500 transition-colors">
+                <span>{selectedBreakdownType === 'checks' ? '▲ بستن ریز اقلام' : 'ریز چک‌های صیادی'}</span>
                 <span className="flex items-center gap-0.5 text-[10px]">
                   <span>{selectedBreakdownType === 'checks' ? 'بستن' : 'مشاهده'}</span>
                   <ChevronLeft className={`w-3 h-3 transition-transform ${selectedBreakdownType === 'checks' ? 'rotate-90' : 'group-hover:-translate-x-1'}`} />

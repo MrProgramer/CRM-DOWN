@@ -122,14 +122,17 @@ export const InwardProductModal: React.FC<InwardProductModalProps> = ({
   // Can purchase up to total liquid cash + whatever can be offset against existing debt of supplier to us!
   const maxNonCreditPurchasingPower = totalLiquidity + supplierDebtToUs;
 
-  // Keep modal open checkbox state (persisted)
+  // Keep modal open checkbox state (persisted, default true)
   const [keepOpenAfterAdd, setKeepOpenAfterAdd] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('bazargani_inward_keep_open');
-      return saved === 'true';
+      if (saved !== null) {
+        return saved === 'true';
+      }
     } catch {
-      return false;
+      // fallback
     }
+    return true; // Default true
   });
 
   // Active Tab: 'existing' (شارژ و ورود کالای موجود) or 'new' (تعریف کالای جدید)

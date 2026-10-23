@@ -48,7 +48,21 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
     : 0;
   const discountRatio = invoiceDiscountPercent > 0 ? (invoiceDiscountPercent / 100) : 0;
 
-  // Process items with full profit and discount calculations
+  // Total Gross Merchandise Cost for proportional allocation
+  const totalCostGrossSum = invoice.items.reduce((acc, it) => {
+    const pieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
+    const uCost = it.unitPurchasePrice ?? (pieces > 0 ? ((it.totalPurchaseCost || 0) / pieces) : (it.unitPrice || 0));
+    return acc + (it.totalPurchaseCost || (pieces * uCost));
+  }, 0);
+
+  // Expenses, Freight, and Inward Logistics (reliably calculated from both expenses array and totals)
+  const allExpensesTotal = Math.max(
+    (invoice.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+    (invoice.expensesTotalAddition || 0) + (invoice.expensesTotalDeduction || 0)
+  );
+  const invoiceTax = invoice.tax || 0;
+
+  // Process items with full profit, freight share, and discount calculations
   const analyzedItems = invoice.items.map((item, index) => {
     const totalPieces = item.totalPieces || ((item.cartonsCount || 0) * (item.piecesPerCarton || 1) + (item.extraPieces || 0));
     
@@ -64,15 +78,24 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
     let rowCost = rowCostGross;
     let rowRevenue = rowRevenueGross;
     let itemDiscountAmount = 0;
+    let itemFreightShare = 0;
 
     if (isPurchase) {
       // Inward Purchase Invoice:
-      // If purchase had discount, supplier discount directly reduces purchase cost and INCREASES profit!
+      // Proportional allocation of freight and inward expenses based on item merchandise value
+      if (allExpensesTotal > 0 && totalCostGrossSum > 0) {
+        itemFreightShare = Math.round((rowCostGross / totalCostGrossSum) * allExpensesTotal);
+      }
+
+      // If purchase had discount, supplier discount directly reduces purchase cost
       if (hasInvDiscount && discountRatio > 0) {
         rowCost = Math.round(rowCostGross * (1 - discountRatio));
-        unitCost = totalPieces > 0 ? Math.round(rowCost / totalPieces) : Math.round(unitCostGross * (1 - discountRatio));
         itemDiscountAmount = rowCostGross - rowCost;
       }
+      
+      // Landed item acquisition cost: merchandise net + proportional freight
+      rowCost = rowCost + itemFreightShare;
+      unitCost = totalPieces > 0 ? Math.round(rowCost / totalPieces) : 0;
       rowRevenue = totalPieces * unitSellGross;
     } else {
       // Sales Invoice:
@@ -85,10 +108,11 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
       rowCost = rowCostGross;
     }
 
+    // Profit is net revenue minus landed cost (with freight strictly deducted!)
     const profit = rowRevenue - rowCost;
     const profitPerUnit = totalPieces > 0 ? Math.round(profit / totalPieces) : (unitSell - unitCost);
     const margin = isPurchase
-      ? (rowCost > 0 ? (profit / rowCost) * 100 : 0) // Markup % on purchase cost
+      ? (rowCost > 0 ? (profit / rowCost) * 100 : 0) // Markup % on landed purchase cost
       : (rowRevenue > 0 ? (profit / rowRevenue) * 100 : 0); // Margin % on sales
 
     let tier: 'high' | 'medium' | 'low' = 'medium';
@@ -124,6 +148,7 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
       calculatedProfit: profit,
       calculatedMargin: margin,
       itemDiscountAmount,
+      itemFreightShare,
       profitPerUnit,
       tier,
       tierTitle,
@@ -135,11 +160,6 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
   // Overall Invoice Aggregations
   const totalPiecesSum = analyzedItems.reduce((acc, it) => acc + it.totalPieces, 0);
   const totalCartonsSum = analyzedItems.reduce((acc, it) => acc + (it.cartonsCount || 0), 0);
-  const totalCostGrossSum = analyzedItems.reduce((acc, it) => acc + it.rowCostGross, 0);
-
-  // Expenses, Freight, and Additions/Direct expenses
-  const allExpensesTotal = (invoice.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const invoiceTax = invoice.tax || 0;
 
   // Acquisition cost accounts for supplier discount, tax, and all incurred expenses/freight (deducted from profit)
   const totalCostNetSum = isPurchase
@@ -546,12 +566,17 @@ export const ProfitAnalysisModal: React.FC<ProfitAnalysisModalProps> = ({ invoic
                             <span className="font-mono">{formatPrice(item.calculatedRevenue)}</span>
                           </div>
                           <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                            <span className="text-[9px] font-bold text-slate-400 font-sans">خرید:</span>
+                            <span className="text-[9px] font-bold text-slate-400 font-sans">بهای تمام‌شده:</span>
                             <span className="font-mono">{formatPrice(item.calculatedCost)}</span>
                           </div>
                           {item.itemDiscountAmount > 0 && (
                             <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 text-right mt-0.5">
                               (-{formatPrice(item.itemDiscountAmount)} تخفیف)
+                            </div>
+                          )}
+                          {item.itemFreightShare > 0 && (
+                            <div className="text-[9.5px] text-sky-600 dark:text-sky-400 text-right mt-0.5 font-bold">
+                              (+{formatPrice(item.itemFreightShare)} سهم کرایه)
                             </div>
                           )}
                         </td>

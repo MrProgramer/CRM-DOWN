@@ -512,22 +512,23 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       </aside>
 
       {/* TOP HEADER COMMAND BAR (Inside Main Container Header) */}
-      <header className={`sticky top-0 z-30 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full bg-white dark:bg-[#090d16] border-b border-slate-200/90 dark:border-slate-800/90 text-slate-900 dark:text-white transition-all duration-200 no-print`}>
-        <div className="px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 max-w-7xl mx-auto">
+      <header className={`sticky top-0 z-30 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800/90 text-slate-900 dark:text-white transition-all duration-200 no-print`}>
+        <div className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4 max-w-7xl mx-auto">
           
           {/* Mobile Menu Toggle, Brand Logo (if exists) & Page Title */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-2xs hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-2xs hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+              title="منوی اصلی سامانه"
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </motion.button>
 
             {/* Custom App Logo in Top Bar */}
             {settings.appLogo && (
-              <div className="hidden sm:flex w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
+              <div className="hidden sm:flex w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center bg-white dark:bg-slate-900 overflow-hidden shadow-2xs shrink-0">
                 {settings.appLogo.startsWith('data:image') ? (
                   <img src={settings.appLogo} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                 ) : (
@@ -536,9 +537,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               </div>
             )}
 
-            <div>
-              <h1 className="font-display text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>
+            <div className="min-w-0">
+              <h1 className="font-display text-xs sm:text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 truncate">
+                <span className="truncate">
                   {currentTab === 'dashboard' && 'داشبورد بازرگانی و گزارشات'}
                   {currentTab === 'invoices' && 'بایگانی فاکتورها'}
                   {currentTab === 'new-invoice' && 'صدور فاکتور جدید'}
@@ -552,10 +553,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   {currentTab === 'business-settings' && 'تنظیمات کسب‌وکار و لوگو'}
                   {currentTab === 'system-settings' && 'تنظیمات سیستمی و رنگ‌ها'}
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse hidden md:inline-block shadow-xs" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse hidden md:inline-block shadow-xs shrink-0" />
               </h1>
-              <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-slate-400 font-bold">
-                <span className="text-slate-600 dark:text-slate-300">{toPersianDigits(getCurrentPersianDate())}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-slate-400 font-bold truncate">
+                <span className="text-slate-600 dark:text-slate-300 truncate">{toPersianDigits(getCurrentPersianDate())}</span>
                 <span className="text-slate-300 dark:text-slate-700">•</span>
                 <span className="font-mono text-slate-500 dark:text-slate-400">ساعت {toPersianDigits(getCurrentPersianTime())}</span>
               </div>

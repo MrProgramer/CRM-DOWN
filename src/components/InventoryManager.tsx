@@ -871,9 +871,9 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-20 space-y-6">
+    <div className="w-full max-w-7xl mx-auto pb-20 space-y-5 sm:space-y-6">
       {/* Executive Command Header - Professional, Balanced & Organized */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 transition-colors space-y-4">
+      <div className="bg-white dark:bg-[#0c1322] rounded-2xl shadow-xs border border-slate-200/90 dark:border-slate-800/90 p-4 sm:p-5 lg:p-6 transition-all space-y-4">
         {/* Tier 1: Identity, Feature Structure & Primary CTA */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
           <div className="flex items-start sm:items-center gap-3.5">
@@ -1006,80 +1006,80 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         </div>
       </div>
 
-      {/* Warehouse Summary Cards - Flat Modern Theme-Aligned */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* Warehouse Summary Cards - Ultra-Sleek, Modern & Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
         
         {/* Card 1: Total Items */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">تعداد اقلام تعریف شده</span>
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">تعداد اقلام تعریف شده</span>
+            <div className={`p-2 rounded-xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} group-hover:scale-105 transition-transform`}>
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(products.length)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">قلم کالا</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(products.length)} <span className="text-xs font-sans text-slate-500 font-bold">قلم کالا</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>مجموع موجودی عددی:</span>
-            <span className="font-bold text-slate-900 dark:text-slate-200 font-mono">
+            <span className="font-black text-slate-800 dark:text-slate-200 font-mono">
               {toPersianDigits(totalStockPieces.toLocaleString())} عدد
             </span>
           </div>
         </div>
 
         {/* Card 2: Total Cartons */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">کارتن‌های فیزیکی انبار</span>
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">کارتن‌های فیزیکی انبار</span>
+            <div className={`p-2 rounded-xl ${theme.badgeBg} ${theme.primaryText} border ${theme.borderColor} group-hover:scale-105 transition-transform`}>
               <Boxes className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(totalStockCartons)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">کارتن کامل</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(totalStockCartons)} <span className="text-xs font-sans text-slate-500 font-bold">کارتن کامل</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>آماده بارگیری و توزیع:</span>
-            <span className="font-bold text-slate-900 dark:text-slate-200 font-mono">
+            <span className="font-black text-slate-800 dark:text-slate-200 font-mono">
               {toPersianDigits(products.filter(p => p.stockPieces > 0).length)} قلم موجود
             </span>
           </div>
         </div>
 
         {/* Card 3: Total Inventory Value */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">ارزش کل انبار (قیمت خرید)</span>
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">ارزش کل انبار (قیمت خرید)</span>
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 group-hover:scale-105 transition-transform">
               <Coins className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {!isSecretMode ? formatPrice(totalInventoryValue) : '••••••••'}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>سرمایه در گردش خرید:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {!isSecretMode ? 'موجودی فیزیکی' : 'حالت امنیتی'}
             </span>
           </div>
         </div>
 
         {/* Card 4: Potential Sales Revenue */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">پتانسیل فروش کل انبار</span>
-            <div className={`p-2 rounded-xl ${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">پتانسیل فروش کل انبار</span>
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalPotentialRevenue)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>سود پیش‌بینی توزیع:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {!isSecretMode ? `+${formatPrice(totalPotentialRevenue - totalInventoryValue)}` : 'نرخ مصوب'}
             </span>
           </div>

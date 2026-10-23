@@ -387,7 +387,10 @@ export function calculateInwardInvoiceSellThrough(
   const discountAmount = purchaseInvoice.hasDiscount ? (purchaseInvoice.discount || 0) : 0;
   
   // Freight, handling, waste, and all expenses associated with this shipment directly reduce profit
-  const freightAndExpensesIncurred = (purchaseInvoice.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const freightAndExpensesIncurred = Math.max(
+    (purchaseInvoice.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+    (purchaseInvoice.expensesTotalAddition || 0) + (purchaseInvoice.expensesTotalDeduction || 0)
+  );
   const invoiceTax = purchaseInvoice.tax || 0;
 
   // True acquisition cost of the shipment = (Gross Cost - Supplier Discount + Tax) + Incurred Freight & Expenses
@@ -395,9 +398,13 @@ export function calculateInwardInvoiceSellThrough(
   const totalEstimatedSales = itemsSellThrough.reduce((sum, it) => sum + (it.totalPieces * it.unitSellingPrice), 0);
   const totalPotentialProfit = totalEstimatedSales - totalInvoiceCost;
 
-  const totalSoldCost = itemsSellThrough.reduce((sum, it) => sum + (it.soldPurchaseAmount || 0), 0);
-  const totalRemainingCost = itemsSellThrough.reduce((sum, it) => sum + (it.remainingPurchaseAmount || 0), 0);
-  const totalSoldRevenue = totalSoldCost + totalRealizedProfit;
+  const rawRealizedProfit = soldPieces > 0 ? itemsSellThrough.reduce((sum, it) => sum + it.realizedProfit, 0) : 0;
+  const freightShareForSold = totalPieces > 0 ? Math.round((soldPieces / totalPieces) * freightAndExpensesIncurred) : 0;
+  const totalRealizedProfitFinal = Math.round(rawRealizedProfit - freightShareForSold);
+
+  const totalSoldCost = itemsSellThrough.reduce((sum, it) => sum + (it.soldPurchaseAmount || 0), 0) + freightShareForSold;
+  const totalRemainingCost = itemsSellThrough.reduce((sum, it) => sum + (it.remainingPurchaseAmount || 0), 0) + (freightAndExpensesIncurred - freightShareForSold);
+  const totalSoldRevenue = totalSoldCost + totalRealizedProfitFinal;
 
   return {
     invoiceId: purchaseInvoice.id,
@@ -409,7 +416,7 @@ export function calculateInwardInvoiceSellThrough(
     percentSold,
     percentRemaining,
     isFullySold,
-    totalRealizedProfit,
+    totalRealizedProfit: totalRealizedProfitFinal,
     totalPotentialProfit,
     totalPurchasedCartons,
     totalPurchasedExtraPieces,

@@ -531,6 +531,55 @@ export function getProductEffectiveCartonSize(prod?: {
   return explicit > 0 ? explicit : 1;
 }
 
+/**
+ * Accurately resolves the number of packs in 1 carton (تعداد بسته در یک کارتن).
+ * Prevents and heals the bug where carton count was multiplied with packs (e.g. 3 cartons * 12 packs = 36 packs).
+ */
+export function resolvePacksPerCarton(
+  rawPacks?: number,
+  cartonsCount?: number,
+  piecesPerPack?: number,
+  piecesPerCarton?: number,
+  fallbackPacks?: number
+): number {
+  const packs = Number(rawPacks) || 0;
+  const cartons = Number(cartonsCount) || 0;
+  const ppp = Number(piecesPerPack) || 0;
+  const ppc = Number(piecesPerCarton) || 0;
+  const fallback = Number(fallbackPacks) || 0;
+
+  // 1. If explicit piecesPerCarton and piecesPerPack exist, that determines packs per 1 carton
+  if (ppc > 0 && ppp > 0 && ppc % ppp === 0) {
+    const mathPacks = Math.round(ppc / ppp);
+    // If rawPacks is cartons * mathPacks (e.g. 3 cartons * 12 = 36), it was multiplied by cartons!
+    if (cartons > 1 && packs === cartons * mathPacks) {
+      return mathPacks;
+    }
+    // If rawPacks was multiplied and doesn't match ppc, prefer mathPacks
+    if (packs > 0 && mathPacks > 0 && packs * ppp !== ppc) {
+      return mathPacks;
+    }
+    return mathPacks;
+  }
+
+  // 2. If rawPacks is exactly cartons * fallback
+  if (cartons > 1 && fallback > 0 && packs === cartons * fallback) {
+    return fallback;
+  }
+
+  // 3. If rawPacks divides evenly by cartons
+  if (cartons > 1 && packs > 0 && packs % cartons === 0) {
+    const candidate = Math.round(packs / cartons);
+    if (ppp > 0 && ppc > 0 && candidate * ppp === ppc) {
+      return candidate;
+    }
+  }
+
+  if (packs > 0) return packs;
+  if (fallback > 0) return fallback;
+  return 1;
+}
+
 export function formatProductPackagingSpec(prod?: {
   piecesPerCarton?: number;
   packsPerCarton?: number;
@@ -548,17 +597,26 @@ export function formatProductPackagingSpec(prod?: {
     return 'نامشخص';
   }
 
-  // Accurately determine packs per carton
-  let packsPerCarton = prod.packsPerCarton || 0;
-  if (!packsPerCarton && prod.packsCount && prod.cartonsCount && prod.cartonsCount > 0) {
-    packsPerCarton = Math.round(prod.packsCount / prod.cartonsCount);
-  } else if (!packsPerCarton && prod.packsCount && !prod.cartonsCount) {
-    packsPerCarton = prod.packsCount;
-  }
-
   const piecesPerPack = prod.piecesPerPack || 0;
   const leavesPerPiece = prod.leavesPerPiece || 0;
   const explicitPpc = prod.piecesPerCarton || 0;
+
+  // Accurately determine packs per 1 carton (auto-healing corrupted values where 3 cartons * 12 packs became 36)
+  let packsPerCarton = resolvePacksPerCarton(
+    prod.packsPerCarton,
+    prod.cartonsCount,
+    piecesPerPack,
+    explicitPpc,
+    prod.packsCount
+  );
+
+  // If piecesPerCarton and piecesPerPack exist, ensure packsPerCarton matches 1 carton
+  if (explicitPpc > 0 && piecesPerPack > 0 && explicitPpc % piecesPerPack === 0) {
+    const truePacks = Math.round(explicitPpc / piecesPerPack);
+    if (packsPerCarton * piecesPerPack !== explicitPpc) {
+      packsPerCarton = truePacks;
+    }
+  }
 
   // Case 1: Multi-pack structure (e.g. ۴ بسته ۲۰۰ عددی (کارتن ۸۰۰ عددی) یا ۲۰ بسته ۲۴ عددی (کارتن ۴۸۰ عددی))
   if (packsPerCarton > 1 && piecesPerPack > 1) {

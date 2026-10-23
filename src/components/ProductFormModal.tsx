@@ -5,6 +5,7 @@ import {
   formatPrice, 
   toPersianDigits, 
   formatProductPackagingSpec,
+  resolvePacksPerCarton,
   detectCategoryFromName
 } from '../utils/formatters';
 import { themes } from './ThemeConfig';
@@ -136,8 +137,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         const ppc = editingProduct.piecesPerCarton || 1;
         const cartons = Math.floor(editingProduct.stockPieces / ppc);
         
-        const initialPacks = unpack ? 1 : (Number(editingProduct.packsPerCarton) > 0 ? Number(editingProduct.packsPerCarton) : 0);
+        const rawPacks = Number(editingProduct.packsPerCarton) || 0;
         const initialPpp = unpack ? 1 : (Number(editingProduct.piecesPerPack) > 0 ? Number(editingProduct.piecesPerPack) : 0);
+        const resolvedPacks = resolvePacksPerCarton(
+          rawPacks,
+          editingProduct.cartonsCount,
+          initialPpp,
+          editingProduct.piecesPerCarton,
+          rawPacks
+        );
+        const initialPacks = unpack ? 1 : resolvedPacks;
 
         setFormData({
           id: editingProduct.id,

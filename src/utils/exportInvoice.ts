@@ -83,14 +83,14 @@ function normalizeElementForCapture(element: HTMLElement): { restoreStyles: () =
   const originalBoxSizing = element.style.boxSizing;
   const originalMinHeight = element.style.minHeight;
 
-  // Force Light (Day) Mode during image/PDF capture ONLY for paper invoices, NOT for shot cards
+  // Force Light (Day) Mode during image/PDF capture ONLY for paper invoices in day mode, NOT for shot cards or dark canvases
   const isShotCard = element.id === 'customer-statement-shot-card' || element.classList.contains('customer-statement-shot-card');
+  const isInvoicePaper = element.id === 'invoice-paper' || element.classList.contains('invoice-paper-container');
+  const isDarkPaper = isInvoicePaper && (element.classList.contains('bg-[#0b0f19]') || element.classList.contains('dark'));
   const isDarkMode = document.documentElement.classList.contains('dark');
-  if (isDarkMode && !isShotCard) {
+  if (isDarkMode && !isShotCard && !isDarkPaper) {
     document.documentElement.classList.remove('dark');
   }
-
-  const isInvoicePaper = element.id === 'invoice-paper' || element.classList.contains('invoice-paper-container');
 
   const activeFontFamily = typeof window !== 'undefined'
     ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
@@ -169,7 +169,13 @@ async function captureElementWithIsolation<T>(
   }
 
   const isShotCard = elementId === 'customer-statement-shot-card' || originalElement.classList.contains('customer-statement-shot-card');
-  const isNightShot = isShotCard && (originalElement.classList.contains('bg-slate-950') || originalElement.classList.contains('dark'));
+  const isInvoicePaper = elementId === 'invoice-paper' || originalElement.classList.contains('invoice-paper-container');
+  const isNightShot = (isShotCard || isInvoicePaper) && (
+    originalElement.classList.contains('bg-slate-950') || 
+    originalElement.classList.contains('bg-[#0b0f19]') || 
+    originalElement.classList.contains('dark') ||
+    document.documentElement.classList.contains('dark')
+  );
   const activeFontFamily = typeof window !== 'undefined'
     ? (getComputedStyle(document.documentElement).getPropertyValue('--app-font-family') || "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif")
     : "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -179,8 +185,8 @@ async function captureElementWithIsolation<T>(
   const framePadding = isShotCard ? 24 : 0;
   const innerCardWidth = isShotCard ? 832 : 794;
   const outerWidth = innerCardWidth + (framePadding * 2);
-  const outerBg = isShotCard ? (isNightShot ? '#0b0f19' : '#f1f5f9') : (isNightShot ? '#020617' : '#ffffff');
-  const cardBg = isNightShot ? '#020617' : '#ffffff';
+  const outerBg = isShotCard ? (isNightShot ? '#0b0f19' : '#f1f5f9') : (isNightShot ? '#0b0f19' : '#ffffff');
+  const cardBg = isNightShot ? (isShotCard ? '#0b0f19' : '#0b0f19') : '#ffffff';
   const cardColor = isNightShot ? '#f8fafc' : '#0f172a';
 
   // Create isolated container in DOM with fixed width, transparent/hidden backdrop, zero scroll
@@ -237,11 +243,10 @@ async function captureElementWithIsolation<T>(
     clone.style.boxShadow = 'none';
   }
 
-  // Remove any scrollable constraints inside clone
-  const scrollables = clone.querySelectorAll<HTMLElement>('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
-  scrollables.forEach(el => {
-    el.style.overflow = 'visible';
-  });
+  if (isNightShot) {
+    wrapper.classList.add('dark');
+    clone.classList.add('dark');
+  }
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);

@@ -384,32 +384,39 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         : 0;
       
       // Real Acquisition cost: Gross Goods Cost - Supplier Discount + Tax + Freight & Expenses
-      // Freight is directly ADDED to the main invoice cost!
+      // Freight is directly ADDED to the main invoice acquisition cost and REDUCED from projected profit!
       const totalExpensesAmount = Math.max(
         (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
         (inv.expensesTotalAddition || 0) + (inv.expensesTotalDeduction || 0)
       );
       const invoiceTax = inv.tax || 0;
 
-      // Net purchase cost: Main Goods + Tax - Discount (Freight is displayed as transparent info, not double-deducted)
-      const netPurchaseCost = Math.max(0, grossPurchaseCost - discountAmount + invoiceTax);
+      // Net merchandise cost: Main Goods + Tax - Discount
+      const netMerchandiseCost = Math.max(0, grossPurchaseCost - discountAmount + invoiceTax);
+      // Total Landed Acquisition Cost (بهای تمام‌شده کل با احتساب کرایه بار و هزینه‌های ورود)
+      const landedPurchaseCost = netMerchandiseCost + totalExpensesAmount;
 
-      const totalProjectedSalesValue = calcProjectedSales > 0 ? calcProjectedSales : Math.round(netPurchaseCost * 1.25);
-      // Expected gross profit of inward goods (Sales Value minus Net Purchase Cost)
-      const projectedProfit = totalProjectedSalesValue - netPurchaseCost;
+      const totalProjectedSalesValue = calcProjectedSales > 0 ? calcProjectedSales : Math.round(landedPurchaseCost * 1.25);
+      // Expected gross profit of goods before freight
+      const projectedGrossProfit = Math.max(0, totalProjectedSalesValue - netMerchandiseCost);
+      // Expected NET profit of inward goods (سود خالص پیش‌بینی پس از کسر کامل کرایه بار و هزینه‌ها)
+      const projectedProfit = totalProjectedSalesValue - landedPurchaseCost;
       const projectedMargin = totalProjectedSalesValue > 0 ? (projectedProfit / totalProjectedSalesValue) * 100 : 0;
-      const markupPercentage = netPurchaseCost > 0 ? (projectedProfit / netPurchaseCost) * 100 : 0;
+      const markupPercentage = landedPurchaseCost > 0 ? (projectedProfit / landedPurchaseCost) * 100 : 0;
 
       return {
         ...inv,
         grossPurchaseCost,
-        netPurchaseCost,
+        netPurchaseCost: landedPurchaseCost,
+        netMerchandiseCost,
+        landedPurchaseCost,
         hasDiscount,
         discountAmount,
         discountPercent,
         totalExpensesAmount,
         totalItemsPieces,
         totalProjectedSalesValue,
+        projectedGrossProfit,
         projectedProfit,
         projectedMargin,
         markupPercentage
@@ -692,18 +699,27 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       const totalCartons = (inv.items || []).reduce((s, it) => s + (it.cartonsCount || 0), 0);
 
       // Gross purchase price
-      const grossPurchaseCost = (inv.items || []).reduce((s, it) => {
-        const uPrice = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : (it.unitPrice || 0);
+      const itemsSumGross = (inv.items || []).reduce((s, it) => {
+        if (it.totalPrice && it.totalPrice > 0) return s + it.totalPrice;
         const pieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
-        return s + (uPrice * pieces);
+        const uCost = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : (it.unitPrice || 0);
+        return s + (pieces * uCost);
       }, 0);
+      const grossPurchaseCost = itemsSumGross > 0 ? itemsSumGross : (inv.subtotal > 0 ? inv.subtotal : (inv.finalAmount || 0));
 
       const discount = Number(inv.discount) || 0;
-      // Net merchandise principal (مایه اصلی خرید کالا)
-      const netMerchandisePrincipal = Math.max(0, grossPurchaseCost - discount);
+      const invoiceTax = Number(inv.tax) || 0;
+      // Net merchandise principal (مایه اصلی خرید کالا پس از تخفیف و با مالیات)
+      const netMerchandisePrincipal = Math.max(0, grossPurchaseCost - discount + invoiceTax);
 
-      // Freight and logistics expenses (کرایه بار صرفاً جهت تفکیک و اطلاع)
-      const freightExpenses = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
+      // Freight and logistics expenses (کرایه بار و تخلیه)
+      const freightExpenses = Math.max(
+        (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+        (inv.expensesTotalAddition || 0) + (inv.expensesTotalDeduction || 0)
+      );
+
+      // Real landed cost of goods at destination (بهای تمام‌شده بار در انبار با احتساب کرایه بار)
+      const landedCost = netMerchandisePrincipal + freightExpenses;
 
       // Projected Sales Revenue
       const projectedRevenue = (inv.items || []).reduce((s, it) => {
@@ -713,9 +729,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         return s + (sellPrice * pieces);
       }, 0);
 
-      // Gross profit (ارزش فروش منهای بهای خرید - بدون کسر مجدد کرایه)
-      const projectedGrossProfit = projectedRevenue - netMerchandisePrincipal;
-      const markupPercent = netMerchandisePrincipal > 0 ? (projectedGrossProfit / netMerchandisePrincipal) * 100 : 0;
+      // Gross profit of goods before deducting freight
+      const projectedGrossProfitBeforeFreight = Math.max(0, projectedRevenue - netMerchandisePrincipal);
+      // Net profit after strictly deducting freight expenses (سود خالص پیش‌بینی بار پس از کسر کامل کرایه باربری)
+      const projectedGrossProfit = projectedRevenue - landedCost;
+      const markupPercent = landedCost > 0 ? (projectedGrossProfit / landedCost) * 100 : 0;
       const freightRatio = netMerchandisePrincipal > 0 ? (freightExpenses / netMerchandisePrincipal) * 100 : 0;
 
       return {
@@ -732,8 +750,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         discount,
         netMerchandisePrincipal,
         freightExpenses,
-        landedCost: netMerchandisePrincipal,
+        landedCost,
         projectedRevenue,
+        projectedGrossProfitBeforeFreight,
         projectedGrossProfit,
         markupPercent,
         freightRatio
@@ -746,9 +765,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     const totalInwardCartons = inwardLedger.reduce((s, i) => s + i.totalCartons, 0);
     const totalInwardMerchandisePrincipal = inwardLedger.reduce((s, i) => s + i.netMerchandisePrincipal, 0); // کل مایه اصلی فاکتورهای ورودی
     const totalInwardFreightExpenses = inwardLedger.reduce((s, i) => s + i.freightExpenses, 0); // کل کرایه‌ها
-    const totalInwardLandedCost = totalInwardMerchandisePrincipal; // بهای کل خرید فاکتورها
+    const totalInwardLandedCost = inwardLedger.reduce((s, i) => s + i.landedCost, 0); // بهای کل خرید فاکتورها با احتساب کرایه
     const totalInwardProjectedRevenue = inwardLedger.reduce((s, i) => s + i.projectedRevenue, 0); // کل ارزش فروش
-    const totalInwardProjectedGrossProfit = inwardLedger.reduce((s, i) => s + i.projectedGrossProfit, 0); // سود ناخالص بارها
+    const totalInwardProjectedGrossProfit = inwardLedger.reduce((s, i) => s + i.projectedGrossProfit, 0); // سود بارها پس از کسر کامل کرایه‌ها
     const overallInwardMarkup = totalInwardLandedCost > 0 ? (totalInwardProjectedGrossProfit / totalInwardLandedCost) * 100 : 0;
 
     // 2. Personal Drawings & Non-Purchase Operational Expenses (برداشت‌های شخصی و مخارج جاری - بدون احتساب خرید کالا)
@@ -1045,6 +1064,17 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       : 0;
     const discountRatio = invoiceDiscountPercent > 0 ? (invoiceDiscountPercent / 100) : 0;
 
+    const totalExpensesAmount = Math.max(
+      (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+      (inv.expensesTotalAddition || 0) + (inv.expensesTotalDeduction || 0)
+    );
+
+    const initialMerchandiseGrossTotal = inv.items.reduce((sum, it) => {
+      const pieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
+      const uCost = (it.unitPurchasePrice !== undefined && it.unitPurchasePrice > 0) ? it.unitPurchasePrice : (it.unitPrice || 0);
+      return sum + (it.totalPrice || (pieces * uCost));
+    }, 0);
+
     // Analyzed items
     const analyzedItems = inv.items.map((it, idx) => {
       const matchingProduct = getMatchingProduct(it.productId, it.productName);
@@ -1093,13 +1123,21 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       let unitCost = unitCostGross;
       let unitSell = unitSellGross;
       let itemDiscountSavings = 0;
+      let itemFreightShare = 0;
 
       if (isPurchase) {
+        if (totalExpensesAmount > 0 && initialMerchandiseGrossTotal > 0) {
+          itemFreightShare = Math.round((rowCostGross / initialMerchandiseGrossTotal) * totalExpensesAmount);
+        }
+
         if (hasDiscount && discountRatio > 0) {
           rowCost = Math.round(rowCostGross * (1 - discountRatio));
-          unitCost = totalPieces > 0 ? Math.round(rowCost / totalPieces) : Math.round(unitCostGross * (1 - discountRatio));
           itemDiscountSavings = rowCostGross - rowCost;
         }
+
+        // Add proportional freight share so it strictly reduces item profit
+        rowCost = rowCost + itemFreightShare;
+        unitCost = totalPieces > 0 ? Math.round(rowCost / totalPieces) : 0;
       } else {
         if (hasDiscount && discountRatio > 0) {
           rowRevenue = Math.round(rowRevenueGross * (1 - discountRatio));
@@ -1150,6 +1188,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         rowProfit,
         profitPerPiece,
         itemDiscountSavings,
+        itemFreightShare,
         margin,
         tier,
         tierTitle,
@@ -1162,7 +1201,6 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
     const totalCartonsSum = analyzedItems.reduce((sum, it) => sum + (it.cartonsCount || 0), 0);
     
     const totalCostGross = analyzedItems.reduce((sum, it) => sum + it.rowCostGross, 0);
-    const totalExpensesAmount = (inv.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0) || (inv.expensesTotalAddition || 0) || (inv.expensesTotalDeduction || 0);
     const netMerchandiseCost = Math.max(0, totalCostGross - invoiceDiscountAmount);
 
     const totalRevGross = analyzedItems.reduce((sum, it) => sum + it.rowRevenueGross, 0);
@@ -1170,10 +1208,12 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
       ? (hasDiscount ? Math.max(0, totalRevGross - invoiceDiscountAmount) : (inv.finalAmount || totalRevGross))
       : totalRevGross;
 
-    // For purchase invoices, totalCost is the invoice purchase amount. Freight is displayed for information and NOT double-deducted.
-    const totalCost = isPurchase ? netMerchandiseCost : totalCostGross;
+    // For purchase invoices, totalCost is the full landed cost (merchandise + freight)
+    const landedCost = isPurchase ? (netMerchandiseCost + totalExpensesAmount) : totalCostGross;
+    const totalCost = landedCost;
     const totalRev = isPurchase ? totalRevGross : totalRevNet;
 
+    // Projected profit strictly deducts freight and inward logistics expenses
     const totalProfit = totalRev - totalCost;
     const overallMargin = isPurchase
       ? (totalCost > 0 ? (totalProfit / totalCost) * 100 : 0)
@@ -1272,25 +1312,25 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
               </span>
             </div>
 
-            {/* Card 3: Freight Expenses (Display only) */}
+            {/* Card 3: Freight Expenses (Deducted from profit) */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-sky-200/80 dark:border-sky-900/60 shadow-xs space-y-1">
-              <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 block">کرایه بار (نمایش تفکیکی)</span>
+              <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 block">کرایه بار و تخلیه (کسر از سود)</span>
               <span className="text-base sm:text-lg font-black text-sky-700 dark:text-sky-300 block dir-ltr text-right font-mono tabular-nums">
                 {isSecretMode ? '••••••' : (totalExpensesAmount > 0 ? `+${formatPrice(totalExpensesAmount)}` : '۰ تومان')}
               </span>
               <span className="text-[10.5px] text-sky-600 dark:text-sky-400 block truncate font-medium">
-                {(inv.expenses && inv.expenses.length > 0) ? `${toPersianDigits(inv.expenses.length)} سرفصل کرایه حمل` : 'بدون هزینه حمل'}
+                {totalExpensesAmount > 0 ? 'به بهای تمام‌شده اضافه و از سود کسر شد' : 'بدون هزینه حمل و نقل'}
               </span>
             </div>
 
             {/* Card 4: Projected Profit */}
             <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-300 dark:border-emerald-700/80 shadow-xs space-y-1">
-              <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 block">سود پیش‌بینی‌شده فاکتور</span>
+              <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 block">سود پیش‌بینی فاکتور (پس از کسر کرایه)</span>
               <span className="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-300 block dir-ltr text-right font-mono tabular-nums">
                 {isSecretMode ? '••••••' : `+${formatPrice(totalProfit)}`}
               </span>
               <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 block truncate font-bold">
-                مارک‌آپ: {toPersianDigits(overallMargin.toFixed(1))}٪ · فی سود: +{formatPrice(weightedAvgProfitPerPiece)}
+                {totalExpensesAmount > 0 ? `کسر کرایه: -${formatPrice(totalExpensesAmount)} · ` : ''}مارک‌آپ: {toPersianDigits(overallMargin.toFixed(1))}٪
               </span>
             </div>
           </div>
@@ -1484,7 +1524,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         </div>
 
                         <div className="flex items-center justify-center gap-1.5 text-[11px] mt-0.5">
-                          <span className="text-[10px] text-slate-400 font-sans">خرید:</span>
+                          <span className="text-[10px] text-slate-400 font-sans">{isPurchase ? 'بهای تمام‌شده:' : 'خرید:'}</span>
                           <span className="font-bold text-slate-700 dark:text-slate-300">
                             {isSecretMode ? '••••••' : formatPrice(it.rowCost)}
                           </span>
@@ -1496,6 +1536,12 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         {hasDiscount && isPurchase && it.itemDiscountSavings > 0 && (
                           <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
                             تخفیف سطر: -{formatPrice(it.itemDiscountSavings)}
+                          </div>
+                        )}
+
+                        {isPurchase && it.itemFreightShare > 0 && (
+                          <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-bold text-center mt-0.5">
+                            سهم کرایه بار: +{formatPrice(it.itemFreightShare)}
                           </div>
                         )}
                       </td>
@@ -1762,10 +1808,10 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
           </div>
 
           <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-            {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.rawGrossProfit)}`}
+            {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.effectiveGrossProfit)}`}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>تعداد فاکتورهای صادرشده:</span>
+            <span>{summaryMetrics.totalCustomerReturnsProfit > 0 ? 'پس از کسر مرجوعی:' : 'تعداد فاکتورهای صادرشده:'}</span>
             <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
               {toPersianDigits(summaryMetrics.invoicesCount)} فاکتور
             </span>
@@ -1793,7 +1839,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
         {/* Card 3: سود خالص فاکتورهای ورودی خرید */}
         <div className="bg-white dark:bg-[#090d16] rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 transition-colors flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-800 dark:text-amber-300">سود خالص فاکتورهای ورودی (خرید)</span>
+            <span className="text-xs font-bold text-amber-800 dark:text-amber-300">سود خالص فاکتورهای ورودی (با کسر کرایه)</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
               <Boxes className="w-4 h-4" />
             </div>
@@ -1803,10 +1849,20 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
             {isSecretMode ? '••••••' : `+${formatPrice(summaryMetrics.totalInwardPurchasesProjectedProfit)}`}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>بهای کل (اصلی + کرایه):</span>
-            <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">
-              {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}
-            </span>
+            <div className="flex flex-col gap-0.5 w-full">
+              <div className="flex items-center justify-between">
+                <span>بهای تمام‌شده کل:</span>
+                <span className="text-slate-700 dark:text-slate-300 font-bold font-mono">
+                  {isSecretMode ? '••••••' : formatPrice(summaryMetrics.totalInwardPurchasesNet)}
+                </span>
+              </div>
+              {summaryMetrics.totalInwardPurchasesFreightAndExpenses > 0 && (
+                <div className="flex items-center justify-between text-[10px] text-sky-600 dark:text-sky-400">
+                  <span>کرایه بار کسرشده:</span>
+                  <span className="font-bold font-mono dir-ltr">-{formatPrice(summaryMetrics.totalInwardPurchasesFreightAndExpenses)}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2135,7 +2191,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     align="center"
                     className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    بهای خرید و ارزش فروش
+                    بهای تمام‌شده (خرید + کرایه) و ارزش فروش
                   </SortableTableHeader>
 
                   <SortableTableHeader
@@ -2146,7 +2202,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                     align="center"
                     className="py-2.5 px-3 text-center whitespace-nowrap min-w-[170px]"
                   >
-                    سود پیش‌بینی و مارک‌آپ
+                    سود خالص پیش‌بینی (با کسر کرایه)
                   </SortableTableHeader>
 
                   <th className="py-2.5 px-3 text-center whitespace-nowrap w-24 font-black">عملیات</th>
@@ -2186,20 +2242,21 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         {/* 3. Net Purchase Cost & Projected Sales (Centered) */}
                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           <div className="font-black text-slate-900 dark:text-white text-xs sm:text-[13px] font-mono tabular-nums">
-                            {isSecretMode ? '••••••' : formatPrice(inv.netPurchaseCost)}
+                            {isSecretMode ? '••••••' : formatPrice(inv.landedPurchaseCost)}
                           </div>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center justify-center gap-1">
                             <span className="text-[10px] text-slate-400 font-sans">ارزش فروش:</span>
                             <span className="font-bold">{isSecretMode ? '••••••' : formatPrice(inv.totalProjectedSalesValue)}</span>
                           </div>
-                          {inv.hasDiscount && inv.discountAmount > 0 && (
-                            <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-normal text-center mt-0.5">
-                              تخفیف: -{formatPrice(inv.discountAmount)}
-                            </div>
-                          )}
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-center gap-1">
+                            <span>مایه کالا: {isSecretMode ? '••••' : formatPrice(inv.netMerchandiseCost)}</span>
+                            {inv.hasDiscount && inv.discountAmount > 0 && (
+                              <span className="text-emerald-600 dark:text-emerald-400">(-{formatPrice(inv.discountAmount)})</span>
+                            )}
+                          </div>
                           {inv.totalExpensesAmount > 0 && (
-                            <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-normal text-center mt-0.5">
-                              کرایه بار: +{formatPrice(inv.totalExpensesAmount)}
+                            <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-bold text-center mt-0.5">
+                              کرایه بار: +{formatPrice(inv.totalExpensesAmount)} (کسر از سود)
                             </div>
                           )}
                         </td>
@@ -2214,8 +2271,13 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                               {isSecretMode ? '••٪' : `+${toPersianDigits(inv.markupPercentage.toFixed(1))}٪`}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 font-sans text-center mt-0.5">
-                            سود پیش‌بینی‌شده بار
+                          {inv.totalExpensesAmount > 0 && (
+                            <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-medium text-center mt-0.5 font-mono">
+                              (سود قبل کرایه: +{formatPrice(inv.projectedGrossProfit)})
+                            </div>
+                          )}
+                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium text-center mt-0.5">
+                            سود خالص پیش‌بینی (با کسر کامل کرایه)
                           </div>
                         </td>
 
@@ -2264,7 +2326,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       </div>
                       {summaryMetrics.totalInwardPurchasesFreightAndExpenses > 0 && (
                         <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-bold text-center mt-0.5">
-                          کرایه بار: +{formatPrice(summaryMetrics.totalInwardPurchasesFreightAndExpenses)}
+                          مجموع کرایه بارها: +{formatPrice(summaryMetrics.totalInwardPurchasesFreightAndExpenses)}
                         </div>
                       )}
                     </td>
@@ -2282,7 +2344,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         </span>
                       </div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center mt-0.5">
-                        {toPersianDigits(purchaseInvoicesProfitability.reduce((s, p) => s + p.totalItemsPieces, 0))} عدد کل اقلام
+                        سود خالص تجمیعی (با کسر کامل کرایه بار)
                       </div>
                     </td>
                     <td className="py-2.5 px-3 text-center text-[10.5px] text-slate-400 font-bold">
@@ -2576,13 +2638,13 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   {/* Card 4: Landed Cost */}
                   <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200/90 dark:border-slate-700 space-y-1.5">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 block truncate">
-                      {simulationBasis === 'remaining-stock' ? 'بهای خرید موجودی فعلی' : 'بهای تمام‌شده بار (Landed Cost)'}
+                      {simulationBasis === 'remaining-stock' ? 'بهای خرید موجودی فعلی' : 'بهای تمام‌شده بار (خرید + کرایه)'}
                     </span>
                     <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white block font-mono tabular-nums dir-ltr text-right">
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.landedCost)}
                     </span>
                     <span className="text-[11px] text-slate-400 block truncate">
-                      {simulationBasis === 'remaining-stock' ? 'ارزش دفتری انبار فعلی' : 'بهای خالص خرید فاکتور'}
+                      {simulationBasis === 'remaining-stock' ? 'ارزش دفتری انبار فعلی' : 'بهای خالص خرید + کل کرایه بار'}
                     </span>
                   </div>
                 </div>
@@ -2593,7 +2655,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                   <div className="bg-emerald-50/80 dark:bg-emerald-950/50 p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 block truncate">
-                        {simulationBasis === 'remaining-stock' ? 'سود انتظاری از موجودی فعلی' : 'سود ناخالص بارها'}
+                        {simulationBasis === 'remaining-stock' ? 'سود انتظاری از موجودی فعلی' : 'سود خالص بارها (با کسر کرایه)'}
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 text-[11px] font-bold">
                         مارک‌آپ: {toPersianDigits(simulationMetrics.markupPercent.toFixed(1))}٪
@@ -2603,7 +2665,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       {isSecretMode ? '••••••' : `+${formatPrice(simulationMetrics.projectedGrossProfit)}`}
                     </span>
                     <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block truncate font-bold">
-                      {simulationBasis === 'remaining-stock' ? 'ارزش فروش فعلی منهای بهای خرید' : 'ارزش فروش منهای بهای خرید'}
+                      {simulationBasis === 'remaining-stock' ? 'ارزش فروش فعلی منهای بهای خرید' : 'ارزش فروش منهای بهای تمام‌شده خرید و کرایه'}
                     </span>
                   </div>
 
@@ -2637,7 +2699,7 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       {isSecretMode ? '••••••' : formatPrice(simulationMetrics.totalCashReturn)}
                     </div>
                     <span className="text-[11px] text-amber-800 dark:text-amber-300 block truncate font-bold">
-                      {simulationBasis === 'remaining-stock' ? 'مجموع ارزش فروش موجودی + مطالبات + نقدینگی - مخارج' : 'مایه اصلی خرید + سود خالص باقی‌مانده'}
+                      {simulationBasis === 'remaining-stock' ? 'مجموع ارزش فروش موجودی + مطالبات + نقدینگی - مخارج' : 'مایه اصلی خرید + سود خالص باقی‌مانده (با کسر کرایه و مخارج)'}
                     </span>
                   </div>
                 </div>
@@ -2729,9 +2791,9 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                       <th className="p-3.5 text-center font-black">اقلام و کارتن</th>
                       <th className="p-3.5 text-left font-black">مایه اصلی خرید</th>
                       <th className="p-3.5 text-left font-black">کرایه بار</th>
-                      <th className="p-3.5 text-left font-black">بهای تمام‌شده (Landed)</th>
+                      <th className="p-3.5 text-left font-black">بهای تمام‌شده بار (خرید + کرایه)</th>
                       <th className="p-3.5 text-left font-black">ارزش فروش اقلام</th>
-                      <th className="p-3.5 text-left font-black">سود ناخالص فاکتور</th>
+                      <th className="p-3.5 text-left font-black">سود خالص پیش‌بینی (با کسر کرایه)</th>
                       <th className="p-3.5 text-center font-black">مارک‌آپ</th>
                       <th className="p-3.5 text-center w-24 font-black">عملیات</th>
                     </tr>
@@ -2810,7 +2872,12 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                               {isSecretMode ? '••••••' : formatPrice(row.projectedRevenue)}
                             </td>
                             <td className="p-3.5 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                              {isSecretMode ? '••••••' : `+${formatPrice(row.projectedGrossProfit)}`}
+                              <div>{isSecretMode ? '••••••' : `+${formatPrice(row.projectedGrossProfit)}`}</div>
+                              {row.freightExpenses > 0 && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal dir-rtl text-right">
+                                  کسر کرایه: -{formatPrice(row.freightExpenses)}
+                                </div>
+                              )}
                             </td>
                             <td className="p-3.5 text-center">
                               <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800">
@@ -2864,6 +2931,11 @@ export const ProfitLossPage: React.FC<ProfitLossPageProps> = ({
                         </td>
                         <td className="py-3 px-3 text-left dir-ltr font-black text-emerald-600 dark:text-emerald-400">
                           <div>{isSecretMode ? '••••••' : `+${formatPrice(capitalAnalysisData.totalInwardProjectedGrossProfit)}`}</div>
+                          {capitalAnalysisData.totalInwardFreightExpenses > 0 && (
+                            <div className="text-[9.5px] text-sky-700 dark:text-sky-300 font-normal dir-rtl text-right">
+                              با کسر کامل کرایه‌ها
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
                           {isSecretMode ? '••٪' : `${toPersianDigits(capitalAnalysisData.overallInwardMarkup.toFixed(1))}٪`}

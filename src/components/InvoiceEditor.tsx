@@ -24,6 +24,7 @@ import {
   getCurrentPersianTime,
   numberToPersianWords,
   formatProductPackagingSpec,
+  resolvePacksPerCarton,
   matchProduct,
   resolveItemCoverPrice
 } from '../utils/formatters';
@@ -310,6 +311,40 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     localStorage.setItem('bazargani_invoice_picker_hide_zero_stock', JSON.stringify(hideZeroStock));
   }, [hideZeroStock]);
 
+  // Keep product picker modal open after adding an item for continuous multi-product selection
+  // Default: true (پیش‌فرض فعال) as explicitly requested by user
+  const [keepPickerOpenAfterAdd, setKeepPickerOpenAfterAdd] = useState<boolean>(() => {
+    const saved = localStorage.getItem('bazargani_invoice_picker_keep_open');
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return true;
+      }
+    }
+    return true; // پیش‌فرض فعال
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bazargani_invoice_picker_keep_open', JSON.stringify(keepPickerOpenAfterAdd));
+  }, [keepPickerOpenAfterAdd]);
+
+  // Toast / feedback state when an item is added in continuous mode
+  const [recentlyAddedPickerProduct, setRecentlyAddedPickerProduct] = useState<{
+    name: string;
+    quantityText: string;
+    totalItemsCount: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (recentlyAddedPickerProduct) {
+      const timer = setTimeout(() => {
+        setRecentlyAddedPickerProduct(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [recentlyAddedPickerProduct]);
+
   // Synchronize invoice form state whenever initialInvoice changes
   useEffect(() => {
     if (initialInvoice) {
@@ -349,16 +384,22 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           
           const totPieces = it.totalPieces > 0 ? it.totalPieces : ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
           const totPrice = type === 'purchase'
-            ? (it.totalPrice > 0 ? it.totalPrice : totPieces * pPrice)
+            ? (pPrice > 0 ? totPieces * pPrice : (it.totalPrice > 0 ? it.totalPrice : 0))
             : (sPrice > 0 && totPieces > 0 ? totPieces * sPrice : (it.totalPrice || 0));
           const totPurchaseCost = totPieces * pPrice;
           const profit = Math.max(0, (sPrice - pPrice) * totPieces);
+
+          const ppp = it.piecesPerPack || matchingProd?.piecesPerPack || 1;
+          const ppc = it.piecesPerCarton || matchingProd?.piecesPerCarton || 1;
+          const packs = resolvePacksPerCarton(it.packsCount, it.cartonsCount, ppp, ppc, matchingProd?.packsPerCarton);
 
           return {
             ...it,
             cartonsCount: it.cartonsCount !== undefined ? it.cartonsCount : (matchingProd && matchingProd.piecesPerCarton > 0 ? Math.floor(totPieces / matchingProd.piecesPerCarton) : 0),
             extraPieces: it.extraPieces !== undefined ? it.extraPieces : (matchingProd && matchingProd.piecesPerCarton > 0 ? totPieces % matchingProd.piecesPerCarton : 0),
-            piecesPerCarton: it.piecesPerCarton || matchingProd?.piecesPerCarton || 1,
+            piecesPerCarton: ppc,
+            packsCount: packs,
+            piecesPerPack: ppp,
             totalPieces: totPieces,
             unitPurchasePrice: pPrice,
             unitSellingPrice: sPrice,
@@ -605,9 +646,9 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     if (item.productId && !newProductToCreate) {
       const existing = currentProductsList.find(p => p.id === item.productId || (p.name && item.productName && p.name.trim().toLowerCase() === item.productName.trim().toLowerCase()));
       if (existing) {
-        const itemPacks = Number(item.packsCount) > 0 ? Number(item.packsCount) : (existing.packsPerCarton || 1);
         const itemPpp = Number(item.piecesPerPack) > 0 ? Number(item.piecesPerPack) : (existing.piecesPerPack || 1);
-        const itemPpc = Number(item.piecesPerCarton) > 0 ? Number(item.piecesPerCarton) : (itemPacks * itemPpp);
+        const itemPpc = Number(item.piecesPerCarton) > 0 ? Number(item.piecesPerCarton) : (existing.piecesPerCarton || (existing.packsPerCarton ? existing.packsPerCarton * itemPpp : 1));
+        const itemPacks = resolvePacksPerCarton(item.packsCount, item.cartonsCount, itemPpp, itemPpc, existing.packsPerCarton);
 
         const updatedProd: Product = {
           ...existing,
@@ -873,9 +914,25 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       customDescription: customDescription.trim() || undefined,
     };
 
-    setItems([...items, newItem]);
+    setItems(prevItems => [...prevItems, newItem]);
+
+    // Format human-friendly quantity text for feedback
+    const qtyText = (!isUnpackaged && piecesPerCarton > 1 && finalCartons > 0)
+      ? `${toPersianDigits(finalCartons)} کارتن${finalExtra > 0 ? ` و ${toPersianDigits(finalExtra)} دانه` : ''}`
+      : `${toPersianDigits(totalPieces)} ${activePickingProduct.unitTitle || 'عدد'}`;
+
+    setRecentlyAddedPickerProduct({
+      name: activePickingProduct.name,
+      quantityText: qtyText,
+      totalItemsCount: items.length + 1
+    });
+
+    onShowAlert?.(`کالای «${activePickingProduct.name}» (${qtyText}) به فاکتور افزوده شد.`, 'success', 'افزودن کالا');
+
     setActivePickingProduct(null);
-    setIsProductPickerOpen(false);
+    if (!keepPickerOpenAfterAdd) {
+      setIsProductPickerOpen(false);
+    }
   };
 
   // Update item field directly in invoice table with Smart Carton / Pack / Total Calculations
@@ -1091,9 +1148,30 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       .reduce((sum, r) => sum + (r.netAmount !== undefined ? r.netAmount : r.totalAmount), 0);
   }, [unsettledPartyReturns, selectedOffsetReturnIds]);
 
+  // Helper to reliably compute an item's line total for purchase and sales invoices
+  const getItemLineTotal = (item: InvoiceItem): number => {
+    if (invoiceType === 'purchase') {
+      const uPrice = (item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0)
+        ? item.unitPurchasePrice
+        : ((item.totalPurchaseCost && item.totalPieces > 0) ? Math.round(item.totalPurchaseCost / item.totalPieces) : (item.totalPrice && item.totalPieces > 0 ? Math.round(item.totalPrice / item.totalPieces) : 0));
+      if (uPrice > 0 && item.totalPieces > 0) return item.totalPieces * uPrice;
+      if (item.totalPurchaseCost && item.totalPurchaseCost > 0) return item.totalPurchaseCost;
+      if (item.totalPrice && item.totalPrice > 0) return item.totalPrice;
+      return 0;
+    }
+    if (item.totalPrice && item.totalPrice > 0) return item.totalPrice;
+    const sPrice = item.unitSellingPrice || 0;
+    return item.totalPieces * sPrice;
+  };
+
   // Calculations
-  const subtotal = items.reduce((acc, item) => acc + item.totalPrice, 0);
-  const totalPurchaseCost = items.reduce((acc, item) => acc + item.totalPurchaseCost, 0);
+  const subtotal = items.reduce((acc, item) => acc + getItemLineTotal(item), 0);
+  const totalPurchaseCost = items.reduce((acc, item) => {
+    const uPrice = (item.unitPurchasePrice !== undefined && item.unitPurchasePrice > 0)
+      ? item.unitPurchasePrice
+      : ((item.totalPurchaseCost && item.totalPieces > 0) ? Math.round(item.totalPurchaseCost / item.totalPieces) : 0);
+    return acc + (uPrice > 0 ? item.totalPieces * uPrice : (item.totalPurchaseCost || 0));
+  }, 0);
 
   // Synchronize discount with discountPercent if discountMode === 'percent' and hasDiscount is true
   useEffect(() => {
@@ -1352,9 +1430,15 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
       items.forEach(it => {
         const prod = currentProductsList.find(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
         if (prod) {
-          const itemPacks = Number(it.packsCount) > 0 ? Number(it.packsCount) : (prod.packsPerCarton || 1);
           const itemPpp = Number(it.piecesPerPack) > 0 ? Number(it.piecesPerPack) : (prod.piecesPerPack || 1);
-          const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (itemPacks * itemPpp);
+          const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (prod.piecesPerCarton || (prod.packsPerCarton ? prod.packsPerCarton * itemPpp : 1));
+          const itemPacks = resolvePacksPerCarton(
+            it.packsCount,
+            it.cartonsCount,
+            itemPpp,
+            itemPpc,
+            prod.packsPerCarton
+          );
           const itemUnitTitle = it.unitTitle?.trim() || prod.unitTitle || 'عدد';
           const itemNewName = it.productName?.trim() || prod.name;
           const itemCategory = (it as any).category || prod.category;
@@ -1406,13 +1490,21 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
           : 'غیر نقدی (نسیه / حساب مشتری)',
       previousBalance,
       finalCustomerBalance: calculatedFinalBalance,
-      items: items.map(it => ({
-        ...it,
-        originalCartonsCount: it.cartonsCount,
-        originalExtraPieces: it.extraPieces,
-        originalTotalPieces: it.totalPieces,
-        originalTotalPrice: it.totalPrice,
-      })),
+      items: items.map(it => {
+        const lineTotal = getItemLineTotal(it);
+        const linePurchase = (it.unitPurchasePrice && it.unitPurchasePrice > 0)
+          ? it.totalPieces * it.unitPurchasePrice
+          : (effectiveInvoiceType === 'purchase' ? lineTotal : (it.totalPurchaseCost || 0));
+        return {
+          ...it,
+          totalPrice: lineTotal,
+          totalPurchaseCost: linePurchase,
+          originalCartonsCount: it.cartonsCount,
+          originalExtraPieces: it.extraPieces,
+          originalTotalPieces: it.totalPieces,
+          originalTotalPrice: lineTotal,
+        };
+      }),
       hasDiscount,
       discountPercent: hasDiscount ? effectiveDiscountPercent : 0,
       showCoverPrice,
@@ -4022,26 +4114,77 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       />
                     </div>
 
-                    <label 
-                      id="toggle-hide-zero-stock-invoice-picker"
-                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 cursor-pointer select-none shrink-0 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={hideZeroStock}
-                        onChange={(e) => setHideZeroStock(e.target.checked)}
-                        className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600"
-                      />
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                        عدم نمایش موجودی صفر
-                      </span>
-                      {hideZeroStock && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
-                          فعال
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label 
+                        id="toggle-hide-zero-stock-invoice-picker"
+                        className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 cursor-pointer select-none shrink-0 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={hideZeroStock}
+                          onChange={(e) => setHideZeroStock(e.target.checked)}
+                          className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600"
+                        />
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                          عدم نمایش موجودی صفر
                         </span>
-                      )}
-                    </label>
+                        {hideZeroStock && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                            فعال
+                          </span>
+                        )}
+                      </label>
+
+                      {/* Checkbox for keeping picker open (پیش‌فرض فعال) */}
+                      <label 
+                        id="toggle-keep-picker-open-invoice-picker"
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border cursor-pointer select-none shrink-0 transition-all ${
+                          keepPickerOpenAfterAdd
+                            ? `${theme.badgeBg} ${theme.borderColor} ${theme.primaryText} font-black shadow-2xs`
+                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                        title="با فعال بودن این گزینه، پس از افزودن کالا کادر بسته نمی‌شود و در لیست کالاها می‌مانید تا کالاهای بعدی را هم پیوسته اضافه کنید"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={keepPickerOpenAfterAdd}
+                          onChange={(e) => setKeepPickerOpenAfterAdd(e.target.checked)}
+                          className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600"
+                        />
+                        <span className="text-xs font-black">
+                          باقی ماندن در لیست کالاها پس از افزودن
+                        </span>
+                        {keepPickerOpenAfterAdd && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                            پیش‌فرض فعال
+                          </span>
+                        )}
+                      </label>
+                    </div>
                   </div>
+
+                  {/* Real-time Confirmation Banner when product added in continuous mode */}
+                  {recentlyAddedPickerProduct && (
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-200 font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>
+                          کالای «<b className="font-black">{recentlyAddedPickerProduct.name}</b>» ({recentlyAddedPickerProduct.quantityText}) به فاکتور افزوده شد.
+                        </span>
+                        <span className="text-[11px] text-emerald-700 dark:text-emerald-300 mr-1 font-normal">
+                          (تعداد کل اقلام فاکتور: {toPersianDigits(recentlyAddedPickerProduct.totalItemsCount)} قلم)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRecentlyAddedPickerProduct(null)}
+                        className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 p-1 cursor-pointer"
+                        title="بستن پیام"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-1 overflow-x-auto pb-1">
                     {categories.map((cat, idx) => (
@@ -4082,20 +4225,39 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       const isUnpack = isProductUnpackaged(prod);
                       const ppc = isUnpack ? 1 : (prod.piecesPerCarton || 1);
                       const stockCartons = ppc > 1 ? Math.floor(prod.stockPieces / ppc) : 0;
+                      
+                      // Check if already in current invoice items
+                      const matchingItems = items.filter(it => it.productId === prod.id || (it.productName && prod.name && it.productName.trim().toLowerCase() === prod.name.trim().toLowerCase()));
+                      const alreadyPieces = matchingItems.reduce((sum, it) => sum + (it.totalPieces || 0), 0);
+                      const alreadyCartons = (!isUnpack && ppc > 1) ? Math.floor(alreadyPieces / ppc) : 0;
+                      const alreadyExtra = (!isUnpack && ppc > 1) ? (alreadyPieces % ppc) : alreadyPieces;
+
                       return (
                         <div
                           key={`picker-prod-${prod.id || idx}-${idx}`}
                           onClick={() => openProductCustomizer(prod)}
-                          className={`p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 ${theme.accentHoverBorder} hover:shadow-md cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 ${theme.accentHoverBg} flex flex-col justify-between`}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                            alreadyPieces > 0
+                              ? 'border-emerald-300 dark:border-emerald-700/80 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-xs'
+                              : `border-slate-200/80 dark:border-slate-800 ${theme.accentHoverBorder} bg-slate-50/50 dark:bg-slate-950/50 ${theme.accentHoverBg}`
+                          } hover:shadow-md`}
                         >
                           <div>
                             <div className="flex items-start justify-between gap-2">
                               <span className="font-extrabold text-slate-900 dark:text-white text-sm">
                                 {prod.name}
                               </span>
-                              <span className="px-2 py-0.5 bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md text-[10px] font-bold">
-                                {prod.category}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                                {alreadyPieces > 0 && (
+                                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-md text-[10px] font-black border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                    <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                    <span>در فاکتور: {!isUnpack && ppc > 1 && alreadyCartons > 0 ? `${toPersianDigits(alreadyCartons)} کارتن` : ''}{!isUnpack && ppc > 1 && alreadyCartons > 0 && alreadyExtra > 0 ? ' و ' : ''}{alreadyExtra > 0 || (isUnpack || ppc <= 1) ? `${toPersianDigits(alreadyExtra)} دانه` : ''}</span>
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md text-[10px] font-bold">
+                                  {prod.category}
+                                </span>
+                              </div>
                             </div>
                             <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                               <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-black border border-slate-200 dark:border-slate-700">
@@ -4564,25 +4726,53 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setActivePickingProduct(null)}
-                        className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold cursor-pointer"
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <label 
+                        id="toggle-keep-picker-open-customizer"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer select-none transition-all text-xs ${
+                          keepPickerOpenAfterAdd
+                            ? `${theme.badgeBg} ${theme.borderColor} ${theme.primaryText} font-black shadow-2xs`
+                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                        title="با فعال بودن این تیک، پس از افزودن این کادر بسته نمی‌شود و به لیست کالاها برمی‌گردید"
                       >
-                        انصراف
-                      </button>
-                      <button
-                        id="confirm-add-item-btn"
-                        type="button"
-                        onClick={handleAddProductToInvoice}
-                        className={`px-6 py-2.5 rounded-xl text-white font-black shadow-md flex items-center gap-2 cursor-pointer ${theme.primary} ${theme.primaryHover}`}
-                      >
-                        <span>افزودن به فاکتور</span>
-                        <span className="px-2 py-0.5 bg-black/20 rounded-lg text-xs font-mono font-bold">
-                          {formatPrice(pickTotalPieces * pickSellingPrice)}
+                        <input
+                          type="checkbox"
+                          checked={keepPickerOpenAfterAdd}
+                          onChange={(e) => setKeepPickerOpenAfterAdd(e.target.checked)}
+                          className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer accent-teal-600"
+                        />
+                        <span className="font-bold">
+                          باقی ماندن در لیست کالاها پس از افزودن (کادر بسته نشود)
                         </span>
-                      </button>
+                        {keepPickerOpenAfterAdd && (
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                            پیش‌فرض
+                          </span>
+                        )}
+                      </label>
+
+                      <div className="flex items-center justify-end gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setActivePickingProduct(null)}
+                          className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold cursor-pointer transition-colors"
+                        >
+                          بازگشت به لیست
+                        </button>
+                        <button
+                          id="confirm-add-item-btn"
+                          type="button"
+                          onClick={handleAddProductToInvoice}
+                          className={`px-6 py-2.5 rounded-xl text-white font-black shadow-md flex items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] ${theme.primary} ${theme.primaryHover}`}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>افزودن به فاکتور</span>
+                          <span className="px-2 py-0.5 bg-black/20 rounded-lg text-xs font-mono font-bold">
+                            {formatPrice(pickTotalPieces * pickSellingPrice)}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -101,6 +101,85 @@
     color: #cbd5e1;
   }
 
+  /* Comprehensive Dark Mode Coverage: Prevent accidental white boxes or stark borders in dark mode */
+  html.dark .bg-white:not([class*="dark:bg-"]):not(.keep-white),
+  .dark .bg-white:not([class*="dark:bg-"]):not(.keep-white) {
+    background-color: #0f172a !important;
+  }
+  html.dark .bg-slate-50:not([class*="dark:bg-"]),
+  .dark .bg-slate-50:not([class*="dark:bg-"]) {
+    background-color: #0b1120 !important;
+  }
+  html.dark .bg-slate-100:not([class*="dark:bg-"]),
+  .dark .bg-slate-100:not([class*="dark:bg-"]) {
+    background-color: #1e293b !important;
+  }
+  html.dark .border-slate-200:not([class*="dark:border-"]),
+  .dark .border-slate-200:not([class*="dark:border-"]) {
+    border-color: #1e293b !important;
+  }
+  html.dark .border-slate-300:not([class*="dark:border-"]),
+  .dark .border-slate-300:not([class*="dark:border-"]) {
+    border-color: #334155 !important;
+  }
+
+  /* Scoped dark surfaces for shot card and invoice canvas */
+  #invoice-paper.dark,
+  #customer-statement-shot-card.dark {
+    background-color: #080d1a !important;
+    color: #f1f5f9 !important;
+    border-color: #1e293b !important;
+  }
+  #invoice-paper.dark .text-slate-900,
+  #customer-statement-shot-card.dark .text-slate-900 {
+    color: #f8fafc !important;
+  }
+  #invoice-paper.dark .text-slate-800,
+  #customer-statement-shot-card.dark .text-slate-800 {
+    color: #f1f5f9 !important;
+  }
+  #invoice-paper.dark .text-slate-700,
+  #customer-statement-shot-card.dark .text-slate-700 {
+    color: #e2e8f0 !important;
+  }
+  #invoice-paper.dark .text-slate-600,
+  #customer-statement-shot-card.dark .text-slate-600 {
+    color: #cbd5e1 !important;
+  }
+  #invoice-paper.dark .text-slate-500,
+  #customer-statement-shot-card.dark .text-slate-500 {
+    color: #94a3b8 !important;
+  }
+  #invoice-paper.dark .bg-white,
+  #customer-statement-shot-card.dark .bg-white {
+    background-color: #0d1527 !important;
+    color: #f1f5f9 !important;
+  }
+  #invoice-paper.dark .bg-slate-50,
+  #customer-statement-shot-card.dark .bg-slate-50 {
+    background-color: #090f1f !important;
+  }
+  #invoice-paper.dark .bg-slate-100,
+  #customer-statement-shot-card.dark .bg-slate-100 {
+    background-color: #141e33 !important;
+  }
+  #invoice-paper.dark .border-slate-200,
+  #customer-statement-shot-card.dark .border-slate-200 {
+    border-color: #1e293b !important;
+  }
+  #invoice-paper.dark .border-slate-300,
+  #customer-statement-shot-card.dark .border-slate-300 {
+    border-color: #334155 !important;
+  }
+  #invoice-paper.dark .divide-slate-100,
+  #customer-statement-shot-card.dark .divide-slate-100 {
+    border-color: #1e293b !important;
+  }
+  #invoice-paper.dark .divide-slate-200,
+  #customer-statement-shot-card.dark .divide-slate-200 {
+    border-color: #1e293b !important;
+  }
+
   /* Dedicated Number Font & Tabular Monospace for Finance, Prices and Quantities */
   .font-mono, .font-number, [data-font="number"], code, kbd, pre {
     font-family: var(--app-number-font) !important;

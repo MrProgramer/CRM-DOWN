@@ -479,82 +479,82 @@ export const ReturnsManager: React.FC<ReturnsManagerProps> = ({
         </div>
       </div>
 
-      {/* 2. Analytical KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* 2. Analytical KPI Metric Cards - Modern Executive & Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
         
         {/* Card 1: To Supplier Returns */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-rose-200/80 dark:border-rose-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-rose-700 dark:text-rose-400">مرجوع به شرکت‌ها (خرید)</span>
-            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
+            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 group-hover:scale-105 transition-transform">
               <ArrowUpLeft className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalToSupplierAmount)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>کسر از بدهی شرکت</span>
-            <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
+            <span>کسر از بدهی شرکت:</span>
+            <span className="font-black text-rose-600 dark:text-rose-400 font-mono">
               {toPersianDigits(returns.filter(r => r.type === 'to_supplier').length)} سند
             </span>
           </div>
         </div>
 
         {/* Card 2: From Customer Returns */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-indigo-200/70 dark:border-indigo-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-indigo-200/80 dark:border-indigo-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400">مرجوع از مشتریان (فروش)</span>
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800">
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 group-hover:scale-105 transition-transform">
               <ArrowDownRight className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalFromCustomerAmount)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>برگشت به انبار و کسر از فاکتور</span>
-            <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
+            <span>برگشت به انبار:</span>
+            <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">
               {toPersianDigits(returns.filter(r => r.type === 'from_customer').length)} سند
             </span>
           </div>
         </div>
 
         {/* Card 3: Balance Impact */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-teal-200/70 dark:border-teal-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-teal-200/80 dark:border-teal-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-teal-700 dark:text-teal-400">خالص تراز مالی مرجوعی‌ها</span>
-            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border border-teal-200/80 dark:border-teal-800">
+            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 group-hover:scale-105 transition-transform">
               <ArrowRightLeft className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(Math.abs(totalToSupplierAmount - totalFromCustomerAmount))}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>
               {totalToSupplierAmount >= totalFromCustomerAmount 
-                ? 'کاهش خالص تعهدات' 
-                : 'کاهش خالص مطالبات'}
+                ? 'کاهش تعهدات:' 
+                : 'کاهش مطالبات:'}
             </span>
-            <span className="font-bold text-teal-600 dark:text-teal-400 text-[10px]">
-              {totalToSupplierAmount >= totalFromCustomerAmount ? 'تراز به نفع فروشگاه' : 'تراز به نفع مشتریان'}
+            <span className="font-black text-teal-600 dark:text-teal-400 font-mono">
+              {totalToSupplierAmount >= totalFromCustomerAmount ? 'به نفع فروشگاه' : 'به نفع خریدار'}
             </span>
           </div>
         </div>
 
         {/* Card 4: Financial Settlement Status */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-emerald-200/80 dark:border-emerald-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">وضعیت تسویه خزانه‌داری</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 group-hover:scale-105 transition-transform">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalRefundedAmount)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>در انتظار تسویه:</span>
             <span className="font-black text-amber-600 dark:text-amber-400 dir-ltr font-mono">
               {formatPrice(totalPendingRefundAmount)}

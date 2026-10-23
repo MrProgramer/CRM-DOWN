@@ -25,12 +25,15 @@ export function getMatchedReturnsForInvoice(
     if (isPurchase && r.type !== 'to_supplier') return false;
     if (!isPurchase && r.type !== 'from_customer') return false;
 
+    // Explicit offset linked in invoice.offsetReturnIds
+    if (invoice.offsetReturnIds && invoice.offsetReturnIds.includes(r.id)) return true;
+
     // Direct link by invoice ID or invoice number
     if (r.invoiceId && r.invoiceId === invoice.id) return true;
     if (r.invoiceNumber && r.invoiceNumber === invoice.invoiceNumber) return true;
 
-    // Fallback: unlinked return with identical customer and matching product in invoice
-    if (!r.invoiceId && !r.invoiceNumber) {
+    // For sales invoices only: fallback to unlinked customer returns matching the customer and product
+    if (!isPurchase && !r.invoiceId && !r.invoiceNumber) {
       const sameCust = invoice.customerName && r.customerName &&
         r.customerName.trim().toLowerCase() === invoice.customerName.trim().toLowerCase();
       const itemInInvoice = (invoice.items || []).some(it =>

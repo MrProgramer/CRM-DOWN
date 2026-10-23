@@ -667,37 +667,37 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       )}
 
       {/* 2. THE 4 ESSENTIAL COMMERCIAL PILLARS - UNIFIED, POLISHED & NON-REDUNDANT */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
         
         {/* Pillar 1: کل فروش و گردش دوره */}
         <div 
           onClick={() => onNavigateToTab('invoices', 'sale')}
-          className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs transition-all group"
+          className="group relative overflow-hidden bg-white dark:bg-[#0c1322] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-xs"
           title="مشاهده فاکتورهای فروش"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">گردش فروش صادره</span>
-            <div className={`w-8 h-8 rounded-lg ${currentTheme.primaryLight} ${currentTheme.primaryText} flex items-center justify-center shrink-0 border ${currentTheme.borderColor}`}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">گردش فروش صادره</span>
+            <div className={`p-2 rounded-xl ${currentTheme.badgeBg} ${currentTheme.primaryText} flex items-center justify-center shrink-0 border ${currentTheme.borderColor} group-hover:scale-105 transition-transform`}>
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
               {formatPrice(totalSalesRevenue)}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
               <span>میانگین فاکتور (AOV):</span>
-              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{formatPrice(averageOrderValue)}</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{formatPrice(averageOrderValue)}</span>
             </div>
           </div>
 
           {/* Cash vs Credit Conversion Meter */}
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/90 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">تسویه نقدی: {toPersianDigits(cashConversionRate.toFixed(0))}٪</span>
-              <span className="text-slate-500 dark:text-slate-400 font-bold">
-                {toPersianDigits(cashSales.length)} نقدی / {toPersianDigits(creditSales.length)} نسیه
+              <span className="text-slate-500 dark:text-slate-400 font-medium">تسویه نقدی: {toPersianDigits(cashConversionRate.toFixed(0))}٪</span>
+              <span className="text-slate-600 dark:text-slate-300 font-bold">
+                {toPersianDigits(cashSales.length)} ن / {toPersianDigits(creditSales.length)} ع
               </span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
@@ -712,18 +712,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* Pillar 2: سود ناخالص و بازدهی بازرگانی */}
         <div 
           onClick={() => onNavigateToTab('profit-loss')}
-          className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs transition-all group"
+          className="group relative overflow-hidden bg-white dark:bg-[#0c1322] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-xs"
           title="مشاهده تحلیل سود و زیان"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">سود ناخالص بازرگانی</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">سود ناخالص بازرگانی</span>
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
               {!isSecretMode ? (
                 <span className={totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
                   {totalProfit >= 0 ? '+' : ''}{formatPrice(totalProfit)}
@@ -734,15 +734,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
               <span>بهای تمام‌شده خرید (COGS):</span>
-              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                 {!isSecretMode ? formatPrice(totalSalesCost) : '••••••••'}
               </span>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">حاشیه بازدهی سود:</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400">حاشیه بازدهی سود:</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
               +{toPersianDigits(averageMargin.toFixed(1))}٪
             </span>
           </div>
@@ -751,28 +751,28 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* Pillar 3: وضعیت نقدینگی و خزانه‌داری */}
         <div 
           onClick={() => onNavigateToTab('liquidity')}
-          className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs transition-all group"
+          className="group relative overflow-hidden bg-white dark:bg-[#0c1322] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-xs"
           title="مشاهده گردش خزانه‌داری و حساب‌ها"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">نقدینگی حاضر (صندوق + بانک)</span>
-            <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 border border-teal-200 dark:border-teal-800">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">نقدینگی حاضر (صندوق + بانک)</span>
+            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 border border-teal-200 dark:border-teal-800 group-hover:scale-105 transition-transform">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
               {formatPrice(totalLiquidityNow)}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
               <span>صندوق نقد:</span>
-              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{formatPrice(cashBalance)}</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{formatPrice(cashBalance)}</span>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">حساب‌های بانکی:</span>
+          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400">حساب‌های بانکی:</span>
             <span className="font-mono font-bold text-teal-600 dark:text-teal-400">
               {formatPrice(bankBalance)}
             </span>
@@ -782,30 +782,30 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* Pillar 4: مطالبات بازار و سرمایه انبار */}
         <div 
           onClick={() => onNavigateToTab('customers')}
-          className="bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs transition-all group"
+          className="group relative overflow-hidden bg-white dark:bg-[#0c1322] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-xs"
           title="مشاهده حساب مشتریان و مطالبات بازار"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">مطالبات باز از خریداران</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">مطالبات باز از خریداران</span>
+            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800 group-hover:scale-105 transition-transform">
               <Users className="w-4 h-4" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xl font-black text-purple-700 dark:text-purple-300 tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-300 tracking-tight font-mono">
               {formatPrice(totalCustomerReceivables || totalCreditAmount)}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
               <span>ارزش سرمایه انبار:</span>
-              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                 {!isSecretMode ? formatPrice(totalWarehouseCostValue) : formatPrice(totalWarehouseSalesValue)}
               </span>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">تراز خالص بازار:</span>
+          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/90 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400">تراز خالص بازار:</span>
             <span className={`font-mono font-bold ${netMarketPosition >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {netMarketPosition >= 0 ? '+' : ''}{formatPrice(netMarketPosition)}
             </span>

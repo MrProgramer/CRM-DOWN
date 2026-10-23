@@ -31,6 +31,7 @@ import {
   getCurrentPersianTime,
   formatStockBreakdown,
   formatProductPackagingSpec,
+  resolvePacksPerCarton,
   normalizePersianText,
   matchProduct,
   resolveItemCoverPrice
@@ -66,7 +67,24 @@ export default function App() {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            return parsed;
+            return parsed.map(p => {
+              const ppc = Number(p.piecesPerCarton) || 0;
+              const ppp = Number(p.piecesPerPack) || 0;
+              let packs = Number(p.packsPerCarton) || 0;
+              // Auto-heal packaging if packsPerCarton was corrupted (e.g. multiplied by cartons)
+              if (ppc > 0 && ppp > 0 && ppc % ppp === 0) {
+                const truePacks = Math.round(ppc / ppp);
+                if (packs * ppp !== ppc) {
+                  packs = truePacks;
+                }
+              }
+              return {
+                ...p,
+                packsPerCarton: packs > 0 ? packs : undefined,
+                piecesPerCarton: ppc > 0 ? ppc : (packs > 0 && ppp > 0 ? packs * ppp : (p.piecesPerCarton || 1)),
+                piecesPerPack: ppp > 0 ? ppp : (p.piecesPerPack || 1),
+              };
+            });
           }
         } catch (e) {
           console.error(`Failed to parse products from key ${key}`, e);
@@ -89,30 +107,69 @@ export default function App() {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            return parsed.map(inv => ({
-              ...inv,
-              customerName: inv.customerName === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : (inv.customerName || ''),
-              customerPhone: inv.customerPhone === '09999123001' ? '09120000000' : (inv.customerPhone || ''),
-              customerCity: inv.customerCity === 'شبستر' ? 'مرکزی' : (inv.customerCity || ''),
-              customerAddress: inv.customerAddress?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : (inv.customerAddress || ''),
-              items: (inv.items || []).map(item => ({
-                ...item,
-                cartonsCount: Number(item.cartonsCount) || 0,
-                extraPieces: Number(item.extraPieces) || 0,
-                piecesPerCarton: Number(item.piecesPerCarton) || 1,
-                totalPieces: Number(item.totalPieces) || 0,
-                unitPurchasePrice: Number(item.unitPurchasePrice) || 0,
-                unitSellingPrice: Number(item.unitSellingPrice) || 0,
-                totalPrice: Number(item.totalPrice) || 0,
-                totalPurchaseCost: Number(item.totalPurchaseCost) || 0,
-                profitAmount: Number(item.profitAmount) || 0,
-                profitPercentage: Number(item.profitPercentage) || 0,
-              })),
-              subtotal: Number(inv.subtotal) || 0,
-              discount: Number(inv.discount) || 0,
-              tax: Number(inv.tax) || 0,
-              finalAmount: Number(inv.finalAmount) || 0,
-            }));
+            return parsed.map(inv => {
+              const isPur = inv.type === 'purchase';
+              const cleanItems = (inv.items || []).map((item: any) => {
+                const cartonsCount = Number(item.cartonsCount) || 0;
+                const extraPieces = Number(item.extraPieces) || 0;
+                const piecesPerCarton = Number(item.piecesPerCarton) || 1;
+                const totalPieces = Number(item.totalPieces) || ((cartonsCount * piecesPerCarton) + extraPieces);
+                const unitPurchasePrice = Number(item.unitPurchasePrice) || 0;
+                const unitSellingPrice = Number(item.unitSellingPrice) || 0;
+                const ppp = Number(item.piecesPerPack) || 1;
+                const packsCount = resolvePacksPerCarton(item.packsCount, cartonsCount, ppp, piecesPerCarton, item.packsPerCarton);
+
+                const lineTotal = isPur
+                  ? (unitPurchasePrice > 0 && totalPieces > 0 ? totalPieces * unitPurchasePrice : (Number(item.totalPurchaseCost) || Number(item.totalPrice) || 0))
+                  : (unitSellingPrice > 0 && totalPieces > 0 ? totalPieces * unitSellingPrice : (Number(item.totalPrice) || 0));
+
+                return {
+                  ...item,
+                  cartonsCount,
+                  extraPieces,
+                  piecesPerCarton,
+                  packsCount,
+                  piecesPerPack: ppp,
+                  totalPieces,
+                  unitPurchasePrice,
+                  unitSellingPrice,
+                  totalPrice: lineTotal,
+                  totalPurchaseCost: isPur ? lineTotal : (Number(item.totalPurchaseCost) || (totalPieces * unitPurchasePrice)),
+                  profitAmount: Number(item.profitAmount) || 0,
+                  profitPercentage: Number(item.profitPercentage) || 0,
+                };
+              });
+
+              const itemsSum = cleanItems.reduce((s: number, it: any) => s + it.totalPrice, 0);
+              const discount = Number(inv.discount) || 0;
+              const tax = Number(inv.tax) || 0;
+              const offsetReturns = Number(inv.offsetReturnsTotal) || 0;
+              const expensesAddition = Number(inv.expensesTotalAddition) || (inv.expenses || []).filter((e: any) => e.action === 'add').reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
+              const expensesDeduction = Number(inv.expensesTotalDeduction) || (inv.expenses || []).filter((e: any) => e.action === 'deduct').reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
+
+              const calculatedFinal = isPur
+                ? Math.max(0, itemsSum - discount + tax - offsetReturns) + expensesAddition
+                : Math.max(0, itemsSum - discount + tax - offsetReturns - expensesDeduction + expensesAddition);
+
+              // Auto-heal corrupted subtotal or finalAmount (e.g. 6,475,000 when items total 110,155,000)
+              const subtotal = (inv.subtotal && Math.abs(inv.subtotal - itemsSum) < 100) ? inv.subtotal : itemsSum;
+              const finalAmount = (inv.finalAmount && Math.abs(inv.finalAmount - calculatedFinal) < 100)
+                ? inv.finalAmount
+                : calculatedFinal;
+
+              return {
+                ...inv,
+                customerName: inv.customerName === 'عرفان مرادیان (مدیریت انبار)' ? 'مدیریت انبار' : (inv.customerName || ''),
+                customerPhone: inv.customerPhone === '09999123001' ? '09120000000' : (inv.customerPhone || ''),
+                customerCity: inv.customerCity === 'شبستر' ? 'مرکزی' : (inv.customerCity || ''),
+                customerAddress: inv.customerAddress?.includes('شبستر') ? 'دفتر مرکزی انبار و لجستیک' : (inv.customerAddress || ''),
+                items: cleanItems,
+                subtotal,
+                discount,
+                tax,
+                finalAmount,
+              };
+            });
           }
         } catch (e) {
           console.error(`Failed to parse invoices from key ${key}`, e);
@@ -1689,9 +1746,9 @@ export default function App() {
       // Sync packaging specs, unit title, name, category, and pricing from invoice items into product catalog
       const itemInInv = savedInvoice.items.find(it => it.productId === p.id || (p.name && it.productName && it.productName.trim().toLowerCase() === p.name.trim().toLowerCase()));
       if (itemInInv) {
-        const itemPacks = Number(itemInInv.packsCount) > 0 ? Number(itemInInv.packsCount) : updatedP.packsPerCarton;
         const itemPpp = Number(itemInInv.piecesPerPack) > 0 ? Number(itemInInv.piecesPerPack) : updatedP.piecesPerPack;
         const itemPpc = Number(itemInInv.piecesPerCarton) > 0 ? Number(itemInInv.piecesPerCarton) : updatedP.piecesPerCarton;
+        const itemPacks = resolvePacksPerCarton(itemInInv.packsCount, itemInInv.cartonsCount, itemPpp, itemPpc, updatedP.packsPerCarton);
 
         updatedP = {
           ...updatedP,
@@ -1713,9 +1770,9 @@ export default function App() {
     savedInvoice.items.forEach(it => {
       const exists = updatedProducts.some(p => p.id === it.productId || (p.name && it.productName && p.name.trim().toLowerCase() === it.productName.trim().toLowerCase()));
       if (!exists && it.productName) {
-        const itemPacks = Number(it.packsCount) > 0 ? Number(it.packsCount) : 1;
         const itemPpp = Number(it.piecesPerPack) > 0 ? Number(it.piecesPerPack) : 1;
-        const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (itemPacks * itemPpp);
+        const itemPpc = Number(it.piecesPerCarton) > 0 ? Number(it.piecesPerCarton) : (itemPpp > 1 ? itemPpp : 1);
+        const itemPacks = resolvePacksPerCarton(it.packsCount, it.cartonsCount, itemPpp, itemPpc, 1);
         const newProd: Product = {
           id: it.productId || `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           name: it.productName.trim(),
@@ -2173,7 +2230,7 @@ export default function App() {
         category: updatedProd.category || (it as any).category,
         unitTitle: updatedProd.unitTitle || it.unitTitle,
         piecesPerCarton: ppc,
-        packsCount: packs > 0 ? (cartons * packs) : (it.packsCount || 0),
+        packsCount: packs > 0 ? packs : (it.packsCount || 0),
         piecesPerPack: ppp > 0 ? ppp : (it.piecesPerPack || 0),
         cartonsCount: cartons,
         extraPieces: extra,
@@ -2915,7 +2972,7 @@ export default function App() {
 
       {/* Main View Area with RTL Sidebar Container */}
       <div className={`flex-1 ${isSidebarCollapsed ? 'lg:pr-20' : 'lg:pr-64'} w-full min-w-0 overflow-x-clip transition-all duration-300`}>
-        <main className="p-4 sm:p-6 lg:p-8 max-w-[1700px] w-full mx-auto min-w-0">
+        <main className="p-2.5 sm:p-5 lg:p-7 max-w-[1700px] w-full mx-auto min-w-0">
           <AnimatePresence mode="wait">
           {currentTab === 'dashboard' && (
             <motion.div

@@ -711,6 +711,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
     setShotCustomer(customer);
     setCopiedText(false);
     setShotInvoiceLimit(0);
+    setShotThemeMode(isDarkMode ? 'night' : 'day');
     setIsShotModalOpen(true);
   };
 
@@ -1208,80 +1209,80 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
         </div>
       </div>
 
-      {/* 2. Cohesive Rounded-3xl Stats - Styled like ReturnsManager */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 no-print">
+      {/* 2. Cohesive VIP Executive Stats - Responsive & Modern */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs no-print">
         
         {/* Stat 1: کل مشتریان */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200/70 dark:border-blue-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">تعداد کل طرف‌حساب‌ها</span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">تعداد کل طرف‌حساب‌ها</span>
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 group-hover:scale-105 transition-transform">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
-            {toPersianDigits(customers.length)} <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">طرف‌حساب</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
+            {toPersianDigits(customers.length)} <span className="text-xs font-sans text-slate-500 font-bold">طرف‌حساب</span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span>پرونده‌های معاملاتی فعال:</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
+            <span>پرونده‌های فعال:</span>
+            <span className="font-black text-blue-600 dark:text-blue-400 font-mono">
               {toPersianDigits(customers.length)} پرونده
             </span>
           </div>
         </div>
 
         {/* Stat 2: مطالبات (بدهکاران) */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-rose-200/80 dark:border-rose-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-rose-700 dark:text-rose-400">کل مطالبات بازرگانی (نسیه)</span>
-            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800">
+            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalDebtorAmount)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>طلب از خریداران:</span>
-            <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+            <span className="font-black text-rose-600 dark:text-rose-400 font-mono">
               {toPersianDigits(totalDebtorsCount)} مشتری بدهکار
             </span>
           </div>
         </div>
 
         {/* Stat 3: مجموع دریافتی‌ها */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-emerald-200/70 dark:border-emerald-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-emerald-200/80 dark:border-emerald-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">مجموع واریزی‌های ثبت‌شده</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 group-hover:scale-105 transition-transform">
               <TrendingDown className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalPaymentsReceived)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>کل تسویه‌ها و پرداختی‌ها:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {toPersianDigits(payments.filter((p) => (Number(p.amount) || 0) > 0).length)} تراکنش
             </span>
           </div>
         </div>
 
         {/* Stat 4: بستانکاران */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-amber-200/70 dark:border-amber-900/40 shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+        <div className="group relative overflow-hidden bg-white dark:bg-[#0c1322] rounded-2xl p-4 sm:p-5 border border-amber-200/80 dark:border-amber-900/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-700 dark:text-amber-400">پیش‌پرداخت (بستانکاران)</span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800">
+            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 group-hover:scale-105 transition-transform">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-3 dir-ltr text-right font-mono">
             {formatPrice(totalCreditorAmount)}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/90">
             <span>مانده بستانکار مشتریان:</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
+            <span className="font-black text-amber-600 dark:text-amber-400 font-mono">
               {toPersianDigits(customers.filter(c => getCustomerLiveBalance(c) < 0).length)} طرف‌حساب
             </span>
           </div>
@@ -2717,7 +2718,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
         )}
       </AnimatePresence>
 
-      {/* MODAL 5: Customer Account Shot Card Modal (کارت تصویری وضعیت حساب - منطبق دقیق بر طرح) */}
+      {/* MODAL 5: Customer Account Shot Card Modal (کارت تصویری وضعیت حساب - فوق‌العاده حرفه‌ای، متقارن و تمیز) */}
       <AnimatePresence>
         {isShotModalOpen && targetShotCustomer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md no-print overflow-y-auto">
@@ -2725,10 +2726,10 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
+              className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 my-auto"
             >
               {/* Modal Header Bar */}
-              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60 shrink-0">
+              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-950/70 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-2xl text-white shadow-xs ${theme.primary}`}>
                     <Camera className="w-5 h-5" />
@@ -2740,8 +2741,8 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                         {targetShotCustomer.name}
                       </span>
                     </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      خلاصه گرافیکی حساب، مبالغ محاسباتی و گردش‌های انتخابی طرف‌حساب
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      طراحی اجرایی و خروجی باکیفیت جهت ارسال در تلگرام، ایتا و چاپ گزارش
                     </p>
                   </div>
                 </div>
@@ -2749,6 +2750,7 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
                   type="button"
                   onClick={() => setIsShotModalOpen(false)}
                   className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                  title="بستن پنجره"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2757,1080 +2759,845 @@ export const CustomerManager: React.FC<CustomerManagerProps> = ({
               {/* Scrollable Body */}
               <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 flex-1">
                 
-                {/* Advanced Controls Toolbar */}
-                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/60 text-xs">
-                  
-                  {/* 1. Item Filter Selector: All / Invoices Only / Payments Only */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                        <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-                        نحوه نمایش اقلام در لیست:
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {shotFilterType === 'all' ? 'همه (فاکتورها + واریزی‌ها)' : shotFilterType === 'invoices' ? 'فقط فاکتورها' : 'فقط واریزی‌ها و دریافت‌ها'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setShotFilterType('all')}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                          shotFilterType === 'all'
-                            ? `${theme.primary} text-white shadow-xs`
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <FileSpreadsheet className="w-3.5 h-3.5" />
-                        <span>همه (فاکتور + واریزی)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShotFilterType('invoices')}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                          shotFilterType === 'invoices'
-                            ? `${theme.primary} text-white shadow-xs`
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>فقط فاکتورها</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShotFilterType('payments')}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                          shotFilterType === 'payments'
-                            ? `${theme.primary} text-white shadow-xs`
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <Banknote className="w-3.5 h-3.5" />
-                        <span>فقط واریزی‌ها</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 2. Display Limits (Rows count in table, Items count in latest invoice & Invoices calculation limit) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-700/60">
-                    {/* 2A. Table rows limit */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                          <ListOrdered className="w-3.5 h-3.5 text-slate-400" />
-                          ردیف‌های جدول گردش‌ها:
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {shotRecentRowsLimit > 0 ? `${toPersianDigits(shotRecentRowsLimit)} ردیف` : 'همه'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {[3, 5, 10, 15].map((num) => (
-                          <button
-                            key={`shot-rows-${num}`}
-                            type="button"
-                            onClick={() => setShotRecentRowsLimit(num)}
-                            className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                              shotRecentRowsLimit === num
-                                ? `${theme.primary} text-white shadow-xs`
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
-                            }`}
-                          >
-                            {toPersianDigits(num)}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => setShotRecentRowsLimit(0)}
-                          className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                            shotRecentRowsLimit === 0
-                              ? `${theme.primary} text-white shadow-xs`
-                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
-                          }`}
-                        >
-                          همه
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 2B. Latest invoice items count limit */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                          <Package className="w-3.5 h-3.5 text-slate-400" />
-                          اقلام آخرین فاکتور:
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {shotLatestInvItemsLimit === 3 ? '۳ قلم' : shotLatestInvItemsLimit === 5 ? '۵ قلم' : shotLatestInvItemsLimit === 0 ? 'همه' : 'مخفی'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {[
-                          { val: 3, label: '۳ قلم' },
-                          { val: 5, label: '۵ قلم' },
-                          { val: 0, label: 'همه اقلام' },
-                          { val: -1, label: 'عدم نمایش' },
-                        ].map((opt) => (
-                          <button
-                            key={`shot-items-limit-${opt.val}`}
-                            type="button"
-                            onClick={() => setShotLatestInvItemsLimit(opt.val)}
-                            className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                              shotLatestInvItemsLimit === opt.val
-                                ? `${theme.primary} text-white shadow-xs`
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 2C. Invoices calculation limit */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
-                          فاکتورهای محاسباتی:
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {shotInvoiceLimit > 0 ? `${toPersianDigits(shotInvoiceLimit)} فاکتور` : 'همه'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {[
-                          { val: 0, label: 'همه' },
-                          { val: 3, label: '۳ فاکتور' },
-                          { val: 5, label: '۵ فاکتور' },
-                          { val: 10, label: '۱۰ فاکتور' },
-                        ].map((opt) => (
-                          <button
-                            key={`shot-inv-limit-${opt.val}`}
-                            type="button"
-                            onClick={() => setShotInvoiceLimit(opt.val)}
-                            className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                              shotInvoiceLimit === opt.val
-                                ? `${theme.primary} text-white shadow-xs`
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Customization Checkboxes */}
-                  <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between flex-wrap gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={shotShowSummaryCards}
-                        onChange={(e) => setShotShowSummaryCards(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-                      />
-                      <span>کارت‌های مالی ۳گانه (بدهی/واریزی/مانده)</span>
-                    </label>
-
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={shotShowLatestInvoice}
-                        onChange={(e) => setShotShowLatestInvoice(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-                      />
-                      <span>جزئیات آخرین فاکتور (کارتن‌ها و اقلام)</span>
-                    </label>
-
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={shotShowAccountSummary}
-                        onChange={(e) => setShotShowAccountSummary(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-                      />
-                      <span>کادر جامع خلاصه حساب</span>
-                    </label>
-
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={shotShowBankInfo}
-                        onChange={(e) => setShotShowBankInfo(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-                      />
-                      <span>شماره کارت فروشگاه</span>
-                    </label>
-
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={shotShowCustomerContact}
-                        onChange={(e) => setShotShowCustomerContact(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
-                      />
-                      <span>اطلاعات تماس</span>
-                    </label>
-                  </div>
-
-                  {/* 4. Theme Mode Selector Pill (حالت روز / حالت شب) */}
-                  <div className="flex items-center justify-between p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setShotThemeMode('day')}
-                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                        shotThemeMode === 'day'
-                          ? 'bg-slate-100 text-slate-900 shadow-xs border border-slate-200'
-                          : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                      }`}
-                    >
-                      <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      <span>قالب روز (روشن)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShotThemeMode('night')}
-                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus:outline-none focus:ring-0 active:outline-none focus-visible:outline-none ${
-                        shotThemeMode === 'night'
-                          ? 'bg-slate-800 text-white shadow-xs border border-slate-700'
-                          : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                      }`}
-                    >
-                      <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>قالب شب (تاریک بدون حاشیه سفید)</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Printable / Capturable Shot Card Container (کاملاً متقارن، فلت، تراز دقیق دوطرفه، پشتیبانی کامل شب و بدون تومان تکراری) */}
-                <div 
-                  id="customer-statement-shot-card"
-                  className={`p-6 rounded-2xl border space-y-4 w-full mx-auto relative overflow-hidden transition-all duration-200 ${
-                    shotThemeMode === 'day'
-                      ? 'bg-white text-slate-900 border-slate-200 shadow-sm'
-                      : 'dark bg-slate-950 text-slate-100 border-slate-800 shadow-md'
-                  }`}
-                  style={{ direction: 'rtl', boxSizing: 'border-box' }}
-                >
-                  {/* 1. TOP HEADER (هدر لوگو برنامه و صورت‌حساب مشتری با تقارن کامل) */}
-                  <div className={`flex items-center justify-between border-b pb-3.5 relative z-10 ${
-                    shotThemeMode === 'day' ? 'border-slate-100' : 'border-slate-800'
-                  }`}>
-                    {/* Header Right (RTL): صورت‌حساب مشتری */}
-                    <div className="flex items-center gap-3">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                        shotThemeMode === 'day' 
-                          ? `${theme.primaryLight} ${theme.primaryText} border ${theme.borderColor}`
-                          : `bg-slate-900 ${theme.primaryText} border border-slate-800`
-                      } shadow-none shrink-0`}>
-                        <FileText className="w-5 h-5 stroke-[2.2]" />
-                      </div>
-                      <div className="text-right">
-                        <h3 className={`font-black text-xl sm:text-2xl tracking-tight leading-none ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                          صورت‌حساب مشتری
-                        </h3>
-                        <p className="text-xs font-medium mt-1 text-slate-400">
-                          مشاهده و مدیریت حساب مشتریان
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Header Left (RTL): برند بازرگانی و لوگوی واقعی برنامه */}
-                    <div className="flex items-center gap-3">
-                      <div className="text-left">
-                        <h4 className={`font-black text-xl sm:text-2xl tracking-tight leading-none ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                          {settings.brandName || 'بازرگانی'}
-                        </h4>
-                        <p className="text-xs font-medium text-left mt-1 text-slate-400">
-                          {settings.subtitle || 'فروش کالا و خدمات'}
-                        </p>
-                      </div>
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${theme.primary} text-white shadow-xs overflow-hidden shrink-0`}>
-                        {settings.appLogo ? (
-                          settings.appLogo.startsWith('data:image') ? (
-                            <img src={settings.appLogo} alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
-                          ) : (
-                            <span className="text-xl select-none font-black">{settings.appLogo}</span>
-                          )
-                        ) : (
-                          <Store className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2. SUB-HEADER PILLS (فیلتر فاکتورها، نوع نمایش و تاریخ) */}
-                  <div className="flex items-center justify-between relative z-10 text-xs">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold border ${
-                        shotThemeMode === 'day'
-                          ? `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor}`
-                          : `bg-slate-900 ${theme.primaryText} border-slate-800`
-                      }`}>
-                        <FileSpreadsheet className="w-3.5 h-3.5" />
-                        <span>
-                          {shotFilterType === 'payments' 
-                            ? `${toPersianDigits(displayedShotRows.length)} سند واریزی`
-                            : shotFilterType === 'invoices'
-                            ? (shotInvoiceLimit > 0 ? `${toPersianDigits(activeShotInvoices.length)} فاکتور آخر` : `${toPersianDigits(activeShotInvoices.length)} فاکتور`)
-                            : `${toPersianDigits(displayedShotRows.length)} گردش حساب`}
-                        </span>
-                      </div>
-
-                      {shotFilterType !== 'all' && (
-                        <span className={`text-[11px] font-bold px-2 py-1 rounded-md border ${
-                          shotThemeMode === 'day'
-                            ? 'bg-slate-100 text-slate-700 border-slate-200'
-                            : 'bg-slate-900 text-slate-300 border-slate-800'
-                        }`}>
-                          {shotFilterType === 'invoices' ? 'نمایش فاکتورها' : 'نمایش واریزی‌ها'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold border ${
-                      shotThemeMode === 'day'
-                        ? 'bg-slate-50 text-slate-700 border-slate-200'
-                        : 'bg-slate-900 text-slate-300 border-slate-800'
-                    }`}>
-                      <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-                      <span>تا تاریخ {toPersianDigits(getCurrentPersianDate())}</span>
-                    </div>
-                  </div>
-
-                  {/* 3. CUSTOMER PROFILE & 3 FINANCIAL METRIC CARDS ROW */}
-                  <div className={`grid grid-cols-12 gap-3.5 items-stretch p-3.5 rounded-xl border relative z-10 ${
-                    shotThemeMode === 'day'
-                      ? 'bg-slate-50/70 border-slate-200/90'
-                      : 'bg-slate-900/60 border-slate-800'
-                  }`}>
-                    {/* Right: Customer Profile Card */}
-                    <div className={`${shotShowSummaryCards ? 'col-span-12 lg:col-span-5' : 'col-span-12'} flex items-center gap-3 p-3 rounded-xl border ${
-                      shotThemeMode === 'day'
-                        ? 'bg-white border-slate-200/90 text-slate-900'
-                        : 'bg-slate-900 border-slate-800 text-slate-100'
-                    }`}>
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-white text-lg shadow-none shrink-0 ${theme.primary}`}>
-                        <User className="w-5 h-5 stroke-[2.2]" />
-                      </div>
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${
-                            shotThemeMode === 'day'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-emerald-950/70 text-emerald-300 border-emerald-800'
-                          }`}>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            <span>طرف‌حساب فعال</span>
-                          </span>
-                        </div>
-                        <h4 className={`font-black text-base sm:text-lg leading-tight truncate ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                          {targetShotCustomer.name}
-                        </h4>
-                        {shotShowCustomerContact && (
-                          <div className={`flex items-center gap-2 text-xs font-bold flex-wrap ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {targetShotCustomer.phone && (
-                              <span className="inline-flex items-center gap-1 font-mono dir-ltr">
-                                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                <span>{toPersianDigits(targetShotCustomer.phone)}</span>
+                {/* Advanced Controls Toolbar: Clean, Compact & Beautiful */}
+                {(() => {
+                  const isDarkShot = shotThemeMode === 'night';
+                  return (
+                    <>
+                      <div className="space-y-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-xs">
+                        {/* Row 1: Theme Mode Switch (Day / Night) & Item Filter */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Theme Mode Selector (حالت روز / حالت شب) */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                {isDarkShot ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+                                قالب رنگی خروجی تصویر:
                               </span>
-                            )}
-                            {targetShotCustomer.phone && targetShotCustomer.city && <span>•</span>}
-                            {targetShotCustomer.city && (
-                              <span className="inline-flex items-center gap-1 truncate">
-                                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                <span>{targetShotCustomer.city}</span>
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {isDarkShot ? 'تم شب (مشکی یکدست و باکلاس)' : 'تم روز (روشن و تمیز)'}
                               </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Left: 3 Metric Cards */}
-                    {shotShowSummaryCards && (
-                      <div className={`col-span-12 lg:col-span-7 grid grid-cols-3 gap-2 p-2.5 rounded-xl border ${
-                        shotThemeMode === 'day'
-                          ? 'bg-white border-slate-200/90'
-                          : 'bg-slate-900 border-slate-800'
-                      }`}>
-                        {/* 1. مجموع بدهی */}
-                        <div className="space-y-1 text-right px-1.5 py-0.5">
-                          <div className="flex items-center gap-1.5 justify-start">
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                              shotThemeMode === 'day' ? 'bg-rose-100 text-rose-600' : 'bg-rose-950/70 text-rose-400'
-                            }`}>
-                              <Receipt className="w-3 h-3" />
                             </div>
-                            <span className={`text-[10px] font-bold whitespace-nowrap ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>مجموع بدهی</span>
+                            <div className="flex items-center p-1 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setShotThemeMode('night')}
+                                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                  isDarkShot
+                                    ? 'bg-slate-800 text-white shadow-xs border border-slate-700'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                              >
+                                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>قالب شب (تیره)</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShotThemeMode('day')}
+                                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                  !isDarkShot
+                                    ? 'bg-slate-100 text-slate-900 shadow-xs border border-slate-200 font-black'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                              >
+                                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                                <span>قالب روز (روشن)</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className="text-sm sm:text-base font-black font-mono dir-ltr text-right text-rose-600 dark:text-rose-400 leading-tight">
-                            {formatPrice(targetShotTotalInvoicesAmount, false)}
+
+                          {/* Filter Selector: All / Invoices Only / Payments Only */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                                نوع اقلام در جدول:
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {shotFilterType === 'all' ? 'همه (فاکتورها + واریزی‌ها)' : shotFilterType === 'invoices' ? 'فقط فاکتورها' : 'فقط واریزی‌ها'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 p-1 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                              <button
+                                type="button"
+                                onClick={() => setShotFilterType('all')}
+                                className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                                  shotFilterType === 'all'
+                                    ? `${theme.primary} text-white shadow-xs`
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <FileSpreadsheet className="w-3.5 h-3.5" />
+                                <span>همه اقلام</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShotFilterType('invoices')}
+                                className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                                  shotFilterType === 'invoices'
+                                    ? `${theme.primary} text-white shadow-xs`
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>فقط فاکتورها</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShotFilterType('payments')}
+                                className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                                  shotFilterType === 'payments'
+                                    ? `${theme.primary} text-white shadow-xs`
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <Banknote className="w-3.5 h-3.5" />
+                                <span>فقط واریزی‌ها</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className={`text-[9px] font-bold text-left ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>تومان</div>
                         </div>
 
-                        {/* 2. مجموع پرداخت‌ها */}
-                        <div className={`space-y-1 text-right border-r border-l px-2 py-0.5 ${
-                          shotThemeMode === 'day' ? 'border-slate-100' : 'border-slate-800'
+                        {/* Row 2: Display Limits */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2.5 border-t border-slate-200/80 dark:border-slate-800">
+                          {/* 2A. Table rows limit */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <ListOrdered className="w-3.5 h-3.5 text-slate-400" />
+                                ردیف‌های جدول:
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {shotRecentRowsLimit > 0 ? `${toPersianDigits(shotRecentRowsLimit)} ردیف` : 'همه'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {[3, 5, 10, 15].map((num) => (
+                                <button
+                                  key={`shot-rows-${num}`}
+                                  type="button"
+                                  onClick={() => setShotRecentRowsLimit(num)}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                    shotRecentRowsLimit === num
+                                      ? `${theme.primary} text-white shadow-xs`
+                                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                  }`}
+                                >
+                                  {toPersianDigits(num)}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setShotRecentRowsLimit(0)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                  shotRecentRowsLimit === 0
+                                    ? `${theme.primary} text-white shadow-xs`
+                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                }`}
+                              >
+                                همه
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 2B. Latest invoice items limit */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <Package className="w-3.5 h-3.5 text-slate-400" />
+                                اقلام آخرین فاکتور:
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {shotLatestInvItemsLimit === 3 ? '۳ قلم' : shotLatestInvItemsLimit === 5 ? '۵ قلم' : shotLatestInvItemsLimit === 0 ? 'همه' : 'مخفی'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {[
+                                { val: 3, label: '۳ قلم' },
+                                { val: 5, label: '۵ قلم' },
+                                { val: 0, label: 'همه' },
+                                { val: -1, label: 'مخفی' },
+                              ].map((opt) => (
+                                <button
+                                  key={`shot-items-limit-${opt.val}`}
+                                  type="button"
+                                  onClick={() => setShotLatestInvItemsLimit(opt.val)}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                    shotLatestInvItemsLimit === opt.val
+                                      ? `${theme.primary} text-white shadow-xs`
+                                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                  }`}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 2C. Invoices calculation limit */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
+                                فاکتورهای محاسباتی:
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {shotInvoiceLimit > 0 ? `${toPersianDigits(shotInvoiceLimit)} فاکتور` : 'همه'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {[
+                                { val: 0, label: 'همه' },
+                                { val: 3, label: '۳ فاکتور' },
+                                { val: 5, label: '۵ فاکتور' },
+                                { val: 10, label: '۱۰ فاکتور' },
+                              ].map((opt) => (
+                                <button
+                                  key={`shot-inv-limit-${opt.val}`}
+                                  type="button"
+                                  onClick={() => setShotInvoiceLimit(opt.val)}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                    shotInvoiceLimit === opt.val
+                                      ? `${theme.primary} text-white shadow-xs`
+                                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                  }`}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Row 3: Customization Checkboxes */}
+                        <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={shotShowSummaryCards}
+                              onChange={(e) => setShotShowSummaryCards(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                            />
+                            <span>کارت‌های مالی ۳گانه</span>
+                          </label>
+
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={shotShowLatestInvoice}
+                              onChange={(e) => setShotShowLatestInvoice(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                            />
+                            <span>جزئیات آخرین فاکتور</span>
+                          </label>
+
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={shotShowAccountSummary}
+                              onChange={(e) => setShotShowAccountSummary(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                            />
+                            <span>کادر خلاصه جامع حساب</span>
+                          </label>
+
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={shotShowBankInfo}
+                              onChange={(e) => setShotShowBankInfo(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                            />
+                            <span>اطلاعات کارت بانکی</span>
+                          </label>
+
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={shotShowCustomerContact}
+                              onChange={(e) => setShotShowCustomerContact(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 cursor-pointer accent-indigo-600"
+                            />
+                            <span>اطلاعات تماس و نشانی</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Printable / Capturable Shot Card Container */}
+                      <div 
+                        id="customer-statement-shot-card"
+                        className={`p-6 sm:p-8 rounded-3xl border space-y-5 w-full mx-auto relative overflow-hidden transition-all duration-200 select-text ${
+                          isDarkShot
+                            ? 'dark bg-[#0a0f1d] text-slate-100 border-slate-800 shadow-2xl'
+                            : 'bg-white text-slate-900 border-slate-200/90 shadow-xl'
+                        }`}
+                        style={{ direction: 'rtl', boxSizing: 'border-box' }}
+                      >
+                        {/* 1. TOP EXECUTIVE HEADER */}
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b ${
+                          isDarkShot ? 'border-slate-800/90' : 'border-slate-200/80'
                         }`}>
-                          <div className="flex items-center gap-1.5 justify-start">
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                              shotThemeMode === 'day' ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-950/70 text-emerald-400'
-                            }`}>
-                              <CreditCard className="w-3 h-3" />
+                          {/* Right side: Brand Identity */}
+                          <div className="flex items-center gap-3.5">
+                            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center ${theme.primary} text-white shadow-sm overflow-hidden shrink-0`}>
+                              {settings.appLogo ? (
+                                settings.appLogo.startsWith('data:image') ? (
+                                  <img src={settings.appLogo} alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <span className="text-xl sm:text-2xl select-none font-black">{settings.appLogo}</span>
+                                )
+                              ) : (
+                                <Store className="w-6 h-6 text-white" />
+                              )}
                             </div>
-                            <span className={`text-[10px] font-bold whitespace-nowrap ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>مجموع واریزی‌ها</span>
-                          </div>
-                          <div className="text-sm sm:text-base font-black font-mono dir-ltr text-right text-emerald-600 dark:text-emerald-400 leading-tight">
-                            {formatPrice(targetShotTotalPaid, false)}
-                          </div>
-                          <div className={`text-[9px] font-bold text-left ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>تومان</div>
-                        </div>
-
-                        {/* 3. مانده حساب */}
-                        <div className="space-y-1 text-right px-1.5 py-0.5">
-                          <div className="flex items-center gap-1.5 justify-start">
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                              shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText}` : 'bg-slate-800 text-sky-400'
-                            }`}>
-                              <Scale className="w-3 h-3" />
-                            </div>
-                            <span className={`text-[10px] font-bold whitespace-nowrap ${shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'}`}>مانده حساب</span>
-                          </div>
-                          <div className={`text-sm sm:text-base font-black font-mono dir-ltr text-right leading-tight ${
-                            targetShotLiveBal > 0 
-                              ? 'text-rose-600 dark:text-rose-400' 
-                              : targetShotLiveBal < 0 
-                              ? (shotThemeMode === 'day' ? theme.primaryText : 'text-sky-400')
-                              : 'text-emerald-600 dark:text-emerald-400'
-                          }`}>
-                            {targetShotLiveBal > 0 
-                              ? `+${formatPrice(targetShotLiveBal, false)}` 
-                              : targetShotLiveBal < 0 
-                              ? `-${formatPrice(Math.abs(targetShotLiveBal), false)}` 
-                              : '۰'}
-                          </div>
-                          <div className={`text-[9px] font-bold text-left ${shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'}`}>تومان</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 4. TABLE: تاریخچه گردش‌ها، فاکتورها و واریزی‌ها (منطبق ۱۰۰٪ بر فیلتر انتخابی) */}
-                  <div className="space-y-2 relative z-10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText className={`w-4 h-4 ${shotThemeMode === 'day' ? theme.primaryText : 'text-sky-400'}`} />
-                        <h4 className={`font-black text-sm ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                          {shotFilterType === 'payments' 
-                            ? 'گردش واریزی‌ها و دریافت‌های مالی' 
-                            : shotFilterType === 'invoices' 
-                            ? 'تاریخچه فاکتورهای صادره' 
-                            : 'تاریخچه فاکتورها و واریزی‌ها'}
-                        </h4>
-                      </div>
-                      <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
-                        shotThemeMode === 'day' 
-                          ? `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor}`
-                          : 'bg-slate-900 text-sky-400 border-slate-800'
-                      }`}>
-                        {shotFilterType === 'payments'
-                          ? `${toPersianDigits(displayedShotRows.length)} سند واریزی`
-                          : shotFilterType === 'invoices'
-                          ? `${toPersianDigits(displayedShotRows.length)} فاکتور`
-                          : `${toPersianDigits(displayedShotRows.length)} مورد در لیست`}
-                      </span>
-                    </div>
-
-                    <div className={`rounded-xl border overflow-hidden ${
-                      shotThemeMode === 'day'
-                        ? 'border-slate-200 bg-white'
-                        : 'border-slate-800 bg-slate-900'
-                    }`}>
-                      <table className="w-full text-right text-xs border-collapse table-fixed">
-                        <thead>
-                          <tr className={`border-b font-black text-[11px] sm:text-xs ${
-                            shotThemeMode === 'day'
-                              ? 'bg-slate-50 text-slate-700 border-slate-200'
-                              : 'bg-slate-950 text-slate-200 border-slate-800'
-                          }`}>
-                            <th style={{ width: '6%' }} className="py-2.5 px-1 text-center">#</th>
-                            <th style={{ width: '13%' }} className="py-2.5 px-1 text-center">نوع سند</th>
-                            <th style={{ width: '27%' }} className="py-2.5 px-2 text-center">عنوان، تاریخ و سند</th>
-                            <th style={{ width: '22%' }} className="py-2.5 px-2 text-center">مبلغ سند</th>
-                            <th style={{ width: '20%' }} className="py-2.5 px-2 text-center">پرداخت و مانده</th>
-                            <th style={{ width: '12%' }} className="py-2.5 px-1 text-center">وضعیت</th>
-                          </tr>
-                        </thead>
-                        <tbody className={`divide-y font-bold ${
-                          shotThemeMode === 'day' ? 'divide-slate-100' : 'divide-slate-800/80'
-                        }`}>
-                          {displayedShotRows.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="p-6 text-center text-slate-400 font-medium">
-                                {shotFilterType === 'invoices' 
-                                  ? 'فاکتوری برای این مشتری ثبت نشده است.' 
-                                  : shotFilterType === 'payments' 
-                                  ? 'سند واریزی یا پرداختی برای این طرف‌حساب ثبت نشده است.' 
-                                  : 'گردش حسابی برای این مشتری ثبت نشده است.'}
-                              </td>
-                            </tr>
-                          ) : (
-                            displayedShotRows.map((row, idx) => {
-                              if (row.type === 'invoice') {
-                                const inv = row.invoice;
-                                const isPurchase = row.isPurchase || inv?.type === 'purchase';
-                                const effAmount = row.amount;
-                                const paidAmt = row.paidAmount || 0;
-                                const remAmt = row.remainingAmount || 0;
-                                const isFullyPaid = row.isSettled || remAmt <= 0;
-
-                                return (
-                                  <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
-                                    shotThemeMode === 'day' ? 'hover:bg-slate-50/70' : 'hover:bg-slate-800/50'
-                                  }`}>
-                                    <td className={`py-2.5 px-1 text-center font-mono text-[11px] ${
-                                      shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'
-                                    }`}>
-                                      {toPersianDigits(idx + 1)}
-                                    </td>
-                                    <td className="py-2.5 px-1 text-center">
-                                      <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${
-                                        isPurchase
-                                          ? (shotThemeMode === 'day' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-purple-950/70 text-purple-300 border-purple-800')
-                                          : (shotThemeMode === 'day' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-950/70 text-indigo-300 border-indigo-800')
-                                      }`}>
-                                        {isPurchase ? 'فاکتور خرید' : 'فاکتور فروش'}
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <div className="flex flex-col items-center justify-center leading-tight">
-                                        <span className={`font-mono text-xs font-bold ${
-                                          shotThemeMode === 'day' ? 'text-slate-800' : 'text-slate-200'
-                                        }`}>
-                                          {inv?.invoiceNumber ? `فاکتور #${toPersianDigits(inv.invoiceNumber)}` : row.code}
-                                        </span>
-                                        <span className={`font-mono text-[11px] ${
-                                          shotThemeMode === 'day' ? 'text-slate-500' : 'text-slate-400'
-                                        }`}>
-                                          {toPersianDigits(row.date)}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <div className="flex flex-col items-center justify-center leading-tight">
-                                        <span className={`font-mono font-black text-xs sm:text-sm dir-ltr ${
-                                          shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'
-                                        }`}>
-                                          {formatPrice(effAmount, false)}
-                                        </span>
-                                        <span className={`text-[10px] font-bold ${
-                                          shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'
-                                        }`}>
-                                          تومان
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <div className="flex flex-col items-center justify-center text-[11px] leading-tight space-y-0.5">
-                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 dir-ltr">
-                                          پرداخت: {paidAmt > 0 ? formatPrice(paidAmt, false) : '۰'}
-                                        </span>
-                                        {remAmt > 0 ? (
-                                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 dir-ltr">
-                                            مانده: {formatPrice(remAmt, false)}
-                                          </span>
-                                        ) : (
-                                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                            تسویه کامل
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-1 text-center">
-                                      {isFullyPaid ? (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black mx-auto whitespace-nowrap ${
-                                          shotThemeMode === 'day'
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                            : 'bg-emerald-950/70 text-emerald-300 border-emerald-800'
-                                        }`}>
-                                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                          <span>تسویه شده</span>
-                                        </span>
-                                      ) : (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black mx-auto whitespace-nowrap ${
-                                          shotThemeMode === 'day'
-                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                            : 'bg-amber-950/70 text-amber-300 border-amber-800'
-                                        }`}>
-                                          <Clock className="w-3 h-3 text-amber-500" />
-                                          <span>باقی مانده</span>
-                                        </span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              }
-
-                              if (row.type === 'payment') {
-                                return (
-                                  <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
-                                    shotThemeMode === 'day' ? 'hover:bg-slate-50/70' : 'hover:bg-slate-800/50'
-                                  }`}>
-                                    <td className={`py-2.5 px-1 text-center font-mono text-[11px] ${
-                                      shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'
-                                    }`}>
-                                      {toPersianDigits(idx + 1)}
-                                    </td>
-                                    <td className="py-2.5 px-1 text-center">
-                                      <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${
-                                        shotThemeMode === 'day' 
-                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                          : 'bg-emerald-950/70 text-emerald-300 border-emerald-800'
-                                      }`}>
-                                        واریزی
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <div className="flex flex-col items-center justify-center leading-tight">
-                                        <span className={`text-xs font-bold ${
-                                          shotThemeMode === 'day' ? 'text-slate-800' : 'text-slate-200'
-                                        }`}>
-                                          {row.methodText ? `واریز (${row.methodText})` : 'سند واریز دریافتی'}
-                                        </span>
-                                        <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400 mt-0.5">
-                                          <span>{toPersianDigits(row.date)}</span>
-                                          {row.referenceNumber && (
-                                            <span>· کد: {toPersianDigits(row.referenceNumber)}</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <div className="flex flex-col items-center justify-center leading-tight">
-                                        <span className="font-mono font-black text-xs sm:text-sm dir-ltr text-emerald-600 dark:text-emerald-400">
-                                          +{formatPrice(row.amount, false)}
-                                        </span>
-                                        <span className={`text-[10px] font-bold ${
-                                          shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'
-                                        }`}>
-                                          تومان
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center">
-                                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                        سند قطعی دریافتی
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 px-1 text-center">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black mx-auto whitespace-nowrap ${
-                                        shotThemeMode === 'day'
-                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                          : 'bg-emerald-950/70 text-emerald-300 border-emerald-800'
-                                      }`}>
-                                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                        <span>ثبت واریز</span>
-                                      </span>
-                                    </td>
-                                  </tr>
-                                );
-                              }
-
-                              // Return row
-                              return (
-                                <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
-                                  shotThemeMode === 'day' ? 'hover:bg-slate-50/70' : 'hover:bg-slate-800/50'
+                            <div className="text-right">
+                              <div className="flex items-center gap-2">
+                                <h3 className={`font-black text-xl sm:text-2xl tracking-tight leading-tight ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                  {settings.brandName || 'سازمان بازرگانی'}
+                                </h3>
+                                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                  isDarkShot ? 'bg-slate-900 text-emerald-400 border-slate-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 }`}>
-                                  <td className={`py-2.5 px-1 text-center font-mono text-[11px] ${
-                                    shotThemeMode === 'day' ? 'text-slate-400' : 'text-slate-500'
-                                  }`}>
-                                    {toPersianDigits(idx + 1)}
-                                  </td>
-                                  <td className="py-2.5 px-1 text-center">
-                                    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${
-                                      shotThemeMode === 'day' 
-                                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                                        : 'bg-rose-950/70 text-rose-300 border-rose-800'
-                                    }`}>
-                                      مرجوعی
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center">
-                                    <div className="flex flex-col items-center justify-center leading-tight">
-                                      <span className={`text-xs font-bold ${
-                                        shotThemeMode === 'day' ? 'text-slate-800' : 'text-slate-200'
-                                      }`}>
-                                        {row.code}
-                                      </span>
-                                      <span className="font-mono text-[11px] text-slate-400">
-                                        {toPersianDigits(row.date)}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center">
-                                    <div className="flex flex-col items-center justify-center leading-tight">
-                                      <span className="font-mono font-black text-xs sm:text-sm dir-ltr text-rose-600 dark:text-rose-400">
-                                        -{formatPrice(row.amount, false)}
-                                      </span>
-                                      <span className="text-[10px] font-bold text-slate-400">
-                                        تومان
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center">
-                                    <span className="text-[11px] font-bold text-slate-500">
-                                      کسر از حساب بدهی
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-1 text-center">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black mx-auto whitespace-nowrap ${
-                                      shotThemeMode === 'day'
-                                        ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                        : 'bg-rose-950/70 text-rose-300 border-rose-800'
-                                    }`}>
-                                      <CheckCircle2 className="w-3 h-3 text-rose-500" />
-                                      <span>مرجوعی</span>
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                                  تایید شده رسمی ✓
+                                </span>
+                              </div>
+                              <p className={`text-xs font-medium mt-1 ${isDarkShot ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {settings.subtitle || 'سیستم رسمی حسابداری، انبارداری و توزیع کالا'}
+                              </p>
+                            </div>
+                          </div>
 
-                  {/* 5. BOTTOM 2-COLUMN SECTION (جزئیات آخرین فاکتور در راست + خلاصه حساب در چپ) */}
-                  {(shotShowLatestInvoice || shotShowAccountSummary) && (
-                    <div className={`grid ${shotShowLatestInvoice && shotShowAccountSummary ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-3.5 relative z-10`}>
-                      
-                      {/* Right Box: جزئیات آخرین فاکتور (شامل تعداد کارتن‌ها، اقلام و چند محصول از فاکتور) */}
-                      {shotShowLatestInvoice && (
-                        <div className={`p-3.5 rounded-xl border space-y-3 ${
-                          shotThemeMode === 'day'
-                            ? 'bg-slate-50/70 border-slate-200/90 text-slate-900'
-                            : 'bg-slate-900/80 border-slate-800 text-slate-100'
+                          {/* Left side: Statement Document Plaque */}
+                          <div className="flex flex-col items-start sm:items-end gap-1.5">
+                            <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black border shadow-2xs ${
+                              isDarkShot 
+                                ? 'bg-slate-900/90 text-white border-slate-800' 
+                                : 'bg-slate-100 text-slate-900 border-slate-200'
+                            }`}>
+                              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                              <span>صورت‌حساب رسمی طرف‌حساب</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 font-mono">
+                              <span>تاریخ: {toPersianDigits(getCurrentPersianDate())}</span>
+                              <span>•</span>
+                              <span>{shotFilterType === 'payments' ? 'اسناد دریافتی' : shotFilterType === 'invoices' ? 'فاکتورها' : 'گردش کامل'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. CUSTOMER PROFILE & HERO BALANCE SHOWCASE BANNER */}
+                        <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                          isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
                         }`}>
-                          <div className={`flex items-center justify-between pb-2 border-b ${
-                            shotThemeMode === 'day' ? 'border-slate-200/70' : 'border-slate-800'
+                          {/* Right: Customer Profile */}
+                          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white text-xl shadow-xs shrink-0 ${theme.primary}`}>
+                              {targetShotCustomer.name.trim().charAt(0) || 'م'}
+                            </div>
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className={`font-black text-lg sm:text-xl leading-tight truncate ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                  {targetShotCustomer.name}
+                                </h4>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
+                                  isDarkShot ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                }`}>
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                  <span>طرف‌حساب فعال</span>
+                                </span>
+                              </div>
+                              {targetShotCustomer.company && (
+                                <p className={`text-xs font-bold ${isDarkShot ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  {targetShotCustomer.company}
+                                </p>
+                              )}
+                              {shotShowCustomerContact && (
+                                <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
+                                  {targetShotCustomer.phone && (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold dir-ltr ${
+                                      isDarkShot ? 'bg-slate-950/80 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+                                    }`}>
+                                      <Phone className="w-3 h-3 text-slate-400" />
+                                      <span>{toPersianDigits(targetShotCustomer.phone)}</span>
+                                    </div>
+                                  )}
+                                  {targetShotCustomer.city && (
+                                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${
+                                      isDarkShot ? 'bg-slate-950/80 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+                                    }`}>
+                                      <MapPin className="w-3 h-3 text-slate-400" />
+                                      <span>{targetShotCustomer.city}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Left: Prominent Live Balance Showcase */}
+                          <div className={`p-3.5 sm:p-4 rounded-xl border flex flex-col items-center sm:items-end justify-center min-w-[210px] shrink-0 ${
+                            targetShotLiveBal > 0 
+                              ? (isDarkShot ? 'bg-rose-950/50 border-rose-900/80' : 'bg-rose-50/90 border-rose-200')
+                              : targetShotLiveBal < 0 
+                              ? (isDarkShot ? 'bg-sky-950/50 border-sky-900/80' : 'bg-sky-50/90 border-sky-200')
+                              : (isDarkShot ? 'bg-emerald-950/50 border-emerald-900/80' : 'bg-emerald-50/90 border-emerald-200')
                           }`}>
+                            <span className="text-[11px] font-bold text-slate-400 mb-1">
+                              مانده نهایی حساب طرف‌حساب:
+                            </span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className={`text-2xl sm:text-3xl font-black font-mono dir-ltr tracking-tight ${
+                                targetShotLiveBal > 0 
+                                  ? 'text-rose-500 dark:text-rose-400' 
+                                  : targetShotLiveBal < 0 
+                                  ? 'text-sky-500 dark:text-sky-400' 
+                                  : 'text-emerald-500 dark:text-emerald-400'
+                              }`}>
+                                {targetShotLiveBal > 0 
+                                  ? `+${formatPrice(targetShotLiveBal, false)}` 
+                                  : targetShotLiveBal < 0 
+                                  ? `-${formatPrice(Math.abs(targetShotLiveBal), false)}` 
+                                  : '۰'}
+                              </span>
+                              <span className="text-xs font-bold text-slate-400">تومان</span>
+                            </div>
+                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full mt-1.5 border ${
+                              targetShotLiveBal > 0 
+                                ? (isDarkShot ? 'bg-rose-900/80 text-rose-200 border-rose-700' : 'bg-rose-100 text-rose-700 border-rose-300')
+                                : targetShotLiveBal < 0 
+                                ? (isDarkShot ? 'bg-sky-900/80 text-sky-200 border-sky-700' : 'bg-sky-100 text-sky-700 border-sky-300')
+                                : (isDarkShot ? 'bg-emerald-900/80 text-emerald-200 border-emerald-700' : 'bg-emerald-100 text-emerald-700 border-emerald-300')
+                            }`}>
+                              {targetShotLiveBal > 0 ? 'بدهکار به فروشگاه' : targetShotLiveBal < 0 ? 'بستانکار (پیش‌پرداخت)' : 'تسویه کامل ✓'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 3. THREE BALANCED METRIC CARDS */}
+                        {shotShowSummaryCards && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {/* Card 1: Total Invoices */}
+                            <div className={`p-3.5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+                              isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs font-bold ${isDarkShot ? 'text-slate-300' : 'text-slate-600'}`}>
+                                  مجموع خریدها و فاکتورها:
+                                </span>
+                                <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                                  isDarkShot ? 'bg-rose-950/80 text-rose-400' : 'bg-rose-100 text-rose-600'
+                                }`}>
+                                  <Receipt className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                              <div className="flex items-baseline justify-between pt-1">
+                                <span className="text-xl sm:text-2xl font-black font-mono dir-ltr text-rose-500 dark:text-rose-400">
+                                  {formatPrice(targetShotTotalInvoicesAmount, false)}
+                                </span>
+                                <span className="text-xs text-slate-400 font-bold">تومان</span>
+                              </div>
+                              <div className={`text-[11px] font-medium pt-1 border-t ${isDarkShot ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                                {toPersianDigits(activeShotInvoices.length)} فاکتور ثبت‌شده
+                              </div>
+                            </div>
+
+                            {/* Card 2: Total Payments */}
+                            <div className={`p-3.5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+                              isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs font-bold ${isDarkShot ? 'text-slate-300' : 'text-slate-600'}`}>
+                                  مجموع دریافتی‌ها و واریزها:
+                                </span>
+                                <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                                  isDarkShot ? 'bg-emerald-950/80 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
+                                }`}>
+                                  <Banknote className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                              <div className="flex items-baseline justify-between pt-1">
+                                <span className="text-xl sm:text-2xl font-black font-mono dir-ltr text-emerald-500 dark:text-emerald-400">
+                                  {formatPrice(targetShotTotalPaid, false)}
+                                </span>
+                                <span className="text-xs text-slate-400 font-bold">تومان</span>
+                              </div>
+                              <div className={`text-[11px] font-medium pt-1 border-t ${isDarkShot ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                                {toPersianDigits(targetShotPayments.length)} سند دریافت و واریز
+                              </div>
+                            </div>
+
+                            {/* Card 3: Settlement Ratio */}
+                            <div className={`p-3.5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+                              isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs font-bold ${isDarkShot ? 'text-slate-300' : 'text-slate-600'}`}>
+                                  وضعیت پوشش مالی:
+                                </span>
+                                <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                                  isDarkShot ? 'bg-slate-800 text-sky-400' : `${theme.primaryLight} ${theme.primaryText}`
+                                }`}>
+                                  <Scale className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                              <div className="flex items-baseline justify-between pt-1">
+                                <span className="text-xl sm:text-2xl font-black font-mono dir-ltr text-sky-500 dark:text-sky-400">
+                                  {targetShotTotalInvoicesAmount > 0 
+                                    ? `${toPersianDigits(Math.min(100, Math.round((targetShotTotalPaid / targetShotTotalInvoicesAmount) * 100)))}٪`
+                                    : '۱۰۰٪'}
+                                </span>
+                                <span className="text-xs text-slate-400 font-bold">تسویه شده</span>
+                              </div>
+                              <div className={`text-[11px] font-medium pt-1 border-t ${isDarkShot ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                                {targetShotLiveBal <= 0 ? 'حساب دارای تسویه کامل' : 'دارای مانده در جریان'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 4. THE CLEAN LEDGER TABLE */}
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <FileText className={`w-4 h-4 ${shotThemeMode === 'day' ? theme.primaryText : 'text-sky-400'}`} />
-                              <h4 className={`font-black text-sm ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                جزئیات آخرین فاکتور
+                              <FileText className={`w-4 h-4 ${isDarkShot ? 'text-sky-400' : theme.primaryText}`} />
+                              <h4 className={`font-black text-sm ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                {shotFilterType === 'payments' 
+                                  ? 'گردش واریزی‌ها و دریافت‌های مالی' 
+                                  : shotFilterType === 'invoices' 
+                                  ? 'تاریخچه فاکتورهای صادره' 
+                                  : 'تاریخچه گردش حساب و تراکنش‌ها'}
                               </h4>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${
-                              shotThemeMode === 'day'
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                            <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
+                              isDarkShot 
+                                ? 'bg-slate-900 text-sky-400 border-slate-800' 
+                                : `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor}`
                             }`}>
-                              {targetShotLatestInvoice?.type === 'purchase' ? 'فاکتور خرید' : 'فاکتور فروش'}
+                              {toPersianDigits(displayedShotRows.length)} سند در این گزارش
                             </span>
                           </div>
 
-                          {/* Invoice Meta */}
-                          {targetShotLatestInvoice ? (
-                            <>
-                              <div className={`flex items-center justify-between text-xs font-bold ${
-                                shotThemeMode === 'day' ? 'text-slate-600' : 'text-slate-400'
+                          <div className={`rounded-2xl border overflow-hidden shadow-2xs ${
+                            isDarkShot ? 'border-slate-800 bg-slate-900/90' : 'border-slate-200 bg-white'
+                          }`}>
+                            <table className="w-full text-right text-xs border-collapse">
+                              <thead>
+                                <tr className={`border-b font-black text-xs ${
+                                  isDarkShot 
+                                    ? 'bg-slate-950 text-slate-200 border-slate-800' 
+                                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                                }`}>
+                                  <th style={{ width: '6%' }} className="py-3 px-2 text-center">#</th>
+                                  <th style={{ width: '16%' }} className="py-3 px-2 text-center">نوع سند</th>
+                                  <th style={{ width: '34%' }} className="py-3 px-3">عنوان، تاریخ و شماره پیگیری</th>
+                                  <th style={{ width: '24%' }} className="py-3 px-3 text-left">مبلغ سند</th>
+                                  <th style={{ width: '20%' }} className="py-3 px-2 text-center">وضعیت تسویه</th>
+                                </tr>
+                              </thead>
+                              <tbody className={`divide-y font-bold ${
+                                isDarkShot ? 'divide-slate-800/80 text-slate-200' : 'divide-slate-100 text-slate-900'
                               }`}>
-                                <span>شماره فاکتور: <strong className={`font-mono ${shotThemeMode === 'day' ? 'text-slate-800' : 'text-slate-200'}`}>{toPersianDigits(targetShotLatestInvoice.invoiceNumber)}</strong></span>
-                                <span>تاریخ: <strong className={`font-mono ${shotThemeMode === 'day' ? 'text-slate-800' : 'text-slate-200'}`}>{toPersianDigits(targetShotLatestInvoice.date)}</strong></span>
-                              </div>
+                                {displayedShotRows.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
+                                      {shotFilterType === 'invoices' 
+                                        ? 'فاکتوری برای این مشتری ثبت نشده است.' 
+                                        : shotFilterType === 'payments' 
+                                        ? 'سند واریزی یا پرداختی برای این طرف‌حساب ثبت نشده است.' 
+                                        : 'گردش حسابی برای این مشتری ثبت نشده است.'}
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  displayedShotRows.map((row, idx) => {
+                                    if (row.type === 'invoice') {
+                                      const inv = row.invoice;
+                                      const effAmount = row.amount;
+                                      const paidAmt = row.paidAmount || 0;
+                                      const remAmt = row.remainingAmount || 0;
+                                      const isFullyPaid = row.isSettled || remAmt <= 0;
 
-                              {/* Highlight Card: Total Cartons & Items in Invoice */}
-                              <div className={`p-2.5 rounded-lg text-xs font-bold border flex items-center justify-between ${
-                                shotThemeMode === 'day' 
-                                  ? 'bg-white text-slate-800 border-slate-200' 
-                                  : 'bg-slate-950/90 text-slate-200 border-slate-800'
+                                      return (
+                                        <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
+                                          isDarkShot ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/70'
+                                        }`}>
+                                          <td className="py-3 px-2 text-center font-mono text-slate-400 text-xs">
+                                            {toPersianDigits(idx + 1)}
+                                          </td>
+                                          <td className="py-3 px-2 text-center">
+                                            <span className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${
+                                              isDarkShot 
+                                                ? 'bg-rose-950/80 text-rose-300 border-rose-800' 
+                                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                                            }`}>
+                                              فاکتور فروش
+                                            </span>
+                                          </td>
+                                          <td className="py-3 px-3">
+                                            <div className="space-y-0.5">
+                                              <div className={`font-bold text-xs ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                                فاکتور #{toPersianDigits(inv.invoiceNumber)}
+                                              </div>
+                                              <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
+                                                <span>{toPersianDigits(row.date)}</span>
+                                                <span>· {toPersianDigits(inv.items.length)} قلم کالا</span>
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="py-3 px-3 text-left">
+                                            <div className="flex flex-col items-start leading-tight">
+                                              <span className="font-mono font-black text-xs sm:text-sm dir-ltr text-rose-500 dark:text-rose-400">
+                                                +{formatPrice(effAmount, false)}
+                                              </span>
+                                              <span className="text-[10px] font-normal text-slate-400">تومان</span>
+                                            </div>
+                                          </td>
+                                          <td className="py-3 px-2 text-center">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-black whitespace-nowrap ${
+                                              isFullyPaid
+                                                ? (isDarkShot ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                                                : (isDarkShot ? 'bg-amber-950/80 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-700 border-amber-200')
+                                            }`}>
+                                              {isFullyPaid ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Clock className="w-3 h-3 text-amber-500" />}
+                                              <span>{isFullyPaid ? 'تسویه کامل' : `مانده: ${formatPrice(remAmt, false)}`}</span>
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    }
+
+                                    if (row.type === 'payment') {
+                                      return (
+                                        <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
+                                          isDarkShot ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/70'
+                                        }`}>
+                                          <td className="py-3 px-2 text-center font-mono text-slate-400 text-xs">
+                                            {toPersianDigits(idx + 1)}
+                                          </td>
+                                          <td className="py-3 px-2 text-center">
+                                            <span className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${
+                                              isDarkShot 
+                                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' 
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            }`}>
+                                              سند واریز
+                                            </span>
+                                          </td>
+                                          <td className="py-3 px-3">
+                                            <div className="space-y-0.5">
+                                              <div className={`font-bold text-xs ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                                {row.methodText ? `واریز (${row.methodText})` : 'سند واریز دریافتی'}
+                                              </div>
+                                              <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
+                                                <span>{toPersianDigits(row.date)}</span>
+                                                {row.referenceNumber && (
+                                                  <span>· پیگیری: {toPersianDigits(row.referenceNumber)}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="py-3 px-3 text-left">
+                                            <div className="flex flex-col items-start leading-tight">
+                                              <span className="font-mono font-black text-xs sm:text-sm dir-ltr text-emerald-500 dark:text-emerald-400">
+                                                -{formatPrice(row.amount, false)}
+                                              </span>
+                                              <span className="text-[10px] font-normal text-slate-400">تومان</span>
+                                            </div>
+                                          </td>
+                                          <td className="py-3 px-2 text-center">
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-black whitespace-nowrap bg-emerald-950/80 text-emerald-300 border-emerald-800">
+                                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                              <span>دریافت قطعی</span>
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    }
+
+                                    // Return row
+                                    return (
+                                      <tr key={`shot-row-${row.id || idx}-${idx}`} className={`transition-colors ${
+                                        isDarkShot ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/70'
+                                      }`}>
+                                        <td className="py-3 px-2 text-center font-mono text-slate-400 text-xs">
+                                          {toPersianDigits(idx + 1)}
+                                        </td>
+                                        <td className="py-3 px-2 text-center">
+                                          <span className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${
+                                            isDarkShot 
+                                              ? 'bg-purple-950/80 text-purple-300 border-purple-800' 
+                                              : 'bg-purple-50 text-purple-700 border-purple-200'
+                                          }`}>
+                                            مرجوعی
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-3">
+                                          <div className="space-y-0.5">
+                                            <div className={`font-bold text-xs ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                              {row.code || 'کالای مرجوعی'}
+                                            </div>
+                                            <div className="font-mono text-[11px] text-slate-400">
+                                              {toPersianDigits(row.date)}
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-3 text-left">
+                                          <div className="flex flex-col items-start leading-tight">
+                                            <span className="font-mono font-black text-xs sm:text-sm dir-ltr text-purple-500 dark:text-purple-400">
+                                              -{formatPrice(row.amount, false)}
+                                            </span>
+                                            <span className="text-[10px] font-normal text-slate-400">تومان</span>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-2 text-center">
+                                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-black whitespace-nowrap bg-purple-950/80 text-purple-300 border-purple-800">
+                                            <CheckCircle2 className="w-3 h-3 text-purple-500" />
+                                            <span>کسر از بدهی</span>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* 5. COMPACT LATEST INVOICE & ACCOUNT SUMMARY STRIP */}
+                        {(shotShowLatestInvoice && targetShotLatestInvoice) || shotShowAccountSummary ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {shotShowLatestInvoice && targetShotLatestInvoice && (
+                              <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                                isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
                               }`}>
-                                <div className="flex items-center gap-1.5">
-                                  <Package className="w-4 h-4 text-indigo-500 shrink-0" />
-                                  <span>
-                                    کل فاکتور: <strong>{toPersianDigits(latestInvItems.length)} قلم کالا</strong>
-                                    {' '}
-                                    ({toPersianDigits(latestInvTotalCartons)} کارتن {latestInvTotalExtraPieces > 0 ? `و ${toPersianDigits(latestInvTotalExtraPieces)} عدد` : ''})
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                                    <span className={`text-xs font-black truncate ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                      آخرین فاکتور #{toPersianDigits(targetShotLatestInvoice.invoiceNumber)}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-mono">
+                                    تاریخ: {toPersianDigits(targetShotLatestInvoice.date)} · {toPersianDigits(latestInvItems.length)} قلم کالا
+                                  </div>
+                                </div>
+                                <div className="text-left shrink-0">
+                                  <div className={`font-mono font-black text-xs sm:text-sm dir-ltr ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                    {formatPrice(targetShotLatestInvoice.finalAmount || 0, false)} تومان
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mt-0.5 border ${
+                                    targetShotLatestInvoice.paymentStatus === 'cash'
+                                      ? (isDarkShot ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                                      : (isDarkShot ? 'bg-amber-950/80 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-700 border-amber-200')
+                                  }`}>
+                                    {targetShotLatestInvoice.paymentStatus === 'cash' ? 'تسویه شده' : 'نسیه / در جریان'}
                                   </span>
                                 </div>
-                                <span className="font-mono text-slate-500 dark:text-slate-400 text-[11px] shrink-0">
-                                  مجموعاً {toPersianDigits(latestInvTotalPieces)} عدد
-                                </span>
                               </div>
+                            )}
 
-                              {/* Items Display Scope Indicator */}
-                              {shotLatestInvItemsLimit !== -1 && (
-                                <div className="space-y-1.5 pt-0.5">
-                                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-0.5">
-                                    <span>
-                                      {latestInvItemsToShow.length < latestInvItems.length
-                                        ? `${toPersianDigits(latestInvItemsToShow.length)} قلم از فاکتور نمایش داده شده است (${toPersianDigits(remainingLatestItemsCount)} قلم دیگر در فاکتور ثبت است):`
-                                        : `نمایش تمامی ${toPersianDigits(latestInvItems.length)} قلم کالای فاکتور:`}
+                            {shotShowAccountSummary && (
+                              <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                                isDarkShot ? 'bg-slate-900/70 border-slate-800' : 'bg-slate-50/80 border-slate-200'
+                              }`}>
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Wallet className={`w-3.5 h-3.5 ${isDarkShot ? 'text-sky-400' : theme.primaryText}`} />
+                                    <span className={`text-xs font-black truncate ${isDarkShot ? 'text-white' : 'text-slate-900'}`}>
+                                      خلاصه کلی گردش مالی
                                     </span>
                                   </div>
-
-                                  {/* Items Rows */}
-                                  <div className="space-y-1 text-xs">
-                                    {latestInvItemsToShow.map((it, itIdx) => {
-                                      const totalPieces = it.totalPieces || ((it.cartonsCount || 0) * (it.piecesPerCarton || 1) + (it.extraPieces || 0));
-                                      const rowTotal = it.totalPrice || (totalPieces * (it.unitSellingPrice || it.unitPrice || 0));
-                                      return (
-                                        <div key={`shot-latest-item-${itIdx}`} className={`flex items-center justify-between font-bold py-1.5 px-2 rounded-lg border ${
-                                          shotThemeMode === 'day' ? 'bg-white border-slate-100 text-slate-800' : 'bg-slate-950/60 border-slate-800/80 text-slate-200'
-                                        }`}>
-                                          <div className="flex items-center gap-1.5 truncate max-w-[55%]">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
-                                            <span className="truncate">{it.productName}</span>
-                                          </div>
-                                          <div className="flex items-center gap-2 font-mono text-[11px]">
-                                            <span className="text-slate-500">
-                                              {it.cartonsCount > 0 ? `${toPersianDigits(it.cartonsCount)} ک` : ''}
-                                              {it.cartonsCount > 0 && it.extraPieces > 0 ? ' + ' : ''}
-                                              {it.extraPieces > 0 ? `${toPersianDigits(it.extraPieces)} د` : ''}
-                                              {' '}({toPersianDigits(totalPieces)} عدد)
-                                            </span>
-                                            <span className="dir-ltr text-left font-black text-slate-900 dark:text-white">
-                                              {formatPrice(rowTotal, false)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
+                                  <div className="text-[11px] text-slate-400 font-mono">
+                                    {toPersianDigits(activeShotInvoices.length)} فاکتور · {toPersianDigits(targetShotPayments.length)} واریزی
                                   </div>
                                 </div>
-                              )}
-
-                              {shotLatestInvItemsLimit === -1 && (
-                                <div className="text-center py-2 text-slate-400 text-xs font-medium">
-                                  نمایش اقلام فاکتور در تنظیمات مخفی شده است (فاکتور شامل {toPersianDigits(latestInvItems.length)} قلم است).
-                                </div>
-                              )}
-
-                              {/* Subtotal */}
-                              <div className={`flex items-center justify-between pt-1.5 border-t ${
-                                shotThemeMode === 'day' ? 'border-slate-200/80' : 'border-slate-800'
-                              }`}>
-                                <span className={`font-black text-sm ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>مبلغ کل فاکتور</span>
-                                <span className={`font-black text-sm font-mono dir-ltr ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                  {formatPrice(targetShotLatestInvoice.finalAmount || 0, false)} تومان
-                                </span>
-                              </div>
-
-                              {/* Payment Banner */}
-                              {(() => {
-                                const eff = getInvoiceEffectiveAmount(targetShotLatestInvoice);
-                                const isSet = targetShotLatestInvoice.paymentStatus === 'cash' || (targetShotLatestInvoice.paymentMethod?.includes('نقدی') && !targetShotLatestInvoice.paymentMethod?.includes('نسیه') && !targetShotLatestInvoice.paymentMethod?.includes('غیر'));
-                                const paid = isSet ? eff : ((targetShotLatestInvoice as any).paidAmount || 0);
-                                const rem = Math.max(0, eff - paid);
-                                const fullyPaid = rem <= 0 || isSet;
-                                
-                                if (fullyPaid) {
-                                  return (
-                                    <div className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border ${
-                                      shotThemeMode === 'day'
-                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                        : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                                    }`}>
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                      <span>پرداخت کامل · فاکتور تسویه شد</span>
-                                    </div>
-                                  );
-                                }
-                                return (
-                                  <div className={`p-2 rounded-lg text-xs font-bold flex items-center justify-between px-3 border ${
-                                    shotThemeMode === 'day'
-                                      ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                      : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                                <div className="text-left shrink-0">
+                                  <div className={`font-mono font-black text-xs sm:text-sm dir-ltr ${
+                                    targetShotLiveBal > 0 
+                                      ? 'text-rose-500 dark:text-rose-400' 
+                                      : targetShotLiveBal < 0 
+                                      ? 'text-sky-500 dark:text-sky-400' 
+                                      : 'text-emerald-500 dark:text-emerald-400'
                                   }`}>
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock className="w-4 h-4 text-amber-500" />
-                                      <span>مانده پرداخت فاکتور:</span>
-                                    </div>
-                                    <span className="font-mono font-black dir-ltr">
-                                      {formatPrice(rem, false)} تومان
-                                    </span>
+                                    {targetShotLiveBal > 0 
+                                      ? `+${formatPrice(targetShotLiveBal, false)}` 
+                                      : targetShotLiveBal < 0 
+                                      ? `-${formatPrice(Math.abs(targetShotLiveBal), false)}` 
+                                      : '۰'} تومان
                                   </div>
-                                );
-                              })()}
-                            </>
-                          ) : (
-                            <div className="py-6 text-center text-xs text-slate-400 font-medium">
-                              فاکتوری برای این مشتری یافت نشد.
-                            </div>
-                          )}
-                        </div>
-                      )}
+                                  <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+                                    {targetShotLiveBal > 0 ? 'مانده بدهی قطعی' : targetShotLiveBal < 0 ? 'بستانکار' : 'تسویه کامل'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
 
-                      {/* Left Box: خلاصه حساب (۵۰٪ عرض) */}
-                      {shotShowAccountSummary && (
-                        <div className={`p-3.5 rounded-xl border space-y-3 ${
-                          shotThemeMode === 'day'
-                            ? 'bg-slate-50/70 border-slate-200/90 text-slate-900'
-                            : 'bg-slate-900/80 border-slate-800 text-slate-100'
-                        }`}>
-                          <div className={`flex items-center justify-between pb-2 border-b ${
-                            shotThemeMode === 'day' ? 'border-slate-200/70' : 'border-slate-800'
+                        {/* 6. STORE BANK ACCOUNT VIP CARD */}
+                        {shotShowBankInfo && (settings.cardNumber || settings.bankName || settings.shabaNumber) && (
+                          <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                            isDarkShot 
+                              ? 'bg-slate-900/80 border-slate-800 text-slate-200' 
+                              : 'bg-slate-50/90 border-slate-200 text-slate-800'
                           }`}>
-                            <div className="flex items-center gap-2">
-                              <Wallet className={`w-4 h-4 ${shotThemeMode === 'day' ? theme.primaryText : 'text-sky-400'}`} />
-                              <h4 className={`font-black text-sm ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                خلاصه حساب جامع
-                              </h4>
-                            </div>
-                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                              shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText}` : 'bg-slate-800 text-sky-400'
-                            }`}>
-                              <ShoppingBag className="w-3.5 h-3.5" />
-                            </div>
-                          </div>
-
-                          {/* Summary Rows */}
-                          <div className="space-y-1.5 text-xs">
-                            <div className={`flex items-center justify-between py-1 border-b ${
-                              shotThemeMode === 'day' ? 'border-slate-100 text-slate-700' : 'border-slate-800/80 text-slate-300'
-                            }`}>
-                              <div className="flex items-center gap-1.5 font-bold">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  shotThemeMode === 'day' ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-950/70 text-emerald-400'
-                                }`}>
-                                  <Receipt className="w-3 h-3" />
-                                </div>
-                                <span>مجموع فاکتورهای فروش</span>
-                              </div>
-                              <span className={`font-black font-mono dir-ltr ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                {formatPrice(targetShotTotalSalesInvoices, false)} تومان
-                              </span>
-                            </div>
-
-                            <div className={`flex items-center justify-between py-1 border-b ${
-                              shotThemeMode === 'day' ? 'border-slate-100 text-slate-700' : 'border-slate-800/80 text-slate-300'
-                            }`}>
-                              <div className="flex items-center gap-1.5 font-bold">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  shotThemeMode === 'day' ? 'bg-purple-100 text-purple-600' : 'bg-purple-950/70 text-purple-400'
-                                }`}>
-                                  <ShoppingBag className="w-3 h-3" />
-                                </div>
-                                <span>مجموع فاکتورهای خرید</span>
-                              </div>
-                              <span className={`font-black font-mono dir-ltr ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                {formatPrice(targetShotTotalPurchaseInvoices, false)} تومان
-                              </span>
-                            </div>
-
-                            <div className={`flex items-center justify-between py-1 border-b ${
-                              shotThemeMode === 'day' ? 'border-slate-100 text-slate-700' : 'border-slate-800/80 text-slate-300'
-                            }`}>
-                              <div className="flex items-center gap-1.5 font-bold">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText}` : 'bg-slate-800 text-sky-400'
-                                }`}>
-                                  <CreditCard className="w-3 h-3" />
-                                </div>
-                                <span>مجموع واریزی‌ها و دریافت‌ها</span>
-                              </div>
-                              <span className={`font-black font-mono dir-ltr ${shotThemeMode === 'day' ? 'text-slate-900' : 'text-white'}`}>
-                                {formatPrice(targetShotTotalPaid, false)} تومان
-                              </span>
-                            </div>
-
-                            {/* Highlight Card: مانده حساب مشتری */}
-                            <div className={`p-2 rounded-lg border flex items-center justify-between mt-1 ${
-                              shotThemeMode === 'day'
-                                ? 'bg-white border-slate-200/90 text-slate-800'
-                                : 'bg-slate-950 border-slate-800 text-slate-100'
-                            }`}>
-                              <div className="flex items-center gap-1.5 font-black">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText}` : 'bg-slate-800 text-sky-400'
-                                }`}>
-                                  <Scale className="w-3 h-3" />
-                                </div>
-                                <span>مانده نهایی حساب</span>
-                              </div>
-                              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md font-black font-mono dir-ltr border ${
-                                targetShotLiveBal > 0 
-                                  ? (shotThemeMode === 'day' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-rose-950/70 text-rose-300 border-rose-900')
-                                  : targetShotLiveBal < 0 
-                                  ? (shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText} ${theme.borderColor}` : 'bg-slate-900 text-sky-300 border-slate-800')
-                                  : (shotThemeMode === 'day' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-emerald-950/70 text-emerald-300 border-emerald-800')
+                            <div className="flex items-center gap-3 text-right w-full sm:w-auto">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                isDarkShot ? 'bg-slate-800 text-sky-400' : `${theme.primaryLight} ${theme.primaryText}`
                               }`}>
-                                <Receipt className="w-3 h-3" />
-                                <span>
-                                  {targetShotLiveBal > 0 
-                                    ? `+${formatPrice(targetShotLiveBal, false)}` 
-                                    : targetShotLiveBal < 0 
-                                    ? `-${formatPrice(Math.abs(targetShotLiveBal), false)}` 
-                                    : '۰'} تومان
-                                </span>
+                                <CreditCard className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <div className="text-xs font-black flex items-center gap-2 flex-wrap">
+                                  <span>اطلاعات واریز به حساب:</span>
+                                  {settings.bankName && (
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                      isDarkShot ? 'bg-slate-800 text-slate-200' : 'bg-slate-200/80 text-slate-700'
+                                    }`}>
+                                      {settings.bankName}
+                                    </span>
+                                  )}
+                                  {settings.accountOwner && (
+                                    <span className="text-[11px] text-slate-400 font-medium">({settings.accountOwner})</span>
+                                  )}
+                                </div>
+                                {settings.shabaNumber && (
+                                  <div className="text-[11px] font-mono text-slate-400 mt-0.5 dir-ltr text-right">
+                                    IR{toPersianDigits(settings.shabaNumber)}
+                                  </div>
+                                )}
                               </div>
                             </div>
+                            {settings.cardNumber && (
+                              <div className={`flex items-center gap-2 font-mono font-black text-xs sm:text-sm dir-ltr tracking-wider px-3.5 py-2 rounded-xl border shrink-0 ${
+                                isDarkShot 
+                                  ? 'bg-slate-950 border-slate-800 text-white' 
+                                  : 'bg-white border-slate-200 text-slate-900'
+                              }`}>
+                                <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{toPersianDigits(settings.cardNumber.replace(/\s+/g, '').replace(/(\d{4})/g, '$1 ').trim())}</span>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
 
-                  {/* 6. STORE BANK ACCOUNT INFO (در صورت فعال بودن در تنظیمات) */}
-                  {shotShowBankInfo && (settings.cardNumber || settings.bankName || settings.shabaNumber) && (
-                    <div className={`p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-2.5 relative z-10 ${
-                      shotThemeMode === 'day' 
-                        ? 'bg-slate-50/90 border-slate-200/90 text-slate-900' 
-                        : 'bg-slate-900/80 border-slate-800 text-slate-100'
-                    }`}>
-                      <div className="flex items-center gap-2.5 text-right w-full sm:w-auto">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          shotThemeMode === 'day' ? `${theme.primaryLight} ${theme.primaryText}` : 'bg-slate-800 text-sky-400'
+                        {/* 7. EXECUTIVE FOOTER */}
+                        <div className={`pt-3.5 border-t flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-bold ${
+                          isDarkShot ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
                         }`}>
-                          <CreditCard className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-black flex items-center gap-2 flex-wrap">
-                            <span>شماره کارت واریز:</span>
-                            {settings.bankName && (
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                {settings.bankName}
-                              </span>
-                            )}
-                            {settings.accountOwner && (
-                              <span className="text-[11px] text-slate-500 font-medium">({settings.accountOwner})</span>
-                            )}
+                          <div className={`flex items-center gap-2 ${isDarkShot ? 'text-slate-300' : 'text-slate-700'}`}>
+                            <Sparkles className={`w-4 h-4 ${isDarkShot ? 'text-sky-400' : theme.primaryText}`} />
+                            <span>با تشکر از حسن اعتماد و همکاری شما · {settings.brandName || 'سازمان بازرگانی'}</span>
                           </div>
-                          {settings.shabaNumber && (
-                            <div className="text-[10.5px] font-mono text-slate-400 mt-0.5 dir-ltr text-right">
-                              IR{toPersianDigits(settings.shabaNumber)}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5 font-mono text-slate-400">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>تاریخ صدور: {toPersianDigits(getCurrentPersianDate())}</span>
+                          </div>
                         </div>
                       </div>
-                      {settings.cardNumber && (
-                        <div className="flex items-center gap-2 font-mono font-black text-xs sm:text-sm dir-ltr tracking-wider px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shrink-0">
-                          <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{toPersianDigits(settings.cardNumber.replace(/\s+/g, '').replace(/(\d{4})/g, '$1 ').trim())}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 7. CLEAN FOOTER (پاورقی تشکر و تاریخ با تراز دقیق دوطرفه) */}
-                  <div className={`pt-3 border-t flex items-center justify-between text-xs font-bold relative z-10 ${
-                    shotThemeMode === 'day' ? 'border-slate-100 text-slate-400' : 'border-slate-800 text-slate-400'
-                  }`}>
-                    <div className={`flex items-center gap-1.5 ${shotThemeMode === 'day' ? 'text-slate-600' : 'text-slate-300'}`}>
-                      <Sparkles className={`w-4 h-4 ${shotThemeMode === 'day' ? theme.primaryText : 'text-sky-400'}`} />
-                      <span>با تشکر از اعتماد و همکاری شما</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 font-mono">
-                      <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-                      <span>تاریخ صدور گزارش: {toPersianDigits(getCurrentPersianDate())}</span>
-                    </div>
-                  </div>
-                </div>
+                    </>
+                  );
+                })()}
 
                 {/* Actions Section */}
                 <div className="space-y-2.5 pt-1">
